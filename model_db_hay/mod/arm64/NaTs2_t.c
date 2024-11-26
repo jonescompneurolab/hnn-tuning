@@ -239,7 +239,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  	hoc_register_cvode(_mechtype, _ode_count, _ode_map, _ode_spec, _ode_matsol);
  	hoc_register_tolerance(_mechtype, _hoc_state_tol, &_atollist);
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 NaTs2_t /Users/katharinaduecker/Documents/projects_brown/hnn_dev/model_db_hay/mod/NaTs2_t.mod\n");
+ 	ivoc_help("help ?1 NaTs2_t /Users/katharinaduecker/Documents/projects_brown/hnn-tuning/model_db_hay/mod/NaTs2_t.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -514,7 +514,7 @@ _first = 0;
 #endif
 
 #if NMODL_TEXT
-static const char* nmodl_filename = "/Users/katharinaduecker/Documents/projects_brown/hnn_dev/model_db_hay/mod/NaTs2_t.mod";
+static const char* nmodl_filename = "/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/model_db_hay/mod/NaTs2_t.mod";
 static const char* nmodl_file_text = 
   ":Reference :Colbert and Pan 2002\n"
   ":comment: took the NaTa and shifted both activation/inactivation by 6 mv\n"

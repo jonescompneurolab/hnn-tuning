@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def fig_conductances(model):
-    apical_sections = ['apical_trunk', 'apical_oblique', 'apical_1', 'apical_2', 'apical_tuft']
+    apical_sections = ['apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']
     distance_apical = []
     gbar_Ih_apical = []
     gbar_Ca_HVA_apical = []
@@ -40,7 +40,7 @@ def fig_conductances(model):
 
 def fig_compartments(model, clamp_current, l_stim=200):
 
-    section_names = ['apical_tuft', 'apical_2', 'apical_1', 'apical_trunk', 'apical_oblique', 'soma']
+    section_names = ['apical_tuft', 'apical_2', 'apical_1', 'apical_trunk', 'soma']
 
     voltg = [None]*len(section_names)
     ca = [None]*len(section_names)
@@ -73,6 +73,8 @@ def fig_compartments(model, clamp_current, l_stim=200):
     for i,section in enumerate(section_names):
         
         ax[1,0].plot(t,voltg[i] + cv)
+        if section == 'apical_tuft':
+            ax[1,0].plot(t,np.ones_like(ca[i]) + cv, color='k', linestyle='-.')
 
         yticks_v.append(-75+cv)
         yticks_v.append(50+cv)
@@ -83,6 +85,8 @@ def fig_compartments(model, clamp_current, l_stim=200):
         cv -= 200
 
         ax[1,1].plot(t,ca[i] + cca, label=section)
+        
+
 
         yticks_ca.append(min(ca[i])+cca)
         yticks_ca.append(max(ca[i])+cca)

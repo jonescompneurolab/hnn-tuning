@@ -14,7 +14,7 @@ def _get_nseg(L):
     return nseg
 
 
-def _get_dends(params, cell_type, section_names):
+def _get_dends(params, cell_type, section_names, end_pts):
     """Convert a flat dictionary to a nested dictionary.
 
     Returns
@@ -25,6 +25,7 @@ def _get_dends(params, cell_type, section_names):
     prop_names = ['L', 'diam', 'Ra', 'cm']
     sections = dict()
     for section_name in section_names:
+        end_pt = end_pts[section_name]
         dend_prop = dict()
         for key in prop_names:
             if key in ['Ra', 'cm']:
@@ -36,16 +37,18 @@ def _get_dends(params, cell_type, section_names):
         sections[section_name] = Section(L=dend_prop['L'],
                                         diam=dend_prop['diam'],
                                         Ra=dend_prop['Ra'],
-                                        cm=dend_prop['cm'])
+                                        cm=dend_prop['cm'],
+                                        end_pts = end_pt)
     return sections
 
-def _get_pyr_soma(p_all, cell_type):
+def _get_pyr_soma(p_all, cell_type, end_pt):
     """Get somatic properties."""
     return Section(
         L=p_all[f'{cell_type}_soma_L'],
         diam=p_all[f'{cell_type}_soma_diam'],
         cm=p_all[f'{cell_type}_soma_cm'],
-        Ra=p_all[f'{cell_type}_soma_Ra']
+        Ra=p_all[f'{cell_type}_soma_Ra'],
+        end_pts = end_pt
     )
 
 class Section:
@@ -139,7 +142,7 @@ class Cell:
 
 
 
-def cell_params():
+def cell_params(model='hay'):
 
     section_params = {
         # Soma
@@ -149,7 +152,7 @@ def cell_params():
         'L5Pyr_soma_Ra': 100, #Rich 495.73, Hay: 100
 
         # Dendrite
-        'L5Pyr_dend_cm': 2,
+        'L5Pyr_dend_cm': 1,
         'L5Pyr_dend_Ra': 100, #Rich 495.73, Hay: 100
 
         'L5Pyr_apicaltrunk_L': 102.,
@@ -176,6 +179,10 @@ def cell_params():
         'L5Pyr_basal3_L': 255.,
         'L5Pyr_basal3_diam': 8.5,
     }
+    if model == 'rich':
+        section_params['L5Pyr_soma_Ra'] = 495.73
+        section_params['L5Pyr_dend_Ra'] = 495.73
+        section_params['L5Pyr_dend_cm'] = 1.6
 
     end_pts = {
             'soma': [[0, 0, 0], [0, 0, 23]],
