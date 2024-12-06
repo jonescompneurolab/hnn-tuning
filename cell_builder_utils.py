@@ -142,7 +142,7 @@ class Cell:
 
 
 
-def cell_params(model='hay'):
+def l5_params(model='hay'):
 
     section_params = {
         # Soma
@@ -214,4 +214,68 @@ def cell_params(model='hay'):
             ('basal_1', 1): [('basal_2', 0), ('basal_3', 0)]
         }
 
+    return section_params, end_pts, cell_tree
+
+def l2_params():
+
+    section_params = {
+
+        # Soma
+        'L2Pyr_soma_L': 22.1,
+        'L2Pyr_soma_diam': 23.4,
+        'L2Pyr_soma_cm': 0.6195,
+        'L2Pyr_soma_Ra': 200.,
+
+        # Dendrites
+        'L2Pyr_dend_cm': 0.6195,
+        'L2Pyr_dend_Ra': 200.,
+
+        'L2Pyr_apicaltrunk_L': 59.5,
+        'L2Pyr_apicaltrunk_diam': 4.25,
+
+        'L2Pyr_apical1_L': 306.,
+        'L2Pyr_apical1_diam': 4.08,
+
+        'L2Pyr_apicaltuft_L': 238.,
+        'L2Pyr_apicaltuft_diam': 3.4,
+
+        'L2Pyr_apicaloblique_L': 340.,
+        'L2Pyr_apicaloblique_diam': 3.91,
+
+        'L2Pyr_basal1_L': 85.,
+        'L2Pyr_basal1_diam': 4.25,
+
+        'L2Pyr_basal2_L': 255.,
+        'L2Pyr_basal2_diam': 2.72,
+
+        'L2Pyr_basal3_L': 255.,
+        'L2Pyr_basal3_diam': 2.72,
+    }
+
+    end_pts = {
+        'soma': [[-50, 0, 765], [-50, 0, 778]],
+        'apical_trunk': [[-50, 0, 778], [-50, 0, 813]],
+        'apical_oblique': [[-50, 0, 813], [-250, 0, 813]],
+        'apical_1': [[-50, 0, 813], [-50, 0, 993]],
+        'apical_tuft': [[-50, 0, 993], [-50, 0, 1133]],
+        'basal_1': [[-50, 0, 765], [-50, 0, 715]],
+        'basal_2': [[-50, 0, 715], [-156, 0, 609]],
+        'basal_3': [[-50, 0, 715], [56, 0, 609]],
+    }
+
+    cell_tree = {
+        ('apical_trunk', 0): [('apical_trunk', 1)],
+        ('apical_1', 0): [('apical_1', 1)],
+        ('apical_tuft', 0): [('apical_tuft', 1)],
+        ('apical_oblique', 0): [('apical_oblique', 1)],
+        ('basal_1', 0): [('basal_1', 1)],
+        ('basal_2', 0): [('basal_2', 1)],
+        ('basal_3', 0): [('basal_3', 1)],
+        # Different sections connected
+        ('soma', 0): [('soma', 1), ('basal_1', 0)],
+        ('soma', 1): [('apical_trunk', 0)],
+        ('apical_trunk', 1): [('apical_1', 0), ('apical_oblique', 0)],
+        ('apical_1', 1): [('apical_tuft', 0)],
+        ('basal_1', 1): [('basal_2', 0), ('basal_3', 0)]}
+    
     return section_params, end_pts, cell_tree

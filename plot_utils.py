@@ -5,8 +5,7 @@ from neuron.units import ms, mV
 import matplotlib.pyplot as plt
 import numpy as np
 
-def fig_conductances(model):
-    apical_sections = ['apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']
+def fig_conductances(model, apical_sections=['apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']):
     distance_apical = []
     gbar_Ih_apical = []
     gbar_Ca_HVA_apical = []
