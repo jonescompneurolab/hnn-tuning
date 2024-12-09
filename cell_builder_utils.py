@@ -149,11 +149,11 @@ def l5_params(model='hay'):
         'L5Pyr_soma_L': 39.,
         'L5Pyr_soma_diam': 28.9,
         'L5Pyr_soma_cm': 1,
-        'L5Pyr_soma_Ra': 100, #Rich 495.73, Hay: 100
+        'L5Pyr_soma_Ra': 200, #Rich 495.73, Hay: 100
 
         # Dendrite
         'L5Pyr_dend_cm': 1,
-        'L5Pyr_dend_Ra': 100, #Rich 495.73, Hay: 100
+        'L5Pyr_dend_Ra': 200, #Rich 495.73, Hay: 100
 
         'L5Pyr_apicaltrunk_L': 102.,
         'L5Pyr_apicaltrunk_diam': 10.2,
