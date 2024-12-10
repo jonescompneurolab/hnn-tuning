@@ -6,7 +6,13 @@ import numpy as np
 
 def Ih_condu_apical(gsoma, x):
 
-    return gsoma * (-0.8696 + 2.087 * np.exp(x/323))
+    sl = 1.1
+    a = 5 # 2.087
+    return gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
+
+def linear_gbar(gsoma, gdend, xkink, x):
+
+    return gsoma + np.min([xkink, x]) * (gdend - gsoma) / xkink
 
 def get_hay_params():
 
@@ -47,21 +53,22 @@ class Mechs:
     def add_mechs(self,cell, params, hotzone=[650, 950]):
 
         h.distance(sec = cell._nrn_sections['soma'])
+        #params = get_rich_params()
         # apical_oblique as part of basal because it's the target of the proximal drive?
         basal_sections = ['basal_1', 'basal_2', 'basal_3', 'apical_oblique']
 
         mechs = params['basal'].keys()
         for sec_name in basal_sections:
-            for i,m in enumerate(mechs):
+            for i, m in enumerate(mechs):
                 cell._nrn_sections[sec_name].insert(m)
-
                 for seg in cell._nrn_sections[sec_name]:
                     if m == 'pas':
                         seg.pas.g = params['basal']['pas']['g']
                         seg.pas.e = params['basal']['pas']['e']
                     else:
-                        setattr(seg, 'gbar_'+m, params['soma'][m])
-        
+                        gbar = params['basal'][m]
+                        setattr(seg, 'gbar_'+m, gbar)
+            
         # soma
         mechs = params['soma'].keys()
         for i,m in enumerate(mechs):
@@ -85,42 +92,39 @@ class Mechs:
         mechs = params['dend'].keys()
         for sec_name in apical_sections:
             for i,m in enumerate(mechs):
-                if m == 'NaT':
-                    cell._nrn_sections[sec_name].insert('NaTa_t')
-                    for seg in cell._nrn_sections[sec_name]:
-                        setattr(seg, 'gbar_NaTa_t', params['dend']['NaTa_t']) 
-                else: 
-                    cell._nrn_sections[sec_name].insert(m)
-                    for seg in cell._nrn_sections[sec_name]:
-                        if m == 'pas':
-                            seg.pas.g = params['dend']['pas']['g']               # Hay increases all conductances by 2 because resistance is also increased by 2
-                            seg.pas.e = params['dend']['pas']['e'] 
-                        
-                        elif m == 'Ih':
-                            distance = h.distance(seg.x, sec=seg.sec)
-                            gbar = params['dend']['Ih'](distance)
-                            setattr(seg, 'gbar_'+m, gbar)
-                        
-                        # set calcium according to function (new)
-                        elif m == 'Ca_HVA':
-                            distance = h.distance(seg.x, sec=seg.sec)
-                            gbar = params['dend']['Ca_HVA'](distance)
-                            if (distance >= hotzone[0]) and (distance < hotzone[1]):
-                                gbar *= 3
-                            setattr(seg, 'gbar_'+m, gbar)
-                        elif m == 'Ca_LVAst':
-                            distance = h.distance(seg.x, sec=seg.sec)
-                            gbar = params['dend']['Ca_LVAst'](distance)
-                            if (distance >= hotzone[0]) and (distance < hotzone[1]):
-                                gbar *= 3
-                            setattr(seg, 'gbar_'+m, gbar)
-                        else:
-                            setattr(seg, 'gbar_'+m, params['dend'][m])       # Hay increases all conductances by 2 because resistance is also increased by 2
+                cell._nrn_sections[sec_name].insert(m)
+                for seg in cell._nrn_sections[sec_name]:
+                    if m == 'pas':
+                        seg.pas.g = params['dend']['pas']['g']               # Hay increases all conductances by 2 because resistance is also increased by 2
+                        seg.pas.e = params['dend']['pas']['e']       
+                    elif m == 'Ih':
+                        distance = h.distance(seg.x, sec=seg.sec)
+                        gbar = params['dend']['Ih'](distance)
+                        setattr(seg, 'gbar_'+m, gbar)
+                    
+                    # set calcium according to function (new)
+                    elif m == 'Ca_HVA':
+                        distance = h.distance(seg.x, sec=seg.sec)
+                        gbar = params['dend']['Ca_HVA'](distance)
+                        if (distance >= hotzone[0]) and (distance < hotzone[1]):
+                            gbar *= 3
+                        setattr(seg, 'gbar_'+m, gbar)
+                    elif m == 'Ca_LVAst':
+                        distance = h.distance(seg.x, sec=seg.sec)
+                        gbar = params['dend']['Ca_LVAst'](distance)
+                        if (distance >= hotzone[0]) and (distance < hotzone[1]):
+                            gbar *= 3
+                        setattr(seg, 'gbar_'+m, gbar) 
+                    else:
+                        setattr(seg, 'gbar_'+m, params['dend'][m])       # Hay increases all conductances by 2 because resistance is also increased by 2
 
             cell._nrn_sections[sec_name].insert('CaDynamics_E2')
             for seg in cell._nrn_sections[sec_name]:
                 seg.CaDynamics_E2.decay = 122
                 seg.CaDynamics_E2.gamma = .000509
+                # seg.CaDynamics_E2.decay = 460
+                # seg.CaDynamics_E2.gamma = .000501
+
 
         return cell
     
