@@ -50,7 +50,7 @@ def fig_compartments(model, clamp_current, l_stim=200):
     t = h.Vector().record(h._ref_t)
 
 
-    h.celsius = 34
+    h.celsius = 37
     h.finitialize(-65 * mV)
     h.continuerun(l_stim * ms)
 
