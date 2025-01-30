@@ -1,6 +1,10 @@
 """optimize cells based on kalmbach_2021""" 
 
 import os
+
+pth = '/users/kduecker/hnn-tuning'
+os.chdir(os.path.join(pth,'new_model_dev'))
+
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import matplotlib as mpl
@@ -93,8 +97,11 @@ def return_start_params():
                         'apical_gamma_CaDynamics_E2': .000501}
 
 
-def add_condu_cell(l5pyr, keys, conductances, basal_sections, apical_sections, hotzone):
+def add_condu_cell(l5pyr, keys, conductances, hotzone=[1500,200]):
     """set conductances in each compartment of the cell"""
+
+    basal_sections = ['basal_1', 'basal_2', 'basal_3', 'apical_oblique']
+    apical_sections = ['apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']
 
     h.distance(sec = l5pyr._nrn_sections['soma'])
 
@@ -182,7 +189,7 @@ def inp_res(sections, cell_tree, keys, conductances):
 def rebound(sections, cell_tree, keys, conductances):
     """Rebound slope and sag ratio"""
 
-    ampl = np.linspace(-0.1, -2, 100)
+    ampl = np.linspace(-.1, -2, 100)
 
     soma_v = np.zeros((len(ampl),int(1/h.dt*205+1)))
     peak_heights = np.zeros_like(ampl)
@@ -211,10 +218,12 @@ def rebound(sections, cell_tree, keys, conductances):
         soma_v[i] = soma_voltg.as_numpy()
 
         pk = find_peaks(soma_v[i][steady_idx:], height=[-70, 50])
-        if len(pk[1]) > 1:
+        if len(pk[0]) > 1:
             peak_heights[i] = pk[1]['peak_heights'][0]
+        elif len(pk[0]) == 0:
+            peak_heights[i] = soma_v[i][steady_idx]
         else:
-            peak_heights[i] = pk[1]['peak_heights']
+            peak_heights[i] = pk[1]['peak_heights'].item()
         
         min_membr_pot[i] = np.min(soma_v[i])
 
@@ -255,7 +264,10 @@ def ap_measures(sections, cell_tree, keys, conductances):
     ap_thresh_idx = np.argmin(np.abs(v_grad-np.max(v_grad)*.09))
     ap_thresh = v_soma[ap_thresh_idx]
 
-    ap_peak = properties['peak_heights'][0]
+    if len(ap) > 0:
+        ap_peak = properties['peak_heights'][0]
+    else:
+        ap_peak = v_soma[-1]
 
     return ap_thresh, ap_peak
 
@@ -368,75 +380,30 @@ def res_to_chirp(sections, cell_tree, keys, conductances):
     return res_freq
 
 
-def fitness_function(ga_instance, solution, solution_idx, hand_tuned_condu, keys, ephys_measures):
+def fitness_function(ga_instance, solution, solution_idx):
     """Fitness function for PyGAD optimization"""
-    
-    fitness = [None]*9
-
-    conductances = hand_tuned_condu*solution
-    
-    # RMP
-    rmp, grad = rmp_grad(keys, conductances)
-
-    fitness[0] = 1/(abs(rmp-ephys_measures['target_rmp'])+0.1)
-
-    # penalize for very high gradient - we want to go asymptotically..
-    fitness[1] = 1/(abs(0.05-grad)+0.1)
-
-    # input resistance
-
-    input_resistance_neuron = inp_res(keys, conductances)
-
-    fitness[2] = 1/(abs(input_resistance_neuron-ephys_measures['ss_inp_res']))
-
-
-    # rebound slope and sag ratio
-    rebound_model, sag_ratio_model = rebound(keys, conductances)
-    
-    fitness[3] = 1/np.abs(rebound_model-ephys_measures['rebound'])
-
-    fitness[4] = 1/np.abs(sag_ratio_model-ephys_measures['sag_ratio'])
 
     
-    # AP threshold & peak
-    
-    ap_thresh, ap_peak = ap_measures(keys, conductances)
-
-    fitness[5] = 1/np.abs(ap_thresh-ephys_measures['ap_thresh'])
-    fitness[6] = 1/np.abs(ap_peak-ephys_measures['ap_peak'])
-
-
-    # FI slope
-    smooth_slope = fi_slope(keys, conductances)
-
-    fitness[7] = 1/np.abs(smooth_slope-ephys_measures['fi_slope'])
-
-    # resonance frequency
-    res_freq = res_to_chirp(keys, conductances)
-
-    fitness[8] = 1/np.abs(res_freq-ephys_measures['res_freq'])
-
-    return fitness
-
-# track loss - there  must be a better way
-def on_generation(ga_instance):
-    global best_solutions
-    best_solution, best_fitness, _ = ga_instance.best_solution()
-    best_solutions.append(1 / best_fitness)  # Convert fitness to loss
-
-
-
-def main(pth, population_size=100, num_parents_mating=10):
-    """Optimization"""
-
-    os.chdir(pth)
-    pth_mod = 'local_hnn/hnn_core/mod'
+    pth_mod = os.path.join(pth,'local_hnn/hnn_core/mod')
 
     # load data
-    ephys_measures = load_data('data/ephys_data.csv')
+    ephys_measures = load_data(os.path.join(pth,'data/kalmbach_2021_l5_electrophys.csv'))
+
+    # print statements to track progress
+    prefixes = [f"RMP target: {np.round(ephys_measures['target_rmp'])} model ", 
+            f"grad target: .05: ", 
+            f"imped target: {ephys_measures['ss_inp_res']} model: ", 
+            f"rebound target: {ephys_measures['rebound']} model: ", 
+            f"sag target: {ephys_measures['sag_ratio']} model: ", 
+            f"ap thresh target: {ephys_measures['ap_thresh']} model: ", 
+            f"ap peak target: {ephys_measures['ap_peak']} model: ", 
+            f"FI slope target: {ephys_measures['fi_slope']} model: ", 
+            f"res freq target: {ephys_measures['res_freq']} model: "
+            ]
 
     # start parameters (hand-tuned conductances)
     start_params = return_start_params()
+    hand_tuned_condu = np.array(list(start_params.values()))
 
     # cell morphology and sections
     keys = list(start_params.keys())
@@ -451,31 +418,115 @@ def main(pth, population_size=100, num_parents_mating=10):
     sections['soma'] = _get_pyr_soma(section_params, 'L5Pyr', end_pts['soma'])
 
     mech_class = Mechs(pth_mod)
+    
+    fitness = [None]*9
 
-    hotzone = [1500, 2000]
+    conductances = hand_tuned_condu*solution
+    
+    # RMP
+    rmp, grad = rmp_grad(sections, cell_tree, keys, conductances)
 
-    basal_sections = ['basal_1', 'basal_2', 'basal_3', 'apical_oblique']
-    apical_sections = ['apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']
+    fitness[0] = 1/(abs(rmp-ephys_measures['target_rmp'])+0.1)
+    print(prefixes[0] + str(rmp), flush=True)
 
+
+    # penalize for very high gradient - we want to go asymptotically..
+    fitness[1] = 1/(abs(0.05-grad)+0.1)
+    print(prefixes[1] + str(grad), flush=True)
+
+    # input resistance
+
+    input_resistance_neuron = inp_res(sections, cell_tree, keys, conductances)
+
+    fitness[2] = 1/(abs(input_resistance_neuron-ephys_measures['ss_inp_res']))
+    print(prefixes[2] + str(np.round(input_resistance_neuron)), flush=True)
+
+
+    # rebound slope and sag ratio
+    rebound_model, sag_ratio_model = rebound(sections, cell_tree, keys, conductances)
+    
+    fitness[3] = 1/np.abs(rebound_model-ephys_measures['rebound'])
+    print(prefixes[3] + str(rebound_model))
+
+    fitness[4] = 1/np.abs(sag_ratio_model-ephys_measures['sag_ratio'])
+    print(prefixes[4] + str(np.round(sag_ratio_model)))
+
+    
+    # AP threshold & peak
+    
+    ap_thresh, ap_peak = ap_measures(sections, cell_tree, keys, conductances)
+
+    fitness[5] = 1/np.abs(ap_thresh-ephys_measures['ap_thresh'])
+    fitness[6] = 1/np.abs(ap_peak-ephys_measures['ap_peak'])
+    print(prefixes[5] + str(ap_thresh), flush=True)
+    print(prefixes[6] + str(ap_peak), flush=True)
+
+
+    # FI slope
+    smooth_slope = fi_slope(sections, cell_tree, keys, conductances)
+
+    fitness[7] = 1/np.abs(smooth_slope-ephys_measures['fi_slope'])
+    print(prefixes[7] + str(smooth_slope), flush=True)
+
+    # resonance frequency
+    res_freq = res_to_chirp(sections, cell_tree, keys, conductances)
+
+    fitness[8] = 1/np.abs(res_freq-ephys_measures['res_freq'])
+    print(prefixes[8] + str(res_freq), flush=True)
+
+    return fitness
+
+def on_fitness(ga_instance, population_fitness):
+    print("on_fitness()", flush=True)
+
+def on_parents(ga_instance, selected_parents):
+    print("on_parents()", flush=True)
+
+def on_crossover(ga_instance, offspring_crossover):
+    print("on_crossover()", flush=True)
+
+def on_mutation(ga_instance, offspring_mutation):
+    print("on_mutation()", flush=True)
+
+def on_generation(ga_instance):
+    print("on_generation()", flush=True)
+
+def main():
+    """Optimization"""
+
+    # start parameters (hand-tuned conductances)
+    start_params = return_start_params()
+
+    # set up optimization
     hand_tuned_condu = np.array(list(start_params.values()))
     initial_population = np.ones_like(hand_tuned_condu)
 
-    initial_population_2d = np.tile(initial_population, (population_size, 1))
+    num_gen = 100
+    population_size = 10
+    num_parents_mating = 5
+
+    population_size = 10
     gene_space = {'low': .1, 'high': 2}
 
-    best_solutions = []
+    initial_population_2d = np.concatenate((initial_population.reshape(1,-1),np.random.uniform(gene_space['low'], gene_space['high'],(population_size-1,hand_tuned_condu.shape[0]))))
 
-    ga_instance = pygad.GA(num_generations=population_size,
+    ga_instance = pygad.GA(num_generations=num_gen,
                        num_parents_mating=num_parents_mating,
                        fitness_func=fitness_function,
                        num_genes=len(start_params),
+                       sol_per_pop=population_size,
                        initial_population=initial_population_2d,
                        gene_space=gene_space,
+                       on_fitness=on_fitness,
+                       on_parents=on_parents,
+                       on_crossover=on_crossover,
+                       on_mutation=on_mutation,
                        on_generation=on_generation)
 
     ga_instance.run()
 
-    best_condu = ga_instance.best_solution()[0]
+    ga_instance.save('l5_pygad_inst')
+
 
 
 if __name__ == "__main__":
