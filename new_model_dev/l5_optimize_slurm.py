@@ -18,12 +18,8 @@ from scipy.fft import fft, fftfreq
 from scipy.signal import windows
 from scipy.signal import chirp
 import pygad
+import pickle
 
-
-# neuron imports
-import neuron
-from neuron import h
-from neuron.units import ms, mV
 
 # own utils
 from cell_builder_utils import l5_params, _get_dends, _get_pyr_soma, Cell
@@ -100,6 +96,11 @@ def return_start_params():
 def add_condu_cell(l5pyr, keys, conductances, hotzone=[1500,200]):
     """set conductances in each compartment of the cell"""
 
+    # neuron imports
+    import neuron
+    from neuron import h
+    from neuron.units import ms, mV
+
     basal_sections = ['basal_1', 'basal_2', 'basal_3', 'apical_oblique']
     apical_sections = ['apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']
 
@@ -149,6 +150,11 @@ def add_condu_cell(l5pyr, keys, conductances, hotzone=[1500,200]):
 def rmp_grad(sections, cell_tree, keys, conductances):
     """Resting membrane potential and gradient (penalize fast drops to RMP)"""
 
+    # neuron imports
+    import neuron
+    from neuron import h
+    from neuron.units import ms, mV
+
     l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
     l5pyr.build()
 
@@ -157,6 +163,7 @@ def rmp_grad(sections, cell_tree, keys, conductances):
     t = h.Vector().record(h._ref_t)
     soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
 
+    soma_v = soma_voltg.as_numpy()
     h.celsius = 37
     h.finitialize(-60 * mV)
     h.continuerun(200 * ms)
@@ -170,6 +177,11 @@ def rmp_grad(sections, cell_tree, keys, conductances):
 
 def inp_res(sections, cell_tree, keys, conductances):
     """Input resistance"""
+
+    # neuron imports
+    import neuron
+    from neuron import h
+    from neuron.units import ms, mV
 
     l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
     l5pyr.build()
@@ -188,6 +200,11 @@ def inp_res(sections, cell_tree, keys, conductances):
 
 def rebound(sections, cell_tree, keys, conductances):
     """Rebound slope and sag ratio"""
+
+    # neuron imports
+    import neuron
+    from neuron import h
+    from neuron.units import ms, mV
 
     ampl = np.linspace(-.1, -2, 100)
 
@@ -235,10 +252,15 @@ def rebound(sections, cell_tree, keys, conductances):
 
     sag_ratio_model = inp_res_max/inp_res_steady
 
-    return rebound_model, sag_ratio_model
+    return rebound_model, sag_ratio_model, inp_res_max
 
 def ap_measures(sections, cell_tree, keys, conductances):
     """Action potential threshold and peak"""
+
+    # neuron imports
+    import neuron
+    from neuron import h
+    from neuron.units import ms, mV
 
     l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
     l5pyr.build()
@@ -258,7 +280,7 @@ def ap_measures(sections, cell_tree, keys, conductances):
     h.finitialize(-60 * mV)
     h.continuerun(50 * ms)
 
-    ap, properties = find_peaks(v_soma, height=0, width=0)
+    ap, properties = find_peaks(v_soma.as_numpy(), height=0, width=0)
 
     v_grad = np.gradient(v_soma)
     ap_thresh_idx = np.argmin(np.abs(v_grad-np.max(v_grad)*.09))
@@ -274,6 +296,11 @@ def ap_measures(sections, cell_tree, keys, conductances):
 
 def fi_slope(sections, cell_tree, keys, conductances):
     """F-I slope"""
+
+    # neuron imports
+    import neuron
+    from neuron import h
+    from neuron.units import ms, mV
 
     ampls = np.linspace(.5,2,100)
 
@@ -317,6 +344,11 @@ def fi_slope(sections, cell_tree, keys, conductances):
 
 def res_to_chirp(sections, cell_tree, keys, conductances):
     """Resonance frequency to chirp stimulus"""
+
+    # neuron imports
+    import neuron
+    from neuron import h
+    from neuron.units import ms, mV
 
     l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
     l5pyr.build()
@@ -383,6 +415,10 @@ def res_to_chirp(sections, cell_tree, keys, conductances):
 def fitness_function(ga_instance, solution, solution_idx):
     """Fitness function for PyGAD optimization"""
 
+    # neuron imports
+    import neuron
+    from neuron import h
+    from neuron.units import ms, mV
     
     pth_mod = os.path.join(pth,'local_hnn/hnn_core/mod')
 
@@ -397,9 +433,9 @@ def fitness_function(ga_instance, solution, solution_idx):
             f"sag target: {ephys_measures['sag_ratio']} model: ", 
             f"ap thresh target: {ephys_measures['ap_thresh']} model: ", 
             f"ap peak target: {ephys_measures['ap_peak']} model: ", 
-            f"FI slope target: {ephys_measures['fi_slope']} model: ", 
-            f"res freq target: {ephys_measures['res_freq']} model: "
-            ]
+            f"FI slope target: {ephys_measures['fi_slope']} model: "] 
+            # f"res freq target: {ephys_measures['res_freq']} model: "
+            # ]
 
     # start parameters (hand-tuned conductances)
     start_params = return_start_params()
@@ -419,7 +455,7 @@ def fitness_function(ga_instance, solution, solution_idx):
 
     mech_class = Mechs(pth_mod)
     
-    fitness = [None]*9
+    fitness = [None]*8
 
     conductances = hand_tuned_condu*solution
     
@@ -436,28 +472,30 @@ def fitness_function(ga_instance, solution, solution_idx):
 
     # input resistance
 
-    input_resistance_neuron = inp_res(sections, cell_tree, keys, conductances)
+    # input_resistance_neuron = inp_res(sections, cell_tree, keys, conductances)
 
-    fitness[2] = 1/(abs(input_resistance_neuron-ephys_measures['ss_inp_res']))
-    print(prefixes[2] + str(np.round(input_resistance_neuron)), flush=True)
-
+    
 
     # rebound slope and sag ratio
-    rebound_model, sag_ratio_model = rebound(sections, cell_tree, keys, conductances)
-    
-    fitness[3] = 1/np.abs(rebound_model-ephys_measures['rebound'])
-    print(prefixes[3] + str(rebound_model))
+    rebound_model, sag_ratio_model, input_res = rebound(sections, cell_tree, keys, conductances)
 
-    fitness[4] = 1/np.abs(sag_ratio_model-ephys_measures['sag_ratio'])
-    print(prefixes[4] + str(np.round(sag_ratio_model)))
+    fitness[2] = 1/(abs(input_res-ephys_measures['ss_inp_res'])+0.01)
+    print(prefixes[2] + str(np.round(input_res)), flush=True)
+
+    
+    fitness[3] = 1/(np.abs(rebound_model-ephys_measures['rebound'])+0.01)
+    print(prefixes[3] + str(rebound_model), flush=True)
+
+    fitness[4] = 1/(np.abs(sag_ratio_model-ephys_measures['sag_ratio'])+0.01)
+    print(prefixes[4] + str(np.round(sag_ratio_model)), flush=True)
 
     
     # AP threshold & peak
     
     ap_thresh, ap_peak = ap_measures(sections, cell_tree, keys, conductances)
 
-    fitness[5] = 1/np.abs(ap_thresh-ephys_measures['ap_thresh'])
-    fitness[6] = 1/np.abs(ap_peak-ephys_measures['ap_peak'])
+    fitness[5] = 1/(np.abs(ap_thresh-ephys_measures['ap_thresh'])+0.01)
+    fitness[6] = 1/(np.abs(ap_peak-ephys_measures['ap_peak'])+0.01)
     print(prefixes[5] + str(ap_thresh), flush=True)
     print(prefixes[6] + str(ap_peak), flush=True)
 
@@ -465,14 +503,14 @@ def fitness_function(ga_instance, solution, solution_idx):
     # FI slope
     smooth_slope = fi_slope(sections, cell_tree, keys, conductances)
 
-    fitness[7] = 1/np.abs(smooth_slope-ephys_measures['fi_slope'])
+    fitness[7] = 1/(np.abs(smooth_slope-ephys_measures['fi_slope'])+0.01)
     print(prefixes[7] + str(smooth_slope), flush=True)
 
-    # resonance frequency
-    res_freq = res_to_chirp(sections, cell_tree, keys, conductances)
+    # # resonance frequency
+    # res_freq = res_to_chirp(sections, cell_tree, keys, conductances)
 
-    fitness[8] = 1/np.abs(res_freq-ephys_measures['res_freq'])
-    print(prefixes[8] + str(res_freq), flush=True)
+    # fitness[8] = 1/np.abs(res_freq-ephys_measures['res_freq'])
+    # print(prefixes[8] + str(res_freq), flush=True)
 
     return fitness
 
@@ -489,7 +527,27 @@ def on_mutation(ga_instance, offspring_mutation):
     print("on_mutation()", flush=True)
 
 def on_generation(ga_instance):
-    print("on_generation()", flush=True)
+
+        print("Generation : ", ga_instance.generations_completed, flush=True)
+        np.save(f'{pth}/new_model_dev/l5_last_gen_parents.npy', ga_instance.last_generation_parents)
+        np.save(f'{pth}/new_model_dev/l5_last_gen_parents_fit.npy',
+                ga_instance.last_generation_fitness[ga_instance.last_generation_parents_indices])
+        fitness_list.append(ga_instance.last_generation_fitness)
+        np.save(f'{pth}/new_model_dev/l5_generation_fitness.npy', np.array(fitness_list))
+        parents_list.append(ga_instance.last_generation_parents)
+        np.save(f'{pth}/new_model_dev/l5_all_parents.npy', np.array(parents_list))
+
+def on_stop(ga_instance, last_population_fitness):
+    
+    print("Done")
+    best_sol = ga_instance.best_solution()
+
+    with open('l5_best_sol.pkl', 'wb') as file:
+        pickle.dump(best_sol, file)
+
+    # # Loading the tuple
+    # with open('l5_best_sol.pkl', 'rb') as file:
+    #     loaded_tuple = pickle.load(file)
 
 def main():
     """Optimization"""
@@ -502,32 +560,36 @@ def main():
     initial_population = np.ones_like(hand_tuned_condu)
 
     num_gen = 100
-    population_size = 10
-    num_parents_mating = 5
+    num_parents_mating = 6
 
-    population_size = 10
+    population_size = 64
+    
     gene_space = {'low': .1, 'high': 2}
 
     initial_population_2d = np.concatenate((initial_population.reshape(1,-1),np.random.uniform(gene_space['low'], gene_space['high'],(population_size-1,hand_tuned_condu.shape[0]))))
+   
+    global fitness_list
+    global parents_list
 
+    fitness_list = []
+    parents_list = []
     ga_instance = pygad.GA(num_generations=num_gen,
                        num_parents_mating=num_parents_mating,
                        fitness_func=fitness_function,
                        num_genes=len(start_params),
-                       sol_per_pop=population_size,
                        initial_population=initial_population_2d,
                        gene_space=gene_space,
                        on_fitness=on_fitness,
                        on_parents=on_parents,
                        on_crossover=on_crossover,
                        on_mutation=on_mutation,
-                       on_generation=on_generation)
+                       on_generation=on_generation,
+                       on_stop=on_stop,
+                       parallel_processing=["process", population_size])
 
     ga_instance.run()
 
     ga_instance.save('l5_pygad_inst')
-
-
 
 if __name__ == "__main__":
     main()
