@@ -14,7 +14,7 @@ def _get_nseg(L):
     return nseg
 
 
-def _get_dends(params, cell_type, section_names, end_pts):
+def _get_dends(params, cell_type, section_names, end_pts, v_init = {'all': -65}, cai=5e-5):
     """Convert a flat dictionary to a nested dictionary.
 
     Returns
@@ -34,20 +34,26 @@ def _get_dends(params, cell_type, section_names, end_pts):
                 # map apicaltrunk -> apical_trunk etc.
                 middle = section_name.replace('_', '')
             dend_prop[key] = params[f'{cell_type}_{middle}_{key}']
+            if len(v_init) == 1:
+                v = v_init['all']
+            else:
+                v = v_init[section_name]
         sections[section_name] = Section(L=dend_prop['L'],
                                         diam=dend_prop['diam'],
                                         Ra=dend_prop['Ra'],
                                         cm=dend_prop['cm'],
+                                        v = v,
                                         end_pts = end_pt)
     return sections
 
-def _get_pyr_soma(p_all, cell_type, end_pt):
+def _get_pyr_soma(p_all, cell_type, end_pt, v_init = -65, cai=5e-5):
     """Get somatic properties."""
     return Section(
         L=p_all[f'{cell_type}_soma_L'],
         diam=p_all[f'{cell_type}_soma_diam'],
         cm=p_all[f'{cell_type}_soma_cm'],
         Ra=p_all[f'{cell_type}_soma_Ra'],
+        v = v_init,
         end_pts = end_pt
     )
 
@@ -64,22 +70,64 @@ def _get_basket_soma():
     )
 
 class Section:
+    """Section class.
 
-    def __init__(self, L, diam, Ra, cm, end_pts=None):
+    Parameters
+    ----------
+    L : float
+        length of a section in microns.
+    diam : float
+        diameter of a section in microns.
+    cm : float
+        membrane capacitance in micro-Farads.
+    Ra : float
+        axial resistivity in ohm-cm
+    end_pts : list of [x, y, z]
+        The start and stop points of the section.
+
+    Attributes
+    ----------
+    mechs : dict
+        Mechanisms to insert in this section. The keys
+        are the names of the mechanisms and values
+        are the properties. For e.g., {'ca': {'gbar_ca': 60}}
+    syns : list of str
+        The synaptic mechanisms to add in this section
+    end_pts : list of [x, y, z]
+        The start and stop points of the section. Cannot be changed.
+    L : float
+        length of a section in microns.
+    diam : float
+        diameter of a section in microns.
+    cm : float
+        membrane capacitance in micro-Farads.
+    Ra : float
+        axial resistivity in ohm-cm.
+    v : float
+        start value for membrane potential.
+    nseg : int
+        Number of segments in the section
+    """
+    def __init__(self, L, diam, Ra, cm, v=-65, cai = 5e-5, end_pts=None):
 
         self._L = L
         self._diam = diam
         self._Ra = Ra
         self._cm = cm
+        self._v = v             # initial voltage for each section
+        self._cai = cai
         if end_pts is None:
             end_pts = list()
         self._end_pts = end_pts
+
+        self.mechs = dict()
+        self.syns = list()
 
         # For distance functionality
         self.nseg = _get_nseg(self.L)
 
     def __repr__(self):
-        return f'L={self.L}, diam={self.diam}, cm={self.cm}, Ra={self.Ra}'
+        return f'L={self.L}, diam={self.diam}, cm={self.cm}, Ra={self.Ra}, v={self.v}'
 
     @property
     def L(self):
@@ -96,6 +144,13 @@ class Section:
     @property
     def Ra(self):
         return self._Ra
+    
+    @property
+    def v(self):
+        return self._v
+    @property
+    def cai(self):
+        return self._cai
 
     @property
     def end_pts(self):
@@ -191,6 +246,7 @@ class Cell:
             sec.Ra = self.sections[sec_name].Ra
             sec.cm = self.sections[sec_name].cm
             sec.nseg = self.sections[sec_name].nseg
+            sec.v = self.sections[sec_name].v
 
         if self.cell_tree is None:
             self.cell_tree = dict()
