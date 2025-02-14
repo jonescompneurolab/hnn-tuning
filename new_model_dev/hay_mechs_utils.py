@@ -7,7 +7,7 @@ import numpy as np
 def Ih_condu_apical(gsoma, x):
 
     sl = 1.1
-    a = 8
+    a = 6
     return gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
 
 def linear_gbar(gsoma, gdend, xkink, x):
