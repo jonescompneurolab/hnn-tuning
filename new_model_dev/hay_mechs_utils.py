@@ -7,7 +7,7 @@ import numpy as np
 def Ih_condu_apical(gsoma, x):
 
     sl = 1.1
-    a = 5 # 2.087
+    a = 8
     return gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
 
 def linear_gbar(gsoma, gdend, xkink, x):
@@ -121,7 +121,8 @@ class Mechs:
             cell._nrn_sections[sec_name].insert('CaDynamics_E2')
             for seg in cell._nrn_sections[sec_name]:
                 seg.CaDynamics_E2.decay = 122
-                seg.CaDynamics_E2.gamma = .000509
+                seg.CaDynamics_E2.gamma = .0005096*.8
+                #seg.CaDynamics_E2.minCai = 5e-5
                 # seg.CaDynamics_E2.decay = 460
                 # seg.CaDynamics_E2.gamma = .000501
 
