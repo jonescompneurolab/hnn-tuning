@@ -61,11 +61,11 @@ def return_start_params():
 
     return {'soma_gbar_NaTs2_t': 20_400e-4, 
                         'soma_gbar_SKv3_1': 6_930e-4,
-                        'soma_gbar_Nap_Et2': 17.2e-4,
-                        'soma_gbar_Ca_HVA': 9.92e-04*.75,
+                        'soma_gbar_Nap_Et2': 17.2e-4*5,
+                        'soma_gbar_Ca_HVA': 9.92e-04*0.5,
                         'soma_gbar_Ca_LVAst': 34.3e-4*.75,
                         'soma_gbar_SK_E2': 441e-4,
-                        'soma_gbar_Ih': 1e-4*1.1,
+                        'soma_gbar_Ih': 1e-4,
                         'soma_gbar_Im': 0,
                         'soma_gbar_K_Pst': 22.3e-4,
                         'soma_gbar_K_Tst': 812e-4,
@@ -90,7 +90,7 @@ def return_start_params():
                         'apical_g_pas': 0.0000589*1.5,
                         'apical_e_pas': -85,
                         'apical_decay_CaDynamics_E2': 122,
-                        'apical_gamma_CaDynamics_E2': .000501}
+                        'apical_gamma_CaDynamics_E2': .0005096*8}
 
 
 def add_condu_cell(l5pyr, keys, conductances, hotzone=[1500,200]):
@@ -128,12 +128,12 @@ def add_condu_cell(l5pyr, keys, conductances, hotzone=[1500,200]):
                 for seg in l5pyr._nrn_sections[section]:
                     if mech == 'Ca_HVA':
                         distance = h.distance(seg.x, sec=seg.sec)
-                        gbar = linear_gbar(val, val*9,1500, distance)
+                        gbar = linear_gbar(val, val*10,1500, distance)
                         if (distance >= hotzone[0]) and (distance < hotzone[1]):
                                 gbar *= 3
                     elif mech == 'Ca_LVAst':
                         distance = h.distance(seg.x, sec=seg.sec)
-                        gbar = linear_gbar(val, val*4,1500, distance)
+                        gbar = linear_gbar(val, val*3,1500, distance)
                         if (distance >= hotzone[0]) and (distance < hotzone[1]):
                                 gbar *= 3
                     elif mech == 'Ih':
@@ -165,15 +165,19 @@ def rmp_grad(sections, cell_tree, keys, conductances):
 
     soma_v = soma_voltg.as_numpy()
     h.celsius = 37
-    h.finitialize(-60 * mV)
+    h.finitialize()
     h.continuerun(200 * ms)
     rmp = soma_voltg[-3]
     grad = np.max(np.abs(np.gradient(soma_voltg)))
+    # penalize for a positive gradient
+    grad_sign = len(np.where(np.gradient(soma_voltg) > 0))
+
     if np.isnan(rmp):
         rmp = 1000
         grad = -1000
+        grad_sign = 1000
 
-    return rmp, grad
+    return rmp, grad, grad_sign, soma_voltg, t
 
 def inp_res(sections, cell_tree, keys, conductances):
     """Input resistance"""
@@ -228,7 +232,7 @@ def rebound(sections, cell_tree, keys, conductances):
         soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
 
         h.celsius = 37
-        h.finitialize(-60 * mV)
+        h.finitialize()
         h.continuerun(205 * ms)
 
         steady_idx = np.argmin(np.abs(t-90))
@@ -250,7 +254,7 @@ def rebound(sections, cell_tree, keys, conductances):
     inp_res_max = np.polyfit(ampl,min_membr_pot,1)[0]
     inp_res_steady = np.polyfit(ampl,steady_state,1)[0]
 
-    sag_ratio_model = inp_res_max/inp_res_steady
+    sag_ratio_model = inp_res_max/inp_res_steady, soma_v, t
 
     return rebound_model, sag_ratio_model, inp_res_max
 
@@ -277,7 +281,7 @@ def ap_measures(sections, cell_tree, keys, conductances):
 
     h.celsius = 37
     h.dt = .01
-    h.finitialize(-60 * mV)
+    h.finitialize()
     h.continuerun(50 * ms)
 
     ap, properties = find_peaks(v_soma.as_numpy(), height=0, width=0)
@@ -291,7 +295,7 @@ def ap_measures(sections, cell_tree, keys, conductances):
     else:
         ap_peak = v_soma[-1]
 
-    return ap_thresh, ap_peak
+    return ap_thresh, ap_peak, v_soma, t
 
 
 def fi_slope(sections, cell_tree, keys, conductances):
@@ -302,7 +306,7 @@ def fi_slope(sections, cell_tree, keys, conductances):
     from neuron import h
     from neuron.units import ms, mV
 
-    ampls = np.linspace(.5,2,100)
+    ampls = np.linspace(.5,2,10)
 
     F = np.zeros_like(ampls)
     for i,amp in enumerate(ampls):
@@ -321,7 +325,7 @@ def fi_slope(sections, cell_tree, keys, conductances):
         soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
 
         h.celsius = 37
-        h.finitialize(-60 * mV)
+        h.finitialize()
         h.continuerun(1001 * ms)
 
         soma_voltg = soma_voltg.as_numpy()
@@ -329,18 +333,18 @@ def fi_slope(sections, cell_tree, keys, conductances):
         F[i] = len(signal.find_peaks(soma_voltg, height=0)[0])
 
     FI_slope = np.diff(np.array(F))/np.diff(ampls)[0]
-
-    ampl_diff = np.diff(ampls)[0]
-
-    smooth_F = np.zeros((len(F)-10,))
-    for i,f in enumerate(F[:-10]):
-        smooth_F[i] = np.mean(F[i:i+10])
-
-    # slope: difference in frequency per nA step
     pA = 0.001 # nA (convert nA to pA)
-    smooth_slope = max(np.diff(smooth_F)/np.diff(ampls[:-10]) * pA)
+    # ampl_diff = np.diff(ampls)[0]
 
-    return smooth_slope
+    # smooth_F = np.zeros((len(F)-10,))
+    # for i,f in enumerate(F[:-10]):
+    #     smooth_F[i] = np.mean(F[i:i+10])
+
+    # # slope: difference in frequency per nA step
+    
+    # smooth_slope = max(np.diff(smooth_F)/np.diff(ampls[:-10]) * pA)
+
+    return max(FI_slope)*pA
 
 def res_to_chirp(sections, cell_tree, keys, conductances):
     """Resonance frequency to chirp stimulus"""
@@ -385,8 +389,9 @@ def res_to_chirp(sections, cell_tree, keys, conductances):
     v_rec.record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
     t_rec = h.Vector().record(h._ref_t)
     # Run the simulation
-    h.finitialize(-65)  # Initialize membrane potential
+    h.finitialize()  # Initialize membrane potential
     h.continuerun(h.tstop)
+    h.dt = 0.1
 
     gauss_win = windows.gaussian(len(chirp_signal), len(chirp_signal)/1.5)
 
@@ -409,7 +414,7 @@ def res_to_chirp(sections, cell_tree, keys, conductances):
 
     res_freq = freq[np.argmax(zap_smooth[lowf:])-lowf]
 
-    return res_freq
+    return res_freq, chirp_signal, v_rec, t_rec, zap
 
 
 def fitness_function(ga_instance, solution, solution_idx):
@@ -455,20 +460,34 @@ def fitness_function(ga_instance, solution, solution_idx):
 
     mech_class = Mechs(pth_mod)
     
-    fitness = [None]*8
+    fitness = [None]*6
 
     conductances = hand_tuned_condu*solution
     
     # RMP
-    rmp, grad = rmp_grad(sections, cell_tree, keys, conductances)
+    rmp, grad, pos_grad = rmp_grad(sections, cell_tree, keys, conductances)
 
-    fitness[0] = 1/(abs(rmp-ephys_measures['target_rmp'])+0.1)
+    fitness[0] = 1/(abs(rmp-ephys_measures['target_rmp'])+0.001)
     print(prefixes[0] + str(rmp), flush=True)
 
 
     # penalize for very high gradient - we want to go asymptotically..
-    fitness[1] = 1/(abs(0.05-grad)+0.1)
+    fitness[1] = 1/(abs(0.05-grad)+0.001)
     print(prefixes[1] + str(grad), flush=True)
+
+    # penalize for positive gradient
+    fitness[2] = 1/pos_grad
+
+
+    
+    # AP threshold & peak
+    
+    ap_thresh, ap_peak = ap_measures(sections, cell_tree, keys, conductances)
+
+    fitness[3] = 1/(np.abs(ap_thresh-ephys_measures['ap_thresh'])+0.001)
+    fitness[4] = 1/(np.abs(ap_peak-ephys_measures['ap_peak'])+0.001)
+    print(prefixes[5] + str(ap_thresh), flush=True)
+    print(prefixes[6] + str(ap_peak), flush=True)
 
     # input resistance
 
@@ -476,34 +495,25 @@ def fitness_function(ga_instance, solution, solution_idx):
 
     
 
-    # rebound slope and sag ratio
-    rebound_model, sag_ratio_model, input_res = rebound(sections, cell_tree, keys, conductances)
+    # # rebound slope and sag ratio
+    # rebound_model, sag_ratio_model, input_res = rebound(sections, cell_tree, keys, conductances)
 
-    fitness[2] = 1/(abs(input_res-ephys_measures['ss_inp_res'])+0.01)
-    print(prefixes[2] + str(np.round(input_res)), flush=True)
-
-    
-    fitness[3] = 1/(np.abs(rebound_model-ephys_measures['rebound'])+0.01)
-    print(prefixes[3] + str(rebound_model), flush=True)
-
-    fitness[4] = 1/(np.abs(sag_ratio_model-ephys_measures['sag_ratio'])+0.01)
-    print(prefixes[4] + str(np.round(sag_ratio_model)), flush=True)
+    # fitness[2] = 1/(abs(input_res-ephys_measures['ss_inp_res'])+0.01)
+    # print(prefixes[2] + str(np.round(input_res)), flush=True)
 
     
-    # AP threshold & peak
-    
-    ap_thresh, ap_peak = ap_measures(sections, cell_tree, keys, conductances)
+    # fitness[3] = 1/(np.abs(rebound_model-ephys_measures['rebound'])+0.01)
+    # print(prefixes[3] + str(rebound_model), flush=True)
 
-    fitness[5] = 1/(np.abs(ap_thresh-ephys_measures['ap_thresh'])+0.01)
-    fitness[6] = 1/(np.abs(ap_peak-ephys_measures['ap_peak'])+0.01)
-    print(prefixes[5] + str(ap_thresh), flush=True)
-    print(prefixes[6] + str(ap_peak), flush=True)
+    # fitness[4] = 1/(np.abs(sag_ratio_model-ephys_measures['sag_ratio'])+0.01)
+    # print(prefixes[4] + str(np.round(sag_ratio_model)), flush=True)
 
 
-    # FI slope
+
+    # # FI slope
     smooth_slope = fi_slope(sections, cell_tree, keys, conductances)
 
-    fitness[7] = 1/(np.abs(smooth_slope-ephys_measures['fi_slope'])+0.01)
+    fitness[5] = 1/(np.abs(smooth_slope-ephys_measures['fi_slope'])+0.001)
     print(prefixes[7] + str(smooth_slope), flush=True)
 
     # # resonance frequency
@@ -559,12 +569,12 @@ def main():
     hand_tuned_condu = np.array(list(start_params.values()))
     initial_population = np.ones_like(hand_tuned_condu)
 
-    num_gen = 100
-    num_parents_mating = 6
+    num_gen = 1000
+    num_parents_mating = 12
 
-    population_size = 64
+    population_size = 256
     
-    gene_space = {'low': .1, 'high': 2}
+    gene_space = {'low': .5, 'high': 1.8}
 
     initial_population_2d = np.concatenate((initial_population.reshape(1,-1),np.random.uniform(gene_space['low'], gene_space['high'],(population_size-1,hand_tuned_condu.shape[0]))))
    
@@ -575,16 +585,20 @@ def main():
     parents_list = []
     ga_instance = pygad.GA(num_generations=num_gen,
                        num_parents_mating=num_parents_mating,
+                       keep_parents = 6,
+                       mutation_percent_genes = 50,
                        fitness_func=fitness_function,
                        num_genes=len(start_params),
                        initial_population=initial_population_2d,
                        gene_space=gene_space,
+                       crossover_type="scattered",
                        on_fitness=on_fitness,
                        on_parents=on_parents,
                        on_crossover=on_crossover,
                        on_mutation=on_mutation,
                        on_generation=on_generation,
                        on_stop=on_stop,
+                
                        parallel_processing=["process", population_size])
 
     ga_instance.run()

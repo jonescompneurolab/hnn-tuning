@@ -1,6 +1,7 @@
 #!/bin/bash
+#SBATCH -n 63
 #SBATCH -J l5_optim
-#SBATCH -t 100:00:00
+#SBATCH -t 20:0:00
 #SBATCH --mem=80G
 
 # Specify an output file
