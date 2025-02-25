@@ -5,6 +5,7 @@ import os
 pth = '/users/kduecker/hnn-tuning'
 os.chdir(os.path.join(pth,'new_model_dev'))
 
+from copy import deepcopy
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import matplotlib as mpl
@@ -20,6 +21,7 @@ from scipy.signal import chirp
 import pygad
 import pickle
 
+import multiprocessing
 
 # own utils
 from cell_builder_utils import l5_params, _get_dends, _get_pyr_soma, Cell
@@ -59,11 +61,11 @@ def load_data(data_path):
 def return_start_params():
     """Hand-tuned starting values for the conductances"""
 
-    return {'soma_gbar_NaTs2_t': 20_400e-4, 
+    return {'soma_gbar_NaTs2_t': 20_400e-4*10, 
                         'soma_gbar_SKv3_1': 6_930e-4,
-                        'soma_gbar_Nap_Et2': 17.2e-4*5,
-                        'soma_gbar_Ca_HVA': 9.92e-04*0.5,
-                        'soma_gbar_Ca_LVAst': 34.3e-4*.75,
+                        'soma_gbar_Nap_Et2': 17.2e-4,
+                        'soma_gbar_Ca_HVA': 9.92e-04,
+                        'soma_gbar_Ca_LVAst': 34.3e-4,
                         'soma_gbar_SK_E2': 441e-4,
                         'soma_gbar_Ih': 1e-4,
                         'soma_gbar_Im': 0,
@@ -111,7 +113,6 @@ def add_condu_cell(l5pyr, keys, conductances, hotzone=[1500,200]):
         idx2 = key.find("_", idx1+1)
         attr = key[idx1+1:]
         mech = key[idx2+1:]
-        #print(attr +','+mech+','+str(val))
 
         if key[:idx1] == 'soma':
             l5pyr._nrn_sections[key[:idx1]].insert(mech)
@@ -128,7 +129,7 @@ def add_condu_cell(l5pyr, keys, conductances, hotzone=[1500,200]):
                 for seg in l5pyr._nrn_sections[section]:
                     if mech == 'Ca_HVA':
                         distance = h.distance(seg.x, sec=seg.sec)
-                        gbar = linear_gbar(val, val*10,1500, distance)
+                        gbar = linear_gbar(val, val*7.5,1500, distance)
                         if (distance >= hotzone[0]) and (distance < hotzone[1]):
                                 gbar *= 3
                     elif mech == 'Ca_LVAst':
@@ -145,9 +146,12 @@ def add_condu_cell(l5pyr, keys, conductances, hotzone=[1500,200]):
     
     return l5pyr
 
+# initialize neuron cell
+
+
 """In silico experiments"""
 
-def rmp_grad(sections, cell_tree, keys, conductances):
+def rmp_grad(keys, conductances):
     """Resting membrane potential and gradient (penalize fast drops to RMP)"""
 
     # neuron imports
@@ -155,54 +159,51 @@ def rmp_grad(sections, cell_tree, keys, conductances):
     from neuron import h
     from neuron.units import ms, mV
 
-    l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
+    pth_mod = os.path.join(pth,'local_hnn/hnn_core/mod')
+    neuron.load_mechanisms(pth_mod)
+    h.load_file("stdrun.hoc")
+
+
+    # Get parameters
+    start_params = return_start_params()
+    hand_tuned_condu = np.array(list(start_params.values()))
+    keys = list(start_params.keys())
+
+    # Get morphological parameters
+    section_params, end_pts, cell_tree = l5_params()
+    sections = _get_dends(section_params, 'L5Pyr', list(end_pts.keys()), end_pts, v_init={'all': -60})
+    sections['soma'] = _get_pyr_soma(section_params, 'L5Pyr', end_pts['soma'], v_init=-60)
+    
+    # Build cell template
+    l5pyr = Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
     l5pyr.build()
 
     l5pyr = add_condu_cell(l5pyr, keys, conductances)
 
-    t = h.Vector().record(h._ref_t)
-    soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
+    try:
+        t = h.Vector().record(h._ref_t)
+        soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
 
-    soma_v = soma_voltg.as_numpy()
-    h.celsius = 37
-    h.finitialize()
-    h.continuerun(200 * ms)
-    rmp = soma_voltg[-3]
-    grad = np.max(np.abs(np.gradient(soma_voltg)))
-    # penalize for a positive gradient
-    grad_sign = len(np.where(np.gradient(soma_voltg) > 0))
+        soma_v = soma_voltg.as_numpy()
+        h.celsius = 37
+        h.finitialize()
+        h.continuerun(100 * ms)
+        rmp = soma_voltg[-3]
+        grad = np.max(np.abs(np.gradient(soma_voltg)))
 
-    if np.isnan(rmp):
-        rmp = 1000
-        grad = -1000
-        grad_sign = 1000
+        if np.isnan(rmp):
+            rmp = 1000
+            grad = -1000
 
-    return rmp, grad, grad_sign, soma_voltg, t
+    except Exception as e:
+        print(f"rmp_grad ERROR: {str(e)}", flush=True)
+        return 1000, -1000, [], []
+    
+    del l5pyr
 
-def inp_res(sections, cell_tree, keys, conductances):
-    """Input resistance"""
+    return rmp, grad, soma_voltg, t
 
-    # neuron imports
-    import neuron
-    from neuron import h
-    from neuron.units import ms, mV
-
-    l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
-    l5pyr.build()
-    l5pyr = add_condu_cell(l5pyr, keys, conductances)
-
-    h.celsius = 37
-    h.finitialize(-65 * mV)
-    h.continuerun(205 * ms)
-
-    imp = h.Impedance()
-    imp.loc(0.5, sec=l5pyr._nrn_sections['soma'])
-    imp.compute(0)
-    input_resistance_neuron = imp.input(0.5)
-
-    return input_resistance_neuron
-
-def rebound(sections, cell_tree, keys, conductances):
+def rebound(keys, conductances):
     """Rebound slope and sag ratio"""
 
     # neuron imports
@@ -210,55 +211,73 @@ def rebound(sections, cell_tree, keys, conductances):
     from neuron import h
     from neuron.units import ms, mV
 
-    ampl = np.linspace(-.1, -2, 100)
+    pth_mod = os.path.join(pth,'local_hnn/hnn_core/mod')
+    neuron.load_mechanisms(pth_mod)
+    h.load_file("stdrun.hoc")
+
+    # Get morphological parameters
+    section_params, end_pts, cell_tree = l5_params()
+    sections = _get_dends(section_params, 'L5Pyr', list(end_pts.keys()), end_pts, v_init={'all': -60})
+    sections['soma'] = _get_pyr_soma(section_params, 'L5Pyr', end_pts['soma'], v_init=-60)
+    
+    ampl = np.linspace(-.1, -2, 10)
 
     soma_v = np.zeros((len(ampl),int(1/h.dt*205+1)))
     peak_heights = np.zeros_like(ampl)
     steady_state = np.zeros_like(ampl)
     min_membr_pot = np.zeros_like(ampl)
     sag_ratio = np.zeros_like(ampl)
+
     for i,amp in enumerate(ampl):
 
-        l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
+        # Build cell template
+        l5pyr = Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
         l5pyr.build()
         l5pyr = add_condu_cell(l5pyr, keys, conductances)
 
-        stim = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
-        stim.delay = 5
-        stim.dur = 100
-        stim.amp = amp
+        try:
+            stim = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
+            stim.delay = 5
+            stim.dur = 100
+            stim.amp = amp
 
-        t = h.Vector().record(h._ref_t)
-        soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
+            t = h.Vector().record(h._ref_t)
+            soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
 
-        h.celsius = 37
-        h.finitialize()
-        h.continuerun(205 * ms)
+            h.celsius = 37
+            h.finitialize()
+            h.continuerun(205 * ms)
 
-        steady_idx = np.argmin(np.abs(t-90))
-        soma_v[i] = soma_voltg.as_numpy()
+            steady_idx = np.argmin(np.abs(t-90))
+            soma_v[i] = soma_voltg.as_numpy()
 
-        pk = find_peaks(soma_v[i][steady_idx:], height=[-70, 50])
-        if len(pk[0]) > 1:
-            peak_heights[i] = pk[1]['peak_heights'][0]
-        elif len(pk[0]) == 0:
-            peak_heights[i] = soma_v[i][steady_idx]
-        else:
-            peak_heights[i] = pk[1]['peak_heights'].item()
-        
-        min_membr_pot[i] = np.min(soma_v[i])
+            pk = find_peaks(soma_v[i][steady_idx:], height=[-70, 50])
+            if len(pk[0]) > 1:
+                peak_heights[i] = pk[1]['peak_heights'][0]
+            elif len(pk[0]) == 0:
+                peak_heights[i] = soma_v[i][steady_idx]
+            else:
+                peak_heights[i] = pk[1]['peak_heights'].item()
+            
+            min_membr_pot[i] = np.min(soma_v[i])
 
-        steady_state[i] = soma_v[i][steady_idx]
+            steady_state[i] = soma_v[i][steady_idx]
+        except Exception as e:
+            print(f"rebound ERROR: {str(e)}", flush=True)
+        finally:
+            h('forall delete_section()')
+
+        del l5pyr
 
     rebound_model = np.polyfit(steady_state, peak_heights,1)[0]
     inp_res_max = np.polyfit(ampl,min_membr_pot,1)[0]
     inp_res_steady = np.polyfit(ampl,steady_state,1)[0]
 
-    sag_ratio_model = inp_res_max/inp_res_steady, soma_v, t
+    sag_ratio_model = inp_res_max/inp_res_steady
 
     return rebound_model, sag_ratio_model, inp_res_max
 
-def ap_measures(sections, cell_tree, keys, conductances):
+def ap_measures(keys, conductances):
     """Action potential threshold and peak"""
 
     # neuron imports
@@ -266,39 +285,56 @@ def ap_measures(sections, cell_tree, keys, conductances):
     from neuron import h
     from neuron.units import ms, mV
 
-    l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
-    l5pyr.build()
-    l5pyr = add_condu_cell(l5pyr, keys, conductances)
+    pth_mod = os.path.join(pth,'local_hnn/hnn_core/mod')
+    neuron.load_mechanisms(pth_mod)
+    h.load_file("stdrun.hoc")
 
-    stim = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
-    stim.delay = 5
-    stim.dur = 3
-    stim.amp = 3
-    clamp_current = h.Vector().record(stim._ref_i)
+    # Get morphological parameters
+    section_params, end_pts, cell_tree = l5_params()
+    sections = _get_dends(section_params, 'L5Pyr', list(end_pts.keys()), end_pts, v_init={'all': -60})
+    sections['soma'] = _get_pyr_soma(section_params, 'L5Pyr', end_pts['soma'], v_init=-60)
+    hotzone = [1500, 2000]
+    try:
+        # Build cell template
+        l5pyr = Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
+        l5pyr.build()
+        l5pyr = add_condu_cell(l5pyr, keys, conductances)
 
-    t = h.Vector().record(h._ref_t)
-    v_soma = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
+        stim = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
+        stim.delay = 20
+        stim.dur = 3
+        stim.amp = 3
+        clamp_current = h.Vector().record(stim._ref_i)
 
-    h.celsius = 37
-    h.dt = .01
-    h.finitialize()
-    h.continuerun(50 * ms)
+        t = h.Vector().record(h._ref_t)
+        v_soma = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
 
-    ap, properties = find_peaks(v_soma.as_numpy(), height=0, width=0)
+        h.celsius = 37
+        h.dt = .01
+        h.finitialize()
+        h.continuerun(50 * ms)
 
-    v_grad = np.gradient(v_soma)
-    ap_thresh_idx = np.argmin(np.abs(v_grad-np.max(v_grad)*.09))
-    ap_thresh = v_soma[ap_thresh_idx]
+        ap, properties = find_peaks(v_soma.as_numpy(), height=0, width=0)
 
-    if len(ap) > 0:
-        ap_peak = properties['peak_heights'][0]
-    else:
-        ap_peak = v_soma[-1]
+        v_grad = np.gradient(v_soma)
+        ap_thresh_idx = np.argmin(np.abs(v_grad-np.max(v_grad)*.09))
+        ap_thresh = v_soma[ap_thresh_idx]
 
+        if len(ap) > 0:
+            ap_peak = properties['peak_heights'][0]
+        else:
+            ap_peak = v_soma[-1]
+        
+    except Exception as e:
+        print(f"AP ERROR: {str(e)}", flush=True)
+    finally:
+        h('forall delete_section()')
+
+    del l5pyr
     return ap_thresh, ap_peak, v_soma, t
 
 
-def fi_slope(sections, cell_tree, keys, conductances):
+def fi_slope(keys, conductances):
     """F-I slope"""
 
     # neuron imports
@@ -306,45 +342,56 @@ def fi_slope(sections, cell_tree, keys, conductances):
     from neuron import h
     from neuron.units import ms, mV
 
+    pth_mod = os.path.join(pth,'local_hnn/hnn_core/mod')
+    neuron.load_mechanisms(pth_mod)
+    h.load_file("stdrun.hoc")
+
+    # Get morphological parameters
+    section_params, end_pts, cell_tree = l5_params()
+    sections = _get_dends(section_params, 'L5Pyr', list(end_pts.keys()), end_pts, v_init={'all': -60})
+    sections['soma'] = _get_pyr_soma(section_params, 'L5Pyr', end_pts['soma'], v_init=-60)
+    hotzone = [1500, 2000]
+
     ampls = np.linspace(.5,2,10)
 
-    F = np.zeros_like(ampls)
-    for i,amp in enumerate(ampls):
+    try:
+        F = np.zeros_like(ampls)
+        for i,amp in enumerate(ampls):
 
-        l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
+            # Build cell template
+            l5pyr = Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
+            l5pyr.build()
+            l5pyr = add_condu_cell(l5pyr, keys, conductances)
 
-        l5pyr.build()
-        l5pyr = add_condu_cell(l5pyr, keys, conductances)
+            stim = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
+            stim.delay = 1
+            stim.dur = 1000
+            stim.amp = amp
 
-        stim = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
-        stim.delay = 1
-        stim.dur = 1000
-        stim.amp = amp
+            t = h.Vector().record(h._ref_t)
+            soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
 
-        t = h.Vector().record(h._ref_t)
-        soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
+            h.celsius = 37
+            h.finitialize()
+            h.continuerun(1001 * ms)
 
-        h.celsius = 37
-        h.finitialize()
-        h.continuerun(1001 * ms)
+            soma_voltg = soma_voltg.as_numpy()
 
-        soma_voltg = soma_voltg.as_numpy()
+            spk, prop = signal.find_peaks(soma_voltg, height=0)
 
-        F[i] = len(signal.find_peaks(soma_voltg, height=0)[0])
+            F[i] = len(spk)
 
-    FI_slope = np.diff(np.array(F))/np.diff(ampls)[0]
-    pA = 0.001 # nA (convert nA to pA)
-    # ampl_diff = np.diff(ampls)[0]
+        FI_slope = np.diff(np.array(F))/np.diff(ampls)[0]
+        pA = 0.001 # nA (convert nA to pA)
 
-    # smooth_F = np.zeros((len(F)-10,))
-    # for i,f in enumerate(F[:-10]):
-    #     smooth_F[i] = np.mean(F[i:i+10])
-
-    # # slope: difference in frequency per nA step
+        fi = max(FI_slope)*pA 
     
-    # smooth_slope = max(np.diff(smooth_F)/np.diff(ampls[:-10]) * pA)
+    except Exception as e:
+        print(f"FI ERROR: {str(e)}", flush=True)
+    finally:
+        h('forall delete_section()')
 
-    return max(FI_slope)*pA
+    return fi
 
 def res_to_chirp(sections, cell_tree, keys, conductances):
     """Resonance frequency to chirp stimulus"""
@@ -416,113 +463,71 @@ def res_to_chirp(sections, cell_tree, keys, conductances):
 
     return res_freq, chirp_signal, v_rec, t_rec, zap
 
-
 def fitness_function(ga_instance, solution, solution_idx):
-    """Fitness function for PyGAD optimization"""
 
     # neuron imports
     import neuron
     from neuron import h
     from neuron.units import ms, mV
-    
-    pth_mod = os.path.join(pth,'local_hnn/hnn_core/mod')
 
-    # load data
-    ephys_measures = load_data(os.path.join(pth,'data/kalmbach_2021_l5_electrophys.csv'))
+    ephys_measures = load_data('/users/kduecker/hnn-tuning/data/kalmbach_2021_l5_electrophys.csv')
 
-    # print statements to track progress
-    prefixes = [f"RMP target: {np.round(ephys_measures['target_rmp'])} model ", 
-            f"grad target: .05: ", 
-            f"imped target: {ephys_measures['ss_inp_res']} model: ", 
-            f"rebound target: {ephys_measures['rebound']} model: ", 
-            f"sag target: {ephys_measures['sag_ratio']} model: ", 
-            f"ap thresh target: {ephys_measures['ap_thresh']} model: ", 
-            f"ap peak target: {ephys_measures['ap_peak']} model: ", 
-            f"FI slope target: {ephys_measures['fi_slope']} model: "] 
-            # f"res freq target: {ephys_measures['res_freq']} model: "
-            # ]
-
-    # start parameters (hand-tuned conductances)
+    # Get parameters
     start_params = return_start_params()
     hand_tuned_condu = np.array(list(start_params.values()))
-
-    # cell morphology and sections
     keys = list(start_params.keys())
 
-    # get paramaters
-    section_params, end_pts, cell_tree = l5_params()
-
-    # build sections
-    section_names = list(end_pts.keys())
-
-    sections = _get_dends(section_params, 'L5Pyr', section_names, end_pts)
-    sections['soma'] = _get_pyr_soma(section_params, 'L5Pyr', end_pts['soma'])
-
-    mech_class = Mechs(pth_mod)
-    
-    fitness = [None]*6
-
     conductances = hand_tuned_condu*solution
-    
+
+    # # Fitness
+    fitness = np.zeros(2,)
+
+    print("Testing RMP...", flush=True)
+    rmp, grad, soma_voltg, t = rmp_grad(keys, conductances)
+
     # RMP
-    rmp, grad, pos_grad = rmp_grad(sections, cell_tree, keys, conductances)
-
-    fitness[0] = 1/(abs(rmp-ephys_measures['target_rmp'])+0.001)
-    print(prefixes[0] + str(rmp), flush=True)
-
-
-    # penalize for very high gradient - we want to go asymptotically..
-    fitness[1] = 1/(abs(0.05-grad)+0.001)
-    print(prefixes[1] + str(grad), flush=True)
-
-    # penalize for positive gradient
-    fitness[2] = 1/pos_grad
-
-
+    fitness[0] = np.mean(np.array((1/(np.abs(rmp-ephys_measures['target_rmp'])+.01),1/(abs(0.05-grad)+0.01))));
     
-    # AP threshold & peak
-    
-    ap_thresh, ap_peak = ap_measures(sections, cell_tree, keys, conductances)
+    print("RMP done. Testing AP...", flush=True)
+    # AP measures
+    ap_thresh, ap_peak, v_soma, t = ap_measures(keys, conductances)
 
-    fitness[3] = 1/(np.abs(ap_thresh-ephys_measures['ap_thresh'])+0.001)
-    fitness[4] = 1/(np.abs(ap_peak-ephys_measures['ap_peak'])+0.001)
-    print(prefixes[5] + str(ap_thresh), flush=True)
-    print(prefixes[6] + str(ap_peak), flush=True)
+    ap_thresh_fit = 1/(np.abs(ap_thresh-ephys_measures['ap_thresh'])+0.01)
+    ap_peak_fit = 1/(np.abs(ap_peak-ephys_measures['ap_peak'])+0.01)
 
-    # input resistance
+    fitness[1] = np.mean(np.array((ap_thresh_fit, ap_peak_fit)))
 
-    # input_resistance_neuron = inp_res(sections, cell_tree, keys, conductances)
-
-    
-
-    # # rebound slope and sag ratio
-    # rebound_model, sag_ratio_model, input_res = rebound(sections, cell_tree, keys, conductances)
-
-    # fitness[2] = 1/(abs(input_res-ephys_measures['ss_inp_res'])+0.01)
-    # print(prefixes[2] + str(np.round(input_res)), flush=True)
-
-    
-    # fitness[3] = 1/(np.abs(rebound_model-ephys_measures['rebound'])+0.01)
-    # print(prefixes[3] + str(rebound_model), flush=True)
-
-    # fitness[4] = 1/(np.abs(sag_ratio_model-ephys_measures['sag_ratio'])+0.01)
-    # print(prefixes[4] + str(np.round(sag_ratio_model)), flush=True)
-
-
-
+    print("AP done. Testing FI...", flush=True)
     # # FI slope
-    smooth_slope = fi_slope(sections, cell_tree, keys, conductances)
+    # fi_slo = fi_slope(keys, conductances)
 
-    fitness[5] = 1/(np.abs(smooth_slope-ephys_measures['fi_slope'])+0.001)
-    print(prefixes[7] + str(smooth_slope), flush=True)
+    # fitness[2] = 1/(np.abs(fi_slo-ephys_measures['fi_slope'])+0.01)
 
-    # # resonance frequency
-    # res_freq = res_to_chirp(sections, cell_tree, keys, conductances)
+    # # Rebound
 
-    # fitness[8] = 1/np.abs(res_freq-ephys_measures['res_freq'])
-    # print(prefixes[8] + str(res_freq), flush=True)
+    # rebound_model, sag_ratio_model, inp_res_max = rebound(sections, cell_tree, keys, conductances)
+
+    # inp_res = 1/(abs(inp_res_max-ephys_measures['ss_inp_res'])+0.01)
+    
+    # reb = 1/(np.abs(rebound_model-ephys_measures['rebound'])+0.01)
+
+    # sagr = 1/(np.abs(sag_ratio_model-ephys_measures['sag_ratio'])+0.01)
+
+    # fitness[3] = (inp_res + reb + sagr)/3
 
     return fitness
+
+
+def fitness_function_wrapper(ga_instance, solution, solution_idx):
+
+    from func_timeout import func_timeout, FunctionTimedOut
+
+    try:
+        # Timeout after 300 seconds (5 minutes) per fitness evaluation
+        return func_timeout(300, fitness_function, args=(ga_instance, solution, solution_idx))
+    except FunctionTimedOut:
+        print(f"Fitness evaluation timed out for solution {solution_idx}. Penalizing.", flush=True)
+        return -np.inf  # Assign worst possible fitness
 
 def on_fitness(ga_instance, population_fitness):
     print("on_fitness()", flush=True)
@@ -537,22 +542,29 @@ def on_mutation(ga_instance, offspring_mutation):
     print("on_mutation()", flush=True)
 
 def on_generation(ga_instance):
+        from datetime import datetime
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
 
-        print("Generation : ", ga_instance.generations_completed, flush=True)
-        np.save(f'{pth}/new_model_dev/l5_last_gen_parents.npy', ga_instance.last_generation_parents)
-        np.save(f'{pth}/new_model_dev/l5_last_gen_parents_fit.npy',
+        print(f'Generation : {ga_instance.generations_completed} at {now.date()} {current_time}', flush=True)
+
+        np.save(f'{pth}/new_model_dev/l5_last_gen_parents_rmp_ap.npy', ga_instance.last_generation_parents)
+        np.save(f'{pth}/new_model_dev/l5_current_pop_rmp_ap.npy', ga_instance.population)
+        np.save(f'{pth}/new_model_dev/l5_last_gen_parents_fit_rmp_ap.npy',
                 ga_instance.last_generation_fitness[ga_instance.last_generation_parents_indices])
         fitness_list.append(ga_instance.last_generation_fitness)
-        np.save(f'{pth}/new_model_dev/l5_generation_fitness.npy', np.array(fitness_list))
+        np.save(f'{pth}/new_model_dev/l5_generation_fitness_rmp_ap.npy', np.array(fitness_list))
         parents_list.append(ga_instance.last_generation_parents)
-        np.save(f'{pth}/new_model_dev/l5_all_parents.npy', np.array(parents_list))
+        np.save(f'{pth}/new_model_dev/l5_all_parents_rmp_ap.npy', np.array(parents_list))
+
+        ga_instance.save('l5_pygad_inst_rmp_ap')
 
 def on_stop(ga_instance, last_population_fitness):
     
     print("Done")
     best_sol = ga_instance.best_solution()
 
-    with open('l5_best_sol.pkl', 'wb') as file:
+    with open('l5_best_sol_rmp_ap.pkl', 'wb') as file:
         pickle.dump(best_sol, file)
 
     # # Loading the tuple
@@ -560,46 +572,73 @@ def on_stop(ga_instance, last_population_fitness):
     #     loaded_tuple = pickle.load(file)
 
 def main():
-    """Optimization"""
-
-    # start parameters (hand-tuned conductances)
-    start_params = return_start_params()
-
-    # set up optimization
-    hand_tuned_condu = np.array(list(start_params.values()))
-    initial_population = np.ones_like(hand_tuned_condu)
-
-    num_gen = 1000
-    num_parents_mating = 12
-
-    population_size = 256
     
-    gene_space = {'low': .5, 'high': 1.8}
+    num_gen = 150
+    num_parents_mating = 256
+    population_size = 512
+    
+    gene_space = [[.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15], 
+                [0.01, 15],
+                [1, 1],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [0.8, 1.2],
+                [0.4, 1.2],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15], 
+                [0.01, 15],
+                [0.7, 1.2],
+                [0.01, 15], 
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [0.01, 15],
+                [1, 1],
+                [1, 1],
+                [0.01, 15],
+                [0.8, 1.2],
+                [0.01, 4],
+                [0.01, 15]]
 
-    initial_population_2d = np.concatenate((initial_population.reshape(1,-1),np.random.uniform(gene_space['low'], gene_space['high'],(population_size-1,hand_tuned_condu.shape[0]))))
-   
+    initial_population = np.ones((len(gene_space),))
+    initial_population_2d = np.zeros((population_size, 32))
+
+    for i,gs in enumerate(gene_space):
+        initial_population_2d[:,i] = np.random.uniform(low=gs[0], high=gs[1],size=(population_size,))
+
+    initial_population_2d[0] = initial_population  
+
     global fitness_list
     global parents_list
 
     fitness_list = []
     parents_list = []
+
     ga_instance = pygad.GA(num_generations=num_gen,
-                       num_parents_mating=num_parents_mating,
-                       keep_parents = 6,
-                       mutation_percent_genes = 50,
-                       fitness_func=fitness_function,
-                       num_genes=len(start_params),
-                       initial_population=initial_population_2d,
-                       gene_space=gene_space,
-                       crossover_type="scattered",
-                       on_fitness=on_fitness,
-                       on_parents=on_parents,
-                       on_crossover=on_crossover,
-                       on_mutation=on_mutation,
-                       on_generation=on_generation,
-                       on_stop=on_stop,
+                    num_parents_mating=num_parents_mating,
+                    keep_parents = -1,
+                    fitness_func=fitness_function_wrapper,
+                    num_genes=len(gene_space),
+                    initial_population=initial_population_2d,
+                    gene_space=gene_space,
+                    on_fitness=on_fitness,
+                    on_parents=on_parents,
+                    on_crossover=on_crossover,
+                    on_mutation=on_mutation,
+                    on_generation=on_generation,
+                    on_stop=on_stop,
                 
-                       parallel_processing=["process", population_size])
+                    parallel_processing=["process", 63])
 
     ga_instance.run()
 

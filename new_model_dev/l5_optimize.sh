@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH -n 63
+#SBATCH --ntasks 63
 #SBATCH -J l5_optim
-#SBATCH -t 20:0:00
-#SBATCH --mem=80G
+#SBATCH -t 10:0:00
+#SBATCH --mem=120G
 
 # Specify an output file
 # %j is a special variable that is replaced by the JobID when 
