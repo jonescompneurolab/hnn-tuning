@@ -95,12 +95,12 @@ class Mechs:
                 cell._nrn_sections[sec_name].insert(m)
                 for seg in cell._nrn_sections[sec_name]:
                     if m == 'pas':
-                        seg.pas.g = params['dend']['pas']['g']               # Hay increases all conductances by 2 because resistance is also increased by 2
+                        seg.pas.g = params['dend']['pas']['g']             # Hay increases all conductances by 2 because resistance is also increased by 2
                         seg.pas.e = params['dend']['pas']['e']       
                     elif m == 'Ih':
                         distance = h.distance(seg.x, sec=seg.sec)
                         gbar = params['dend']['Ih'](distance)
-                        setattr(seg, 'gbar_'+m, gbar)
+                        setattr(seg, 'gbar_'+m, gbar*2)
                     
                     # set calcium according to function (new)
                     elif m == 'Ca_HVA':
@@ -116,12 +116,12 @@ class Mechs:
                             gbar *= 3
                         setattr(seg, 'gbar_'+m, gbar) 
                     else:
-                        setattr(seg, 'gbar_'+m, params['dend'][m])       # Hay increases all conductances by 2 because resistance is also increased by 2
+                        setattr(seg, 'gbar_'+m, params['dend'][m]*2)       # Hay increases all conductances by 2 because resistance is also increased by 2
 
             cell._nrn_sections[sec_name].insert('CaDynamics_E2')
             for seg in cell._nrn_sections[sec_name]:
                 seg.CaDynamics_E2.decay = 122
-                seg.CaDynamics_E2.gamma = .0005096*.8
+                seg.CaDynamics_E2.gamma = .0005096*0.8
                 #seg.CaDynamics_E2.minCai = 5e-5
                 # seg.CaDynamics_E2.decay = 460
                 # seg.CaDynamics_E2.gamma = .000501

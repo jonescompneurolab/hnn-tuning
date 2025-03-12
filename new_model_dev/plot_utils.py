@@ -51,7 +51,7 @@ def fig_compartments(model, clamp_current, l_stim=200):
 
 
     h.celsius = 37
-    h.finitialize(-65 * mV)
+    h.finitialize()
     h.continuerun(l_stim * ms)
 
     fig, ax = plt.subplots(2,2, figsize=(8,8), height_ratios=[0.25, 1], sharex=True)
