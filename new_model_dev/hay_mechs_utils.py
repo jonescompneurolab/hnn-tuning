@@ -10,6 +10,12 @@ def Ih_condu_apical(gsoma, x):
     a = 6
     return gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
 
+def Ih_condu_hay(gsoma, x):
+
+    sl = 1.
+    a = 2.087
+    return gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
+
 def linear_gbar(gsoma, gdend, xkink, x):
 
     return gsoma + np.min([xkink, x]) * (gdend - gsoma) / xkink
@@ -100,14 +106,14 @@ class Mechs:
                     elif m == 'Ih':
                         distance = h.distance(seg.x, sec=seg.sec)
                         gbar = params['dend']['Ih'](distance)
-                        setattr(seg, 'gbar_'+m, gbar*2)
+                        setattr(seg, 'gbar_'+m, gbar)
                     
                     # set calcium according to function (new)
                     elif m == 'Ca_HVA':
                         distance = h.distance(seg.x, sec=seg.sec)
                         gbar = params['dend']['Ca_HVA'](distance)
                         if (distance >= hotzone[0]) and (distance < hotzone[1]):
-                            gbar *= 3
+                            gbar *= 3.9
                         setattr(seg, 'gbar_'+m, gbar)
                     elif m == 'Ca_LVAst':
                         distance = h.distance(seg.x, sec=seg.sec)
@@ -116,7 +122,7 @@ class Mechs:
                             gbar *= 3
                         setattr(seg, 'gbar_'+m, gbar) 
                     else:
-                        setattr(seg, 'gbar_'+m, params['dend'][m]*2)       # Hay increases all conductances by 2 because resistance is also increased by 2
+                        setattr(seg, 'gbar_'+m, params['dend'][m])       # Hay increases all conductances by 2 because resistance is also increased by 2
 
             cell._nrn_sections[sec_name].insert('CaDynamics_E2')
             for seg in cell._nrn_sections[sec_name]:

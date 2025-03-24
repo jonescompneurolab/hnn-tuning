@@ -54,11 +54,12 @@ def fig_compartments(model, clamp_current, l_stim=200):
     h.finitialize()
     h.continuerun(l_stim * ms)
 
-    fig, ax = plt.subplots(2,2, figsize=(8,8), height_ratios=[0.25, 1], sharex=True)
+    fig, ax = plt.subplots(2,3, figsize=(13,8), height_ratios=[0.25, 1], sharex=True)
 
     for c in clamp_current:
         ax[0,0].plot(t,c, color='k')
         ax[0,1].plot(t,c, color='k')
+        ax[0,2].plot(t,c, color='k')
 
     ax[0,0].set_ylabel('clamp \n current')
     yticks_v = []
@@ -73,7 +74,11 @@ def fig_compartments(model, clamp_current, l_stim=200):
         
         ax[1,0].plot(t,voltg[i] + cv)
         if section == 'apical_tuft':
-            ax[1,0].plot(t,np.ones_like(ca[i]) + cv, color='k', linestyle='-.')
+            #ax[1,0].plot(t,np.ones_like(ca[i]) * cv, color='k', linestyle='-.')
+            v_max = np.max(voltg[i].as_numpy())
+            t_max = np.argmax(voltg[i].as_numpy())
+            ax[1,0].text(t[t_max], v_max, f'{v_max:.2f}', fontsize=8)
+
 
         yticks_v.append(-75+cv)
         yticks_v.append(50+cv)

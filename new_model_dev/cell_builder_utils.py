@@ -58,7 +58,7 @@ def _get_pyr_soma(p_all, cell_type, end_pt, v_init = -65, cai=5e-5):
     )
 
 def _get_basket_soma():
-    end_pts = [[0, 0, 0], [0, 0, 39.]]
+    end_pts = [[0, 0, 0], [0, 0, 10.]]
 
     # measures from Cumberland et al., 2023
     return Section(

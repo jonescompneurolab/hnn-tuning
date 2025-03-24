@@ -54,7 +54,7 @@ class Mechs:
             cell._nrn_sections[sec_name].insert('Ih')
 
             # add Sodium and potassium
-            cell._nrn_sections[sec_name].insert('NaTs2_t_l23')
+            cell._nrn_sections[sec_name].insert('NaTa_t_l23')
             cell._nrn_sections[sec_name].insert('SKv3_1')
 
             for seg in cell._nrn_sections[sec_name]:
@@ -62,8 +62,8 @@ class Mechs:
                 seg.pas.e = params['e_pas']
                 seg.gbar_Ih = 0.000080
 
-                setattr(seg, 'gbar_SKv3_1', params['soma']['SKv3_1']*0.5)
-                setattr(seg, 'gbar_NaTs2_t_l23', params['soma']['NaTs2_t_l23']*0.5)
+                setattr(seg, 'gbar_SKv3_1', params['soma']['SKv3_1']*0.1)
+                setattr(seg, 'gbar_NaTa_t_l23', params['dend']['NaTa_t_l23']*2)
         
         # soma
         mechs = params['soma'].keys()
