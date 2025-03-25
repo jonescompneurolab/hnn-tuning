@@ -73,6 +73,9 @@ class Mechs:
                         seg.pas.e = params['basal']['pas']['e']
                     else:
                         gbar = params['basal'][m]
+                        if m == 'NaTs2_t' or m == 'SKv3_1':
+                            distance = h.distance(seg.x, sec=seg.sec)
+                            gbar = gbar(distance)
                         setattr(seg, 'gbar_'+m, gbar)
             
         # soma
