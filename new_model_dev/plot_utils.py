@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def fig_conductances(model, apical_sections=['apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']):
+
+    
     distance_apical = []
     gbar_Ih_apical = []
     gbar_Ca_HVA_apical = []
@@ -19,20 +21,89 @@ def fig_conductances(model, apical_sections=['apical_trunk', 'apical_1', 'apical
             gbar_Ca_HVA_apical.append(seg.gbar_Ca_HVA)
             gbar_Ca_LVA_apical.append(seg.gbar_Ca_LVAst)
 
-    fig, ax = plt.subplots(1,3,figsize=(12,3))
-    ax[0].plot(distance_apical, gbar_Ih_apical)
-    ax[0].set_ylabel('$gbar_{Ih} (S/cm^2)$')
-    ax[0].set_xlabel('distance to soma ($\mu m$)')
+    fig, ax = plt.subplots(2,3,figsize=(11,5))
+    ax[0,0].plot(distance_apical, gbar_Ih_apical, color='k')
+    ax[0,0].set_ylabel('$gbar_{Ih} (S/cm^2)$')
+    ax[0,0].set_xlabel('distance to soma ($\mu m$)')
+    # ax[0,0].set_ylim([0, 0.04])
+    # ax[0,0].set_yticks([0, 0.02, 0.04])
 
-    ax[1].plot(distance_apical, gbar_Ca_HVA_apical)
-    ax[1].set_ylabel('$gbar_{Ca_{HVA}} (S/cm^2)$')
-    ax[1].set_xlabel('distance to soma ($\mu m$)')
+    ax[0,1].plot(distance_apical, gbar_Ca_HVA_apical, color='k')
+    ax[0,1].set_ylabel('$gbar_{Ca_{HVA}} (S/cm^2)$')
+    ax[0,1].set_xlabel('distance to soma ($\mu m$)')
+    # ax[0,1].set_ylim([0, 0.0004])
+    # ax[0,1].set_yticks([0, 0.0002, 0.0004])
 
 
-    ax[2].plot(distance_apical, gbar_Ca_LVA_apical)
-    ax[2].set_ylabel('$gbar_{Ca_{LVA}} (S/cm^2)$')
-    ax[2].set_xlabel('distance to soma ($\mu m$)')
+    ax[0,2].plot(distance_apical, gbar_Ca_LVA_apical, color='k')
+    ax[0,2].set_ylabel('$gbar_{Ca_{LVA}} (S/cm^2)$')
+    ax[0,2].set_xlabel('distance to soma ($\mu m$)')
+    # ax[0,2].set_ylim([0, 0.0004])
+    # ax[0,2].set_yticks([0, 0.0002, 0.0004])
 
+
+    cols = np.array(([27, 158, 119], [217,95,2], [117,112,179], [231,41,138], [102,166,30]))/255
+    col_basal = np.array(([56,108,176], [102,166,30], [231,41,138], [231,41,138]))/255
+
+    time_diff = [10, 10, 13]
+    l_stim = 150
+
+    section_names = ['apical_oblique', 'basal_1','basal_2', 'basal_3']#, 'apical_oblique']
+
+    voltg = [None]*len(section_names)
+
+    stim = h.IClamp(model._nrn_sections['soma'](0.5))
+    stim.delay = 20
+    stim.dur = 3
+    stim.amp = 3
+
+    h.distance(sec = model._nrn_sections['soma'])
+    for s, section in enumerate(section_names):
+        voltg[s] = dict()
+        for seg in model._nrn_sections[section]:
+            voltg[s][seg.x] = h.Vector().record(seg._ref_v)
+
+    t = h.Vector().record(h._ref_t)           
+    h.celsius = 37
+    h.finitialize()
+    h.continuerun(l_stim * ms)
+
+ 
+    for s, section in enumerate(section_names):
+        Nagbar = []
+        Kbar = []   
+        amp = []
+        dist = []
+        for seg in model._nrn_sections[section]:
+            dist.append(h.distance(seg.x, sec=seg.sec))
+            Nagbar.append(seg.gbar_NaTs2_t)
+            Kbar.append(seg.gbar_SKv3_1)
+            
+
+        # get amplitude
+        for segx in voltg[s].keys():
+            vmax = np.max(voltg[s][segx].as_numpy())
+            vmin = np.min(voltg[s][segx].as_numpy())
+            amp.append(vmax - vmin)
+            
+
+        ax[1,0].plot(dist, Nagbar, 'o', color=col_basal[s], alpha=0.5)
+        ax[1,0].set_xlabel('distance from soma')
+        ax[1,0].set_ylabel('$gbar_{Na} (S/cm^2)$')
+
+        ax[1,1].plot(dist, Kbar, 'o', color=col_basal[s], alpha=0.5)
+        ax[1,1].set_xlabel('distance from soma')
+        ax[1,1].set_ylabel('$gbar_{K+} (S/cm^2)$')
+        # ax[1,1].set_ylim([0, 0.04])
+        # ax[1,1].set_yticks([0, 0.02, 0.04])
+        ax[1,2].plot(dist, amp, 'o', color=col_basal[s], alpha=0.5, label=section)
+        ax[1,2].set_xlabel('distance from soma')
+        ax[1,2].set_ylabel('BAP amplitude (mV)')
+        # ax[1,2].set_ylim([60, 90])
+        ax[1,2].set_yticks(np.arange(60, 100, 10))
+        ax[1,2].legend()
+
+    
     fig.tight_layout()
 
     return fig

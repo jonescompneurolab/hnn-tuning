@@ -243,8 +243,12 @@ class Cell:
             # with pt3dconst==0, these will alter the 3d points defined above!
             sec.L = self.sections[sec_name].L
             sec.diam = self.sections[sec_name].diam
-            sec.Ra = self.sections[sec_name].Ra
             sec.cm = self.sections[sec_name].cm
+            sec.Ra = self.sections[sec_name].Ra
+
+            if 'basal' in sec_name or sec_name == 'apical_oblique':
+                sec.Ra *= 2
+                
             sec.nseg = self.sections[sec_name].nseg
             sec.v = self.sections[sec_name].v
 
@@ -388,11 +392,11 @@ def l2_params():
         'L2Pyr_soma_L': 22.1,
         'L2Pyr_soma_diam': 23.4,
         'L2Pyr_soma_cm': 0.6195,
-        'L2Pyr_soma_Ra': 150.,
+        'L2Pyr_soma_Ra': 100.,
 
         # Dendrites
         'L2Pyr_dend_cm': 0.6195,
-        'L2Pyr_dend_Ra': 150.,
+        'L2Pyr_dend_Ra': 100.,
 
         'L2Pyr_apicaltrunk_L': 59.5,
         'L2Pyr_apicaltrunk_diam': 4.25,

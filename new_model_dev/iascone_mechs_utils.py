@@ -49,22 +49,23 @@ class Mechs:
         # apical_oblique as part of basal because it's the target of the proximal drive?
         basal_sections = ['basal_1', 'basal_2', 'basal_3', 'apical_oblique']
 
+        mechs = params['basal'].keys()
         for sec_name in basal_sections:
-            cell._nrn_sections[sec_name].insert('pas')
-            cell._nrn_sections[sec_name].insert('Ih')
 
-            # add Sodium and potassium
-            cell._nrn_sections[sec_name].insert('NaTa_t_34d')
-            cell._nrn_sections[sec_name].insert('SKv3_1')
+            for i,m in enumerate(mechs):
+                cell._nrn_sections[sec_name].insert(m)
+                for seg in cell._nrn_sections[sec_name]:
+                    if m == 'pas':
+                        seg.pas.g = params['basal']['pas']
+                        seg.pas.e = params['e_pas']
+                    # elif m in ['NaTs2_t_32d', 'SKv3_1']:
+                    #         gbar = params['basal'][m]
+                    #         distance = h.distance(seg.x, sec=seg.sec)
+                    #         gbar = gbar(distance)
+                    #         setattr(seg, 'gbar_'+m, gbar)
+                    else:
+                        setattr(seg, 'gbar_'+m, params['basal'][m])
 
-            for seg in cell._nrn_sections[sec_name]:
-                seg.pas.g = params['soma']['pas']
-                seg.pas.e = params['e_pas']
-                seg.gbar_Ih = 0.000080
-
-                setattr(seg, 'gbar_SKv3_1', params['soma']['SKv3_1']*0.1)
-                setattr(seg, 'gbar_NaTa_t_34d', params['dend']['NaTa_t_34d'])
-        
         # soma
         mechs = params['soma'].keys()
         for i,m in enumerate(mechs):
