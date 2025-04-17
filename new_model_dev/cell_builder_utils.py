@@ -58,12 +58,12 @@ def _get_pyr_soma(p_all, cell_type, end_pt, v_init = -65, cai=5e-5):
     )
 
 def _get_basket_soma():
-    end_pts = [[0, 0, 0], [0, 0, 10.]]
+    end_pts = [[0, 0, 0], [0, 0, 20.]]
 
     # measures from Cumberland et al., 2023
     return Section(
-        L=10.,
-        diam=10.,
+        L=20.,
+        diam=20.,
         cm=1.,
         Ra=200.,
         end_pts=end_pts
@@ -334,6 +334,80 @@ def l5_params(model='hay'):
 
         'L5Pyr_apicaltuft_L': 425.,
         'L5Pyr_apicaltuft_diam': 3.4,
+
+        'L5Pyr_apicaloblique_L': 255.,
+        'L5Pyr_apicaloblique_diam': 5.1,
+
+        'L5Pyr_basal1_L': 85.,
+        'L5Pyr_basal1_diam': 6.8,
+
+        'L5Pyr_basal2_L': 255.,
+        'L5Pyr_basal2_diam': 8.5,
+
+        'L5Pyr_basal3_L': 255.,
+        'L5Pyr_basal3_diam': 8.5,
+    }
+    if model == 'rich':
+        section_params['L5Pyr_soma_Ra'] = 495.73
+        section_params['L5Pyr_dend_Ra'] = 495.73
+        section_params['L5Pyr_dend_cm'] = 1.6
+
+    end_pts = {
+            'soma': [[0, 0, 0], [0, 0, 23]],
+            'apical_trunk': [[0, 0, 23], [0, 0, 83]],
+            'apical_oblique': [[0, 0, 83], [-150, 0, 83]],
+            'apical_1': [[0, 0, 83], [0, 0, 483]],
+            'apical_2': [[0, 0, 483], [0, 0, 883]],
+            'apical_tuft': [[0, 0, 883], [0, 0, 1133]],
+            'basal_1': [[0, 0, 0], [0, 0, -50]],
+            'basal_2': [[0, 0, -50], [-106, 0, -156]],
+            'basal_3': [[0, 0, -50], [106, 0, -156]]
+        }
+
+    cell_tree = {
+            ('apical_trunk', 0): [('apical_trunk', 1)],
+            ('apical_1', 0): [('apical_1', 1)],
+            ('apical_2', 0): [('apical_2', 1)],
+            ('apical_tuft', 0): [('apical_tuft', 1)],
+            ('apical_oblique', 0): [('apical_oblique', 1)],
+            ('basal_1', 0): [('basal_1', 1)],
+            ('basal_2', 0): [('basal_2', 1)],
+            ('basal_3', 0): [('basal_3', 1)],
+            # Different sections connected
+            ('soma', 0): [('soma', 1), ('basal_1', 0)],
+            ('soma', 1): [('apical_trunk', 0)],
+            ('apical_trunk', 1): [('apical_1', 0), ('apical_oblique', 0)],
+            ('apical_1', 1): [('apical_2', 0)],
+            ('apical_2', 1): [('apical_tuft', 0)],
+            ('basal_1', 1): [('basal_2', 0), ('basal_3', 0)]
+        }
+
+    return section_params, end_pts, cell_tree
+
+def l5IT_params(model='hay'):
+
+    section_params = {
+        # Soma
+        'L5Pyr_soma_L': 39.,
+        'L5Pyr_soma_diam': 28.9,
+        'L5Pyr_soma_cm': 1,
+        'L5Pyr_soma_Ra': 100, #Rich 495.73, Hay: 100
+
+        # Dendrite
+        'L5Pyr_dend_cm': 1,
+        'L5Pyr_dend_Ra': 100, #Rich 495.73, Hay: 100
+
+        'L5Pyr_apicaltrunk_L': 102.,
+        'L5Pyr_apicaltrunk_diam': 10.2,
+
+        'L5Pyr_apical1_L': 680.,
+        'L5Pyr_apical1_diam': 7.48,
+
+        'L5Pyr_apical2_L': 680.,
+        'L5Pyr_apical2_diam': 4.93,
+
+        'L5Pyr_apicaltuft_L': 425.,
+        'L5Pyr_apicaltuft_diam': 3.4*0.25,
 
         'L5Pyr_apicaloblique_L': 255.,
         'L5Pyr_apicaloblique_diam': 5.1,

@@ -7,7 +7,7 @@ import numpy as np
 def Ih_condu_apical(gsoma, x):
 
     sl = 1.1
-    a = 6
+    a = 2.087-1
     return gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
 
 def Ih_condu_hay(gsoma, x):
