@@ -1,0 +1,167 @@
+{load_file("nrngui.hoc")}
+objectvar save_window_, rvp_
+objectvar scene_vector_[5]
+objectvar ocbox_, ocbox_list_, scene_, scene_list_
+{ocbox_list_ = new List()  scene_list_ = new List()}
+{pwman_place(0,0,0)}
+
+//Begin SingleCompartment
+{
+load_file("single.hoc")
+}
+ocbox_ = new SingleCompartment(0)
+ocbox_.inserter = new Inserter(0)
+{object_push(ocbox_.inserter)}
+{
+mt.select("pas") i = mt.selected()
+ms[i] = new MechanismStandard("pas")
+ms[i].set("g_pas", 0.00025, 0)
+ms[i].set("e_pas", -70, 0)
+mstate[i]= 1
+maction(i)
+mt.select("kd") i = mt.selected()
+ms[i] = new MechanismStandard("kd")
+ms[i].set("gkd_kd", 0.00039, 0)
+mstate[i]= 1
+maction(i)
+mt.select("kdr") i = mt.selected()
+ms[i] = new MechanismStandard("kdr")
+ms[i].set("gkdr_kdr", 0.225, 0)
+mstate[i]= 1
+maction(i)
+mt.select("nas") i = mt.selected()
+ms[i] = new MechanismStandard("nas")
+ms[i].set("gna_nas", 0.1125, 0)
+mstate[i]= 1
+maction(i)
+}
+{object_pop() doNotify()}
+{object_push(ocbox_)}
+{inserter.v1.map()}
+{endbox()}
+{object_pop() doNotify()}
+{
+ocbox_ = ocbox_.vbox
+ocbox_.map("SingleCompartment", 193, 109, 91.2, 152.64)
+}
+objref ocbox_
+//End SingleCompartment
+
+
+//Begin PointProcessManager
+{
+load_file("pointman.hoc")
+}
+{
+soma ocbox_ = new PointProcessManager(0)
+}
+{object_push(ocbox_)}
+{
+mt.select("IClamp") i = mt.selected()
+ms[i] = new MechanismStandard("IClamp")
+ms[i].set("del", 48, 0)
+ms[i].set("dur", 1e+09, 0)
+ms[i].set("amp", 0.00335, 0)
+mt.select("IClamp") i = mt.selected() maction(i)
+hoc_ac_ = 0.5
+sec.sec move() d1.flip_to(0)
+}
+{object_pop() doNotify()}
+{
+ocbox_ = ocbox_.v1
+ocbox_.map("PointProcessManager", 299, 511, 208.32, 326.4)
+}
+objref ocbox_
+//End PointProcessManager
+
+{
+xpanel("soma(0 - 1) (Parameters)", 0)
+xlabel("soma(0 - 1) (Parameters)")
+xlabel("nseg = 1")
+soma.L = 3.1831
+xvalue("L","soma.L", 1,"define_shape()", 0, 0 )
+soma.Ra = 35.4
+xvalue("Ra","soma.Ra", 1,"soma.Ra += 0", 0, 1 )
+soma.diam = 10
+xvalue("diam","soma.diam", 1,"", 0, 0 )
+soma.cm = 1
+xvalue("cm","soma.cm", 1,"", 0, 0 )
+soma.g_pas = 0.00025
+xvalue("g_pas","soma.g_pas", 1,"", 0, 0 )
+soma.e_pas = -70
+xvalue("e_pas","soma.e_pas", 1,"", 0, 0 )
+soma.gkd_kd = 0.00039
+xvalue("gkd_kd","soma.gkd_kd", 1,"", 0, 0 )
+soma.gkdr_kdr = 0.225
+xvalue("gkdr_kdr","soma.gkdr_kdr", 1,"", 0, 0 )
+soma.ek = -90
+xvalue("ek","soma.ek", 1,"", 0, 0 )
+soma.gna_nas = 0.1125
+xvalue("gna_nas","soma.gna_nas", 1,"", 0, 0 )
+soma.ena = 50
+xvalue("ena","soma.ena", 1,"", 0, 0 )
+xpanel(0,297)
+}
+
+//Begin VariableTimeStep
+{
+ocbox_ = NumericalMethodPanel[0]
+}
+{object_push(ocbox_)}
+{
+atol_ = 0.001  CVode[0].atol(atol_)
+restore(1, 1)
+ atoltool_ = new AtolTool()
+    ats("v", 10)
+    ats("a_kd", 0.1)
+    ats("b_kd", 0.1)
+    ats("n_kdr", 0.1)
+    ats("h_nas", 0.1)
+    ats("Vector", -1)
+ atoltool_.scales()
+}
+{object_pop()}
+{
+ocbox_.map("VariableTimeStep", 5, 715, 272.64, 113.28)
+}
+objref ocbox_
+//End VariableTimeStep
+
+{
+xpanel("RunControl", 0)
+v_init = -70.038
+xvalue("Init","v_init", 1,"stdinit()", 1, 1 )
+xbutton("Init & Run","run()")
+xbutton("Stop","stoprun=1")
+runStopAt = 5
+xvalue("Continue til","runStopAt", 1,"{continuerun(runStopAt) stoprun=1}", 1, 1 )
+runStopIn = 1
+xvalue("Continue for","runStopIn", 1,"{continuerun(t + runStopIn) stoprun=1}", 1, 1 )
+xbutton("Single Step","steprun()")
+t = 0
+xvalue("t","t", 2 )
+tstop = 1600
+xvalue("Tstop","tstop", 1,"tstop_changed()", 0, 1 )
+dt = 0.01
+xvalue("dt","dt", 1,"setdt()", 0, 1 )
+steps_per_ms = 50
+xvalue("Points plotted/ms","steps_per_ms", 1,"setdt()", 0, 1 )
+screen_update_invl = 0.05
+xvalue("Scrn update invl","screen_update_invl", 1,"", 0, 1 )
+realtime = 0
+xvalue("Real Time","realtime", 0,"", 0, 1 )
+xpanel(298,109)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,1600,-80,40)
+scene_vector_[3] = save_window_
+// {save_window_.view(0, -80, 1000, 120, 590, 109, 300.48, 200.32)}
+// make this wider to match the figure that contains the gif
+{save_window_.view(0, -80, 1600, 120, 590, 109, 527.04, 200.32)}
+graphList[0].append(save_window_)
+save_window_.save_name("graphList[0].")
+save_window_.addexpr("v(.5)", 1, 1, 0.8, 0.9, 2)
+}
+objectvar scene_vector_[1]
+{doNotify()}

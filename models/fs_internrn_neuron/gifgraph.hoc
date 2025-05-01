@@ -1,0 +1,84 @@
+// I hate long arg lists.  Better to pack them into an object,
+// along with a method that creates the appropriate graph.
+
+begintemplate Gparams
+public gifwh, graphaxes, point0, point1, mkgraph
+public s
+strdef s // name of gif that is to be displayed in the plot
+objref g
+public g
+
+external graphList
+
+public test
+
+proc init() {
+  if (numarg() == 1) {
+    s = $s1
+  }
+  objref g
+}
+
+// specify gif width and height in pixels
+proc gifwh() {
+  wgif = $1
+  hgif = $2
+}
+
+// specify graph min and max coords
+proc graphaxes() {
+  xmin = $1
+  ymin = $2
+  xmax = $3
+  ymax = $4
+}
+
+// Point 1 must be to right and above point 0
+// Point 0 coords (usually the x & y axis origin)
+proc point0() {
+  x0gif = $1
+  y0gif = $2
+  x0 = $3
+  y0 = $4
+}
+
+// Point 1 coords (often the right upper corner of the gif)
+proc point1() {
+  x1gif = $1
+  y1gif = $2
+  x1 = $3
+  y1 = $4
+}
+
+// creates graph
+// arguments are screen xy location of graph
+// and a string that is the name of the variable to be plotted
+proc mkgraph() { local left, bottom, width, height  localobj tobj
+  g = new Graph(0)
+  g.size(xmin,xmax,ymin,ymax)
+
+//  g.view(xmin, ymin, xmax-xmin, ymax-ymin, $1, $2, 300.48, 200.32)
+// make window wider to ensure that the gif's spikes fill in
+//  g.view(xmin, ymin, xmax-xmin, ymax-ymin, $1, $2, 360, 200.32)
+  g.view(xmin, ymin, xmax-xmin, ymax-ymin, $1, $2, 527.04, 200.32)
+
+  // map xg0,yg0 in gif to graph model coord x0,y0
+  // and xg1,yg1 in gif to graph model coord x1,y1
+
+  left = x0 - x0gif*(x1-x0)/(x1gif-x0gif)
+  bottom = y0 - y0gif*(y1-y0)/(y1gif-y0gif)
+
+  width = wgif*(x1-x0)/(x1gif-x0gif)
+  height= hgif*(y1-y0)/(y1gif-y0gif)
+
+  g.gif(s, left, bottom, width, height)
+
+  // medium thick, solid red line
+  g.addvar($s3, 2, 2, 0.25, 0.9, 2)
+
+  g.yaxis(3) // suppress x and y axes--use the figure's own yaxis and calbar
+  g.xaxis(3)
+
+  graphList[0].append(g) // so graph will update correctly
+}
+endtemplate Gparams

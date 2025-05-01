@@ -1,0 +1,61 @@
+/*
+Conceptual model:  Fast-spiking cortical interneuron.
+
+Authors and citation:
+  Golomb D, Donner K, Shacham L, Shlosberg D, Amitai Y, Hansel D (2007).
+  Mechanisms of Firing Patterns in Fast-Spiking Cortical Interneurons. 
+  PLoS Comput Biol 3:e156.
+
+Original implementation and programming language/simulation environment:
+  by Golomb et al. for XPP
+  Available from http://senselab.med.yale.edu/modeldb/ShowModel.asp?model=97747
+
+This implementation is by N.T. Carnevale and V. Yamini for NEURON.
+The gif is from Fig. 2C in Golomb et al. (2007). 
+*/
+
+load_file("nrngui.hoc")
+load_file("model_and_interface.ses")
+
+load_file("gifgraph.hoc") // a class for plotting a graph that has a gif background
+
+// reproduces fig 2C
+obfunc fig2c() { localobj tobj
+  // model params if any
+
+  // instrumentation params if any
+
+/*
+  // graph params
+  tobj = new Gparams("fig2c_200_cropped.gif") // gif that is to be displayed in the plot
+  tobj.gifwh(271, 162) // gif width and height in pixels
+
+  tobj.graphaxes(0, -80, tstop, 40) // graph min and max coords
+
+  // Point 0 specs (usually the x & y axis origin)
+  tobj.point0(0, 0, 0, -88.3) // x0gif, y0gif, x0, y0
+  // Point 1 specs (often the right upper corner of the gif)
+  tobj.point1(271, 162, 947, 42.3) // x1gif, y1gif, x1, y1
+*/
+
+  // graph params
+  tobj = new Gparams("fig2c_x_200.gif") // gif that is to be displayed in the plot
+  tobj.gifwh(503, 192) // gif width and height in pixels
+
+  // these will have to be changed
+  tobj.graphaxes(-100, -90, tstop, 60) // graph min and max coords
+
+  // Point 0 specs (usually the x & y axis origin)
+  tobj.point0(0, 0, -166, -97.3) // x0gif, y0gif, x0, y0
+  // Point 1 specs (often the right upper corner of the gif)
+  tobj.point1(502, 191, 1591, 58.5) // x1gif, y1gif, x1, y1
+
+
+  tobj.mkgraph(590, 375, "v(0.5)") // screen location, variable name
+
+  return tobj
+}
+
+objref gp
+
+gp = fig2c()

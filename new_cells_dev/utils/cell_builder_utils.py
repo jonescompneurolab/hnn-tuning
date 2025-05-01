@@ -1,0 +1,523 @@
+"""HNN utils to build the L5 cell"""
+
+import neuron
+from neuron import h
+from neuron.units import ms, mV
+
+def _get_nseg(L):
+    nseg = 1
+    if L > 100.:  # 100 um
+        nseg = int(L / 50.)
+        # make dend.nseg odd for all sections
+        if not nseg % 2:
+            nseg += 1
+    return nseg
+
+
+def _get_dends(params, cell_type, section_names, end_pts, v_init = {'all': -65}, cai=5e-5):
+    """Convert a flat dictionary to a nested dictionary.
+
+    Returns
+    -------
+    sections : dict
+        Dictionary of sections. Keys are section names
+    """
+    prop_names = ['L', 'diam', 'Ra', 'cm']
+    sections = dict()
+    for section_name in section_names:
+        end_pt = end_pts[section_name]
+        dend_prop = dict()
+        for key in prop_names:
+            if key in ['Ra', 'cm']:
+                middle = 'dend'
+            else:
+                # map apicaltrunk -> apical_trunk etc.
+                middle = section_name.replace('_', '')
+            dend_prop[key] = params[f'{cell_type}_{middle}_{key}']
+            if len(v_init) == 1:
+                v = v_init['all']
+            else:
+                v = v_init[section_name]
+        sections[section_name] = Section(L=dend_prop['L'],
+                                        diam=dend_prop['diam'],
+                                        Ra=dend_prop['Ra'],
+                                        cm=dend_prop['cm'],
+                                        v = v,
+                                        end_pts = end_pt)
+    return sections
+
+def _get_pyr_soma(p_all, cell_type, end_pt, v_init = -65, cai=5e-5):
+    """Get somatic properties."""
+    return Section(
+        L=p_all[f'{cell_type}_soma_L'],
+        diam=p_all[f'{cell_type}_soma_diam'],
+        cm=p_all[f'{cell_type}_soma_cm'],
+        Ra=p_all[f'{cell_type}_soma_Ra'],
+        v = v_init,
+        end_pts = end_pt
+    )
+
+def _get_basket_soma():
+    end_pts = [[0, 0, 0], [0, 0, 20.]]
+
+    # measures from Cumberland et al., 2023
+    return Section(
+        L=20.,
+        diam=20.,
+        cm=1.,
+        Ra=200.,
+        end_pts=end_pts
+    )
+
+class Section:
+    """Section class.
+
+    Parameters
+    ----------
+    L : float
+        length of a section in microns.
+    diam : float
+        diameter of a section in microns.
+    cm : float
+        membrane capacitance in micro-Farads.
+    Ra : float
+        axial resistivity in ohm-cm
+    end_pts : list of [x, y, z]
+        The start and stop points of the section.
+
+    Attributes
+    ----------
+    mechs : dict
+        Mechanisms to insert in this section. The keys
+        are the names of the mechanisms and values
+        are the properties. For e.g., {'ca': {'gbar_ca': 60}}
+    syns : list of str
+        The synaptic mechanisms to add in this section
+    end_pts : list of [x, y, z]
+        The start and stop points of the section. Cannot be changed.
+    L : float
+        length of a section in microns.
+    diam : float
+        diameter of a section in microns.
+    cm : float
+        membrane capacitance in micro-Farads.
+    Ra : float
+        axial resistivity in ohm-cm.
+    v : float
+        start value for membrane potential.
+    nseg : int
+        Number of segments in the section
+    """
+    def __init__(self, L, diam, Ra, cm, v=-65, cai = 5e-5, end_pts=None):
+
+        self._L = L
+        self._diam = diam
+        self._Ra = Ra
+        self._cm = cm
+        self._v = v             # initial voltage for each section
+        self._cai = cai
+        if end_pts is None:
+            end_pts = list()
+        self._end_pts = end_pts
+
+        self.mechs = dict()
+        self.syns = list()
+
+        # For distance functionality
+        self.nseg = _get_nseg(self.L)
+
+    def __repr__(self):
+        return f'L={self.L}, diam={self.diam}, cm={self.cm}, Ra={self.Ra}, v={self.v}'
+
+    @property
+    def L(self):
+        return self._L
+
+    @property
+    def diam(self):
+        return self._diam
+
+    @property
+    def cm(self):
+        return self._cm
+
+    @property
+    def Ra(self):
+        return self._Ra
+    
+    @property
+    def v(self):
+        return self._v
+    @property
+    def cai(self):
+        return self._cai
+
+    @property
+    def end_pts(self):
+        return self._end_pts
+    
+class Cell: 
+
+    def __init__(self, sections, cell_tree, cell_type, gid):
+
+        self._gid = gid
+        self.sections = sections
+
+        self._nrn_sections = dict()
+
+        self.cell_tree = cell_tree
+        self.cell_type = cell_type
+        
+    def __repr__(self):
+        return f'{self.cell_type}[{self._gid}]'
+    
+
+    def _set_biophysics(self, sections):
+        "Set the biophysics for the cell."
+
+        # neuron syntax is used to set values for mechanisms
+        # sec.gbar_mech = x sets value of gbar for mech to x for all segs
+        # in a section. This method is significantly faster than using
+        # a for loop to iterate over all segments to set mech values
+
+        # If value depends on distance from the soma. Soma is set as
+        # origin by passing cell.soma as a sec argument to h.distance()
+        # Then iterate over segment nodes of dendritic sections
+        # and set attribute depending on h.distance(seg.x), which returns
+        # distance from the soma to this point on the CURRENTLY ACCESSED
+        # SECTION!!!
+        h.distance(sec=self._nrn_sections['soma'])
+        for sec_name, section in sections.items():
+            sec = self._nrn_sections[sec_name]
+            for mech_name, p_mech in section.mechs.items():
+                sec.insert(mech_name)
+                for attr, val in p_mech.items():
+                    if isinstance(val, list):
+                        seg_xs, seg_vals = val[0], val[1]
+                        for seg, seg_x, seg_val in zip(sec, seg_xs, seg_vals):
+                            setattr(seg, attr, seg_val)
+                    else:
+                        setattr(sec, attr, val)
+
+    def _compute_section_mechs(self):
+        sections = self.sections
+        for sec_name, section in sections.items():
+            for mech_name, p_mech in section.mechs.items():
+                for attr, val in p_mech.items():
+                    if hasattr(val, '__call__'):
+                        seg_xs, seg_vals = list(), list()
+                        section_distance = self.distance_section(sec_name,
+                                                                 ('soma', 0))
+                        seg_centers = (np.linspace(0, 1, section.nseg * 2 + 1)
+                                       [1::2])
+
+                        for seg_x in seg_centers:
+                            # sec_end_dist is distance between 0 end of soma to
+                            # the 0 or 1 end of section (whichever is closer)
+                            sec_end_dist = section_distance - (section.L / 2)
+                            seg_xs.append(seg_x)
+                            seg_vals.append(val(sec_end_dist +
+                                                (seg_x * section.L)))
+                        p_mech[attr] = [seg_xs, seg_vals]
+        return self.sections
+
+    def _create_synapses(self, sections, synapses):
+        """Create synapses."""
+        for sec_name in sections:
+            for receptor in sections[sec_name].syns:
+                syn_key = f'{sec_name}_{receptor}'
+                seg = self._nrn_sections[sec_name](0.5)
+                self._nrn_synapses[syn_key] = self.syn_create(
+                    seg, **synapses[receptor])
+    
+    def _create_sections(self): 
+        
+        for sec_name in self.sections:
+            sec = h.Section(name=f'{self.cell_type}_{sec_name}', cell=self)
+            self._nrn_sections[sec_name] = sec
+
+            h.pt3dclear(sec=sec)
+            h.pt3dconst(0, sec=sec)  
+            for pt in self.sections[sec_name].end_pts:
+                h.pt3dadd(pt[0], pt[1], pt[2], 1, sec=sec)
+            # with pt3dconst==0, these will alter the 3d points defined above!
+            sec.L = self.sections[sec_name].L
+            sec.diam = self.sections[sec_name].diam
+            sec.cm = self.sections[sec_name].cm
+            sec.Ra = self.sections[sec_name].Ra
+
+            if 'basal' in sec_name or sec_name == 'apical_oblique':
+                sec.Ra *= 2
+                
+            sec.nseg = self.sections[sec_name].nseg
+            sec.v = self.sections[sec_name].v
+
+        if self.cell_tree is None:
+            self.cell_tree = dict()
+
+        # Connects sections of THIS cell together.
+        for parent_node in self.cell_tree:
+            for child_node in self.cell_tree[parent_node]:
+                parent_sec = self._nrn_sections[parent_node[0]]
+                child_sec = self._nrn_sections[child_node[0]]
+                if parent_sec == child_sec:
+                    continue
+                parent_loc = parent_node[1]
+                child_loc = child_node[1]
+                child_sec.connect(parent_sec, parent_loc, child_loc)
+
+        h.define_shape()
+
+    def _get_mechanisms(p_all, cell_type, section_names, mechanisms):
+        """Get mechanism
+
+        Parameters
+        ----------
+        cell_type : str
+            The cell type
+        section_names : str
+            The section_names
+        mechanisms : dict of list
+            The mechanism properties to extract
+
+        Returns
+        -------
+        mech_props : dict of dict of dict
+            Nested dictionary of the form
+            sections -> mechanism -> mechanism properties
+            used to instantiate the mechanism in Neuron
+        """
+        mech_props = dict()
+        for sec_name in section_names:
+            this_sec_prop = dict()
+            for mech_name in mechanisms:
+                this_mech_prop = dict()
+                for mech_attr in mechanisms[mech_name]:
+                    if sec_name == 'soma':
+                        key = f'{cell_type}_soma_{mech_attr}'
+                    elif 'basal' in sec_name or sec_name == 'apical_oblique':
+                        key = f'{cell_type}_basal_{mech_attr}'
+                    else:
+                        key = f'{cell_type}_dend_{mech_attr}'
+                    this_mech_prop[mech_attr] = p_all[key]
+                this_sec_prop[mech_name] = this_mech_prop
+            mech_props[sec_name] = this_sec_prop
+        return mech_props
+
+    def build(self):
+
+        self._create_sections()
+
+
+
+def l5_params(model='hay'):
+
+    section_params = {
+        # Soma
+        'L5Pyr_soma_L': 39.,
+        'L5Pyr_soma_diam': 28.9,
+        'L5Pyr_soma_cm': 1,
+        'L5Pyr_soma_Ra': 100, #Rich 495.73, Hay: 100
+
+        # Dendrite
+        'L5Pyr_dend_cm': 1,
+        'L5Pyr_dend_Ra': 100, #Rich 495.73, Hay: 100
+
+        'L5Pyr_apicaltrunk_L': 102.,
+        'L5Pyr_apicaltrunk_diam': 10.2,
+
+        'L5Pyr_apical1_L': 680.,
+        'L5Pyr_apical1_diam': 7.48,
+
+        'L5Pyr_apical2_L': 680.,
+        'L5Pyr_apical2_diam': 4.93,
+
+        'L5Pyr_apicaltuft_L': 425.,
+        'L5Pyr_apicaltuft_diam': 3.4,
+
+        'L5Pyr_apicaloblique_L': 255.,
+        'L5Pyr_apicaloblique_diam': 5.1,
+
+        'L5Pyr_basal1_L': 85.,
+        'L5Pyr_basal1_diam': 6.8,
+
+        'L5Pyr_basal2_L': 255.,
+        'L5Pyr_basal2_diam': 8.5,
+
+        'L5Pyr_basal3_L': 255.,
+        'L5Pyr_basal3_diam': 8.5,
+    }
+    if model == 'rich':
+        section_params['L5Pyr_soma_Ra'] = 495.73
+        section_params['L5Pyr_dend_Ra'] = 495.73
+        section_params['L5Pyr_dend_cm'] = 1.6
+
+    end_pts = {
+            'soma': [[0, 0, 0], [0, 0, 23]],
+            'apical_trunk': [[0, 0, 23], [0, 0, 83]],
+            'apical_oblique': [[0, 0, 83], [-150, 0, 83]],
+            'apical_1': [[0, 0, 83], [0, 0, 483]],
+            'apical_2': [[0, 0, 483], [0, 0, 883]],
+            'apical_tuft': [[0, 0, 883], [0, 0, 1133]],
+            'basal_1': [[0, 0, 0], [0, 0, -50]],
+            'basal_2': [[0, 0, -50], [-106, 0, -156]],
+            'basal_3': [[0, 0, -50], [106, 0, -156]]
+        }
+
+    cell_tree = {
+            ('apical_trunk', 0): [('apical_trunk', 1)],
+            ('apical_1', 0): [('apical_1', 1)],
+            ('apical_2', 0): [('apical_2', 1)],
+            ('apical_tuft', 0): [('apical_tuft', 1)],
+            ('apical_oblique', 0): [('apical_oblique', 1)],
+            ('basal_1', 0): [('basal_1', 1)],
+            ('basal_2', 0): [('basal_2', 1)],
+            ('basal_3', 0): [('basal_3', 1)],
+            # Different sections connected
+            ('soma', 0): [('soma', 1), ('basal_1', 0)],
+            ('soma', 1): [('apical_trunk', 0)],
+            ('apical_trunk', 1): [('apical_1', 0), ('apical_oblique', 0)],
+            ('apical_1', 1): [('apical_2', 0)],
+            ('apical_2', 1): [('apical_tuft', 0)],
+            ('basal_1', 1): [('basal_2', 0), ('basal_3', 0)]
+        }
+
+    return section_params, end_pts, cell_tree
+
+def l5IT_params(model='hay'):
+
+    section_params = {
+        # Soma
+        'L5Pyr_soma_L': 39.,
+        'L5Pyr_soma_diam': 28.9,
+        'L5Pyr_soma_cm': 1,
+        'L5Pyr_soma_Ra': 100, #Rich 495.73, Hay: 100
+
+        # Dendrite
+        'L5Pyr_dend_cm': 1,
+        'L5Pyr_dend_Ra': 100, #Rich 495.73, Hay: 100
+
+        'L5Pyr_apicaltrunk_L': 102.,
+        'L5Pyr_apicaltrunk_diam': 10.2,
+
+        'L5Pyr_apical1_L': 680.,
+        'L5Pyr_apical1_diam': 7.48,
+
+        'L5Pyr_apical2_L': 680.,
+        'L5Pyr_apical2_diam': 4.93,
+
+        'L5Pyr_apicaltuft_L': 425.,
+        'L5Pyr_apicaltuft_diam': 3.4*0.5,
+
+        'L5Pyr_apicaloblique_L': 255.,
+        'L5Pyr_apicaloblique_diam': 5.1,
+
+        'L5Pyr_basal1_L': 85.,
+        'L5Pyr_basal1_diam': 6.8,
+
+        'L5Pyr_basal2_L': 255.,
+        'L5Pyr_basal2_diam': 8.5,
+
+        'L5Pyr_basal3_L': 255.,
+        'L5Pyr_basal3_diam': 8.5,
+    }
+    if model == 'rich':
+        section_params['L5Pyr_soma_Ra'] = 495.73
+        section_params['L5Pyr_dend_Ra'] = 495.73
+        section_params['L5Pyr_dend_cm'] = 1.6
+
+    end_pts = {
+            'soma': [[0, 0, 0], [0, 0, 23]],
+            'apical_trunk': [[0, 0, 23], [0, 0, 83]],
+            'apical_oblique': [[0, 0, 83], [-150, 0, 83]],
+            'apical_1': [[0, 0, 83], [0, 0, 483]],
+            'apical_2': [[0, 0, 483], [0, 0, 883]],
+            'apical_tuft': [[0, 0, 883], [0, 0, 1133]],
+            'basal_1': [[0, 0, 0], [0, 0, -50]],
+            'basal_2': [[0, 0, -50], [-106, 0, -156]],
+            'basal_3': [[0, 0, -50], [106, 0, -156]]
+        }
+
+    cell_tree = {
+            ('apical_trunk', 0): [('apical_trunk', 1)],
+            ('apical_1', 0): [('apical_1', 1)],
+            ('apical_2', 0): [('apical_2', 1)],
+            ('apical_tuft', 0): [('apical_tuft', 1)],
+            ('apical_oblique', 0): [('apical_oblique', 1)],
+            ('basal_1', 0): [('basal_1', 1)],
+            ('basal_2', 0): [('basal_2', 1)],
+            ('basal_3', 0): [('basal_3', 1)],
+            # Different sections connected
+            ('soma', 0): [('soma', 1), ('basal_1', 0)],
+            ('soma', 1): [('apical_trunk', 0)],
+            ('apical_trunk', 1): [('apical_1', 0), ('apical_oblique', 0)],
+            ('apical_1', 1): [('apical_2', 0)],
+            ('apical_2', 1): [('apical_tuft', 0)],
+            ('basal_1', 1): [('basal_2', 0), ('basal_3', 0)]
+        }
+
+    return section_params, end_pts, cell_tree
+
+def l2_params():
+
+    section_params = {
+
+        # Soma
+        'L2Pyr_soma_L': 22.1,
+        'L2Pyr_soma_diam': 23.4,
+        'L2Pyr_soma_cm': 0.6195,
+        'L2Pyr_soma_Ra': 100.,
+
+        # Dendrites
+        'L2Pyr_dend_cm': 0.6195,
+        'L2Pyr_dend_Ra': 100.,
+
+        'L2Pyr_apicaltrunk_L': 59.5,
+        'L2Pyr_apicaltrunk_diam': 4.25,
+
+        'L2Pyr_apical1_L': 306.,
+        'L2Pyr_apical1_diam': 4.08,
+
+        'L2Pyr_apicaltuft_L': 238.,
+        'L2Pyr_apicaltuft_diam': 3.4,
+
+        'L2Pyr_apicaloblique_L': 340.,
+        'L2Pyr_apicaloblique_diam': 3.91,
+
+        'L2Pyr_basal1_L': 85.,
+        'L2Pyr_basal1_diam': 4.25,
+
+        'L2Pyr_basal2_L': 255.,
+        'L2Pyr_basal2_diam': 2.72,
+
+        'L2Pyr_basal3_L': 255.,
+        'L2Pyr_basal3_diam': 2.72,
+    }
+
+    end_pts = {
+        'soma': [[-50, 0, 765], [-50, 0, 778]],
+        'apical_trunk': [[-50, 0, 778], [-50, 0, 813]],
+        'apical_oblique': [[-50, 0, 813], [-250, 0, 813]],
+        'apical_1': [[-50, 0, 813], [-50, 0, 993]],
+        'apical_tuft': [[-50, 0, 993], [-50, 0, 1133]],
+        'basal_1': [[-50, 0, 765], [-50, 0, 715]],
+        'basal_2': [[-50, 0, 715], [-156, 0, 609]],
+        'basal_3': [[-50, 0, 715], [56, 0, 609]],
+    }
+
+    cell_tree = {
+        ('apical_trunk', 0): [('apical_trunk', 1)],
+        ('apical_1', 0): [('apical_1', 1)],
+        ('apical_tuft', 0): [('apical_tuft', 1)],
+        ('apical_oblique', 0): [('apical_oblique', 1)],
+        ('basal_1', 0): [('basal_1', 1)],
+        ('basal_2', 0): [('basal_2', 1)],
+        ('basal_3', 0): [('basal_3', 1)],
+        # Different sections connected
+        ('soma', 0): [('soma', 1), ('basal_1', 0)],
+        ('soma', 1): [('apical_trunk', 0)],
+        ('apical_trunk', 1): [('apical_1', 0), ('apical_oblique', 0)],
+        ('apical_1', 1): [('apical_tuft', 0)],
+        ('basal_1', 1): [('basal_2', 0), ('basal_3', 0)]}
+    
+    return section_params, end_pts, cell_tree
