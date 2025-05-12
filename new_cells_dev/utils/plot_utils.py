@@ -25,21 +25,25 @@ def fig_conductances(model, apical_sections=['apical_trunk', 'apical_1', 'apical
     ax[0,0].plot(distance_apical, gbar_Ih_apical, color='k')
     ax[0,0].set_ylabel('$gbar_{Ih} (S/cm^2)$')
     ax[0,0].set_xlabel('distance to soma ($\mu m$)')
-    # ax[0,0].set_ylim([0, 0.04])
-    # ax[0,0].set_yticks([0, 0.02, 0.04])
+    ax[0,0].set_ylim([0, 0.04])
+    ax[0,0].set_yticks([0, 0.02, 0.04])
 
     ax[0,1].plot(distance_apical, gbar_Ca_HVA_apical, color='k')
     ax[0,1].set_ylabel('$gbar_{Ca_{HVA}} (S/cm^2)$')
     ax[0,1].set_xlabel('distance to soma ($\mu m$)')
-    # ax[0,1].set_ylim([0, 0.0004])
-    # ax[0,1].set_yticks([0, 0.0002, 0.0004])
+    ax[0,1].set_ylim([0, 0.0004])
+    ax[0,1].set_yticks([0, 0.0002, 0.0004])
 
 
     ax[0,2].plot(distance_apical, gbar_Ca_LVA_apical, color='k')
     ax[0,2].set_ylabel('$gbar_{Ca_{LVA}} (S/cm^2)$')
     ax[0,2].set_xlabel('distance to soma ($\mu m$)')
-    # ax[0,2].set_ylim([0, 0.0004])
-    # ax[0,2].set_yticks([0, 0.0002, 0.0004])
+    ax[0,2].set_ylim([0, 0.0004])
+    ax[0,2].set_yticks([0, 0.0002, 0.0004])
+
+    for a in ax[0]:
+        a.set_xlim([0, 2000])
+        a.set_xticks([0, 1000, 2000])
 
 
     cols = np.array(([27, 158, 119], [217,95,2], [117,112,179], [231,41,138], [102,166,30]))/255
@@ -89,23 +93,34 @@ def fig_conductances(model, apical_sections=['apical_trunk', 'apical_1', 'apical
             vmax = np.max(voltg[s][segx].as_numpy())
             vmin = np.min(voltg[s][segx].as_numpy())
             amp.append(vmax - vmin)
-            
 
         ax[1,0].plot(dist, Nagbar, 'o', color=col_basal[s], alpha=0.5)
         ax[1,0].set_xlabel('distance from soma')
         ax[1,0].set_ylabel('$gbar_{Na} (S/cm^2)$')
+        ax[1,0].set_ylim([-0.0005, 0.009])
+        ax[1,0].set_yticks([0, 0.0045, 0.009])
 
         ax[1,1].plot(dist, Kbar, 'o', color=col_basal[s], alpha=0.5)
         ax[1,1].set_xlabel('distance from soma')
         ax[1,1].set_ylabel('$gbar_{K+} (S/cm^2)$')
-        # ax[1,1].set_ylim([0, 0.04])
-        # ax[1,1].set_yticks([0, 0.02, 0.04])
+        ax[1,1].set_ylim([0, 0.0002])
+        ax[1,1].set_yticks([0, 0.0001, 0.0002])
         ax[1,2].plot(dist, amp, 'o', color=col_basal[s], alpha=0.5, label=section)
         ax[1,2].set_xlabel('distance from soma')
         ax[1,2].set_ylabel('BAP amplitude (mV)')
-        # ax[1,2].set_ylim([60, 90])
-        ax[1,2].set_yticks(np.arange(60, 100, 10))
+        ax[1,2].set_ylim([50, 90])
+        ax[1,2].set_yticks(np.arange(50, 91, 10))
         ax[1,2].legend()
+
+        for a in ax[1]:
+            a.set_xlim([0, 400])
+            a.set_xticks([0, 200, 400])
+
+        
+    ax = ax.ravel()
+    for a in ax:
+        a.spines['top'].set_visible(False)
+        a.spines['right'].set_visible(False)
 
     
     fig.tight_layout()
@@ -186,7 +201,12 @@ def fig_compartments(model, clamp_current, l_stim=200):
     ax[1,1].set_yticklabels(yticklabels_ca)
     ax[1,1].set_ylabel('calcium $mM$')
     ax[1,1].set_xlabel('time (ms)')
+
+    
+
+     
     fig.legend(loc='lower right')
+
 
     fig.tight_layout()
 
