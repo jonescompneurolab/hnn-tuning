@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 import hnn_core
 from hnn_core.params import _short_name
 
-from hnn_core import new_calcium_model, simulate_dipole, read_dipole, MPIBackend, jones_2009_model
-
+from hnn_core import human_ET_model, simulate_dipole, read_dipole, MPIBackend
 from hnn_core.optimization import Optimizer
 import numpy as np
 
@@ -144,7 +143,7 @@ def optimize_drives(max_iter=1, n_procs=1):
                     'prox2_nmda_L5_basket': (0.00005, 0.01),
                     'prox2_nmda_L5_pyramidal': (0.1, 1.)})
 
-    net = new_calcium_model()
+    net = human_ET_model()
 
     optim = Optimizer(net, tstop=tstop, constraints=constraints,
                     set_params=set_params, solver='bayesian', obj_fun='dipole_rmse', max_iter=max_iter)
@@ -237,7 +236,7 @@ def optimize_time(max_iter=1, n_procs=1):
                     'prox2_sigma': (8, 12),
                     'prox2_num_spikes': (1, 8)})
 
-    net = new_calcium_model()
+    net = human_ET_model()
     optim_time = Optimizer(net, tstop=tstop, constraints=constraints,
                     set_params=set_params_time, solver='bayesian', obj_fun='dipole_rmse', max_iter=max_iter)
     with MPIBackend(n_procs=n_procs, mpi_cmd='mpiexec'):

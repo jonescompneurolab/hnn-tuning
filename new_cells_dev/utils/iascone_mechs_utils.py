@@ -105,6 +105,10 @@ class Mechs:
                         gbar_fun = partial(distribute_gbar, params['dend'][m], 0, 1)
                         gbar = gbar_fun(distance)
                         setattr(seg,'gbar_'+m, gbar)
+            cell._nrn_sections[sec_name].insert('CaDynamics_E2')
+            for seg in cell._nrn_sections[sec_name]:
+                seg.CaDynamics_E2.decay = 342.544232
+                seg.CaDynamics_E2.gamma = 0.000533
 
         return cell
     
