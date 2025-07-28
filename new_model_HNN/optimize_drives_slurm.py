@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import hnn_core
 from hnn_core.params import _short_name
 
-from hnn_core import human_ET_model, simulate_dipole, read_dipole, MPIBackend
+from hnn_core import duecker_2025_ET_model, simulate_dipole, read_dipole, MPIBackend
 from hnn_core.optimization import Optimizer
 import numpy as np
 
@@ -42,7 +42,7 @@ def set_params(net, params):
     
     net.add_evoked_drive('prox1',
                          mu=16,
-                         sigma=3,
+                         sigma=5,
                          numspikes=1,
                          location='proximal',
                          weights_ampa=weights_ampa_p1,
@@ -111,17 +111,17 @@ def optimize_drives(max_iter=1, n_procs=1):
 
     tstop = exp_dpl.times[-1]
 
-    scale_factor = 1000
+    scale_factor = 500
 
     smooth_window_len = 10
 
     constraints = dict({'prox1_ampa_L2_basket': (0.01, 0.03),
-                    'prox1_ampa_L2_pyramidal': (0.07, 0.15),
+                    'prox1_ampa_L2_pyramidal': (0.07, 0.2),
                     'prox1_ampa_L5_basket': (0.001, 0.01),
-                    'prox1_ampa_L5_pyramidal': (0.001, 0.002),
+                    'prox1_ampa_L5_pyramidal': (0.001, 0.01),
 
                     'prox1_nmda_L2_basket': (0.0001, 0.0002),
-                    'prox1_nmda_L2_pyramidal': (0.001, 0.002),
+                    'prox1_nmda_L2_pyramidal': (0.001, 0.02),
                     'prox1_nmda_L5_basket': (0.003, 0.005),
                     'prox1_nmda_L5_pyramidal': (0.001, 0.002),
 
@@ -143,7 +143,7 @@ def optimize_drives(max_iter=1, n_procs=1):
                     'prox2_nmda_L5_basket': (0.00005, 0.01),
                     'prox2_nmda_L5_pyramidal': (0.1, 1.)})
 
-    net = human_ET_model()
+    net = duecker_2025_ET_model()
 
     optim = Optimizer(net, tstop=tstop, constraints=constraints,
                     set_params=set_params, solver='bayesian', obj_fun='dipole_rmse', max_iter=max_iter)
@@ -152,27 +152,26 @@ def optimize_drives(max_iter=1, n_procs=1):
         optim.fit(target=exp_dpl, scale_factor=scale_factor,
                 smooth_window_len=smooth_window_len, bsl_cor='calcium')
 
-    
-
     opt_dpl = simulate_dipole(optim.net_, tstop=tstop, n_trials=1, bsl_cor='calcium')[0]  # Added simulation
     opt_dpl.scale(scale_factor)
     opt_dpl.smooth(smooth_window_len)
 
-    with open('optim_drives.pkl', 'wb') as file:
+    with open(f'optim_drives_{scale_factor}.pkl', 'wb') as file:
             pickle.dump(optim, file)
-    with open('dpl_drives.pkl', 'wb') as file:
+    with open(f'dpl_drives_{scale_factor}.pkl', 'wb') as file:
             pickle.dump(opt_dpl, file)
         
 def set_params_time(net, params):
+
+    scale_factor = 500
 
     synaptic_delays_p = {'L2_basket': 0.1, 'L2_pyramidal': 0.1,
                         'L5_basket': 1., 'L5_pyramidal': 1.}
     synaptic_delays_d = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 1.}
 
 
-    with open('optim_drives.pkl', 'rb') as file:
+    with open(f'optim_drives_{scale_factor}.pkl', 'rb') as file:
         optim_drives = pickle.load(file)
-
 
     prox2_weights_ampa = optim_drives.net_.external_drives['prox2']['weights_ampa']
     prox2_weights_nmda = optim_drives.net_.external_drives['prox2']['weights_nmda']
@@ -186,8 +185,8 @@ def set_params_time(net, params):
     # Proximal 1
     
     net.add_evoked_drive('prox1',
-                         mu=params['prox1_mu'],
-                         sigma=params['prox1_sigma'],
+                         mu=optim_drives.net_.external_drives['prox1']['dynamics']['mu'],
+                         sigma=optim_drives.net_.external_drives['prox1']['dynamics']['sigma'],
                          numspikes=1,
                          location='proximal',
                          weights_ampa=prox1_weights_ampa,
@@ -223,7 +222,7 @@ def optimize_time(max_iter=1, n_procs=1):
     data_url = '/oscar/home/kduecker/hnn-tuning/hnn-data/MEG_detection_data/S1_SupraT.txt'
     exp_dpl = read_dipole(data_url)
     tstop = exp_dpl.times[-1]
-    scale_factor = 1000
+    scale_factor = 500
     smooth_window_len = 10
     
 
@@ -236,7 +235,7 @@ def optimize_time(max_iter=1, n_procs=1):
                     'prox2_sigma': (8, 12),
                     'prox2_num_spikes': (1, 8)})
 
-    net = human_ET_model()
+    net = duecker_2025_ET_model()
     optim_time = Optimizer(net, tstop=tstop, constraints=constraints,
                     set_params=set_params_time, solver='bayesian', obj_fun='dipole_rmse', max_iter=max_iter)
     with MPIBackend(n_procs=n_procs, mpi_cmd='mpiexec'):
@@ -249,9 +248,9 @@ def optimize_time(max_iter=1, n_procs=1):
     opt_dpl.scale(scale_factor)
     opt_dpl.smooth(smooth_window_len)
 
-    with open('optim_time.pkl', 'wb') as file:
+    with open(f'optim_time_scale_{scale_factor}.pkl', 'wb') as file:
         pickle.dump(optim_time, file)
-    with open('dpl_time.pkl', 'wb') as file:
+    with open(f'dpl_time_{scale_factor}.pkl', 'wb') as file:
         pickle.dump(opt_dpl, file)
 
 
