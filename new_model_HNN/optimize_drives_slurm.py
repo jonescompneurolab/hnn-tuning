@@ -163,7 +163,7 @@ def optimize_drives(max_iter=1, n_procs=1):
         
 def set_params_time(net, params):
 
-    scale_factor = 500
+    scale_factor = 1000
 
     synaptic_delays_p = {'L2_basket': 0.1, 'L2_pyramidal': 0.1,
                         'L5_basket': 1., 'L5_pyramidal': 1.}
@@ -185,9 +185,9 @@ def set_params_time(net, params):
     # Proximal 1
     
     net.add_evoked_drive('prox1',
-                         mu=optim_drives.net_.external_drives['prox1']['dynamics']['mu'],
-                         sigma=optim_drives.net_.external_drives['prox1']['dynamics']['sigma'],
-                         numspikes=1,
+                         mu = optim_drives.net_.external_drives['prox1']['dynamics']['mu'],
+                         sigma = optim_drives.net_.external_drives['prox1']['dynamics']['sigma'],
+                         numspikes = optim_drives.net_.external_drives['prox1']['dynamics']['numspikes'],
                          location='proximal',
                          weights_ampa=prox1_weights_ampa,
                          weights_nmda=prox1_weights_nmda,
@@ -222,18 +222,16 @@ def optimize_time(max_iter=1, n_procs=1):
     data_url = '/oscar/home/kduecker/hnn-tuning/hnn-data/MEG_detection_data/S1_SupraT.txt'
     exp_dpl = read_dipole(data_url)
     tstop = exp_dpl.times[-1]
-    scale_factor = 500
+    scale_factor = 1000
     smooth_window_len = 10
     
 
-    constraints = dict({'prox1_mu': (15, 21),
-                    'prox1_sigma': (1., 5),
-                    'dist_mu': (57, 62),
+    constraints = dict({'dist_mu': (57, 62),
                     'dist_sigma': (2, 3),
-                    'dist_num_spikes': (1, 2),
+                    'dist_num_spikes': (1, 6),
                     'prox2_mu': (94, 120),
                     'prox2_sigma': (8, 12),
-                    'prox2_num_spikes': (1, 8)})
+                    'prox2_num_spikes': (1, 13)})
 
     net = duecker_2025_ET_model()
     optim_time = Optimizer(net, tstop=tstop, constraints=constraints,
