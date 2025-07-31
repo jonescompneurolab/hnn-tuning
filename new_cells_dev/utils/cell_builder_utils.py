@@ -246,7 +246,7 @@ class Cell:
             sec.cm = self.sections[sec_name].cm
             sec.Ra = self.sections[sec_name].Ra
 
-            if 'basal' in sec_name or sec_name == 'apical_oblique':
+            if 'basal' in sec_name or sec_name == 'apical_oblique':# or sec_name == 'apical_tuft':
                 sec.Ra *= 2
                 
             sec.nseg = self.sections[sec_name].nseg
