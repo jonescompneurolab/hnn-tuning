@@ -126,7 +126,7 @@ class Mechs:
                         distance = h.distance(seg.x, sec=seg.sec)
                         gbar = params['dend']['Ca_LVAst'](distance)
                         if (distance >= hotzone[0]) and (distance < hotzone[1]):
-                            gbar *= 3
+                            gbar *= 3.
                         setattr(seg, 'gbar_'+m, gbar) 
                     else:
                         setattr(seg, 'gbar_'+m, params['dend'][m])       # Hay increases all conductances by 2 because resistance is also increased by 2
