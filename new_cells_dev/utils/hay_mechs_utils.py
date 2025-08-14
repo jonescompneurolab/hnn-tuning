@@ -104,8 +104,12 @@ class Mechs:
                 cell._nrn_sections[sec_name].insert(m)
                 for seg in cell._nrn_sections[sec_name]:
                     if m == 'pas':
+                        distance = h.distance(seg.x, sec=seg.sec) 
                         seg.pas.g = params['dend']['pas']['g']             # Hay increases all conductances by 2 because resistance is also increased by 2
-                        seg.pas.e = params['dend']['pas']['e']       
+                        seg.pas.e = params['dend']['pas']['e']    
+                        if distance > 1500:
+                            seg.pas.g *= 1.2
+                              
                     elif m == 'Ih':
                         distance = h.distance(seg.x, sec=seg.sec)
                         gbar = params['dend']['Ih'](distance)

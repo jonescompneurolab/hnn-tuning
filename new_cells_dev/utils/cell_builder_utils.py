@@ -3,6 +3,8 @@
 import neuron
 from neuron import h
 from neuron.units import ms, mV
+import numpy as np
+from numpy.linalg import norm
 
 def _get_nseg(L):
     nseg = 1
@@ -66,8 +68,18 @@ def _get_basket_soma():
         diam=20.,
         cm=1.,
         Ra=200.,
-        end_pts=end_pts
-    )
+        end_pts=end_pts)
+
+def _get_cos_theta(sections, sec_name_apical):
+    """Get cos(theta) to compute dipole along the apical dendrite."""
+    a = (np.array(sections[sec_name_apical].end_pts[1]) -
+         np.array(sections[sec_name_apical].end_pts[0]))
+    cos_thetas = dict()
+    for sec_name, section in sections.items():
+        b = np.array(section.end_pts[1]) - np.array(section.end_pts[0])
+        cos_thetas[sec_name] = np.dot(a, b) / (norm(a) * norm(b))
+    return cos_thetas
+    
 
 class Section:
     """Section class.
@@ -167,6 +179,7 @@ class Cell:
 
         self.cell_tree = cell_tree
         self.cell_type = cell_type
+        self.dipole_pp = list()
         
     def __repr__(self):
         return f'{self.cell_type}[{self._gid}]'
@@ -246,8 +259,8 @@ class Cell:
             sec.cm = self.sections[sec_name].cm
             sec.Ra = self.sections[sec_name].Ra
 
-            if 'basal' in sec_name or sec_name == 'apical_oblique':# or sec_name == 'apical_tuft':
-                sec.Ra *= 2
+            # if 'basal' in sec_name or sec_name == 'apical_oblique':# or sec_name == 'apical_tuft':
+            #     sec.Ra *= 2
                 
             sec.nseg = self.sections[sec_name].nseg
             sec.v = self.sections[sec_name].v
@@ -304,9 +317,64 @@ class Cell:
             mech_props[sec_name] = this_sec_prop
         return mech_props
 
-    def build(self):
+    def build(self, sec_name_apical=None):
 
         self._create_sections()
+        if sec_name_apical in self._nrn_sections:
+            self._insert_dipole(sec_name_apical)
+    
+    def _insert_dipole(self, sec_name_apical):
+        """Insert dipole into each section of this cell.
+
+        Parameters
+        ----------
+        sec_name_apical : str
+            The name of the section along which dipole moment is calculated.
+        """
+        self.dpl_vec = h.Vector(1)
+        self.dpl_ref = self.dpl_vec._ref_x[0]
+        cos_thetas = _get_cos_theta(self.sections, 'apical_trunk')
+
+        # setting pointers and ztan values
+        for sect_name in self.sections:
+            sect = self._nrn_sections[sect_name]
+            sect.insert('dipole')
+
+            dpp = h.Dipole(1, sec=sect)  # defined in dipole_pp.mod
+            self.dipole_pp.append(dpp)
+            dpp.ri = h.ri(1, sec=sect)  # assign internal resistance
+            # sets pointers in dipole mod file to the correct locations
+            dpp._ref_pv = sect(0.99)._ref_v
+            dpp._ref_Qtotal = self.dpl_ref
+            # gives INTERNAL segments of the section, non-endpoints
+            # creating this because need multiple values simultaneously
+            pos_all = np.array([seg.x for seg in sect.allseg()])
+            seg_lens = np.diff(pos_all) * sect.L
+            seg_lens_z = seg_lens * cos_thetas[sect_name]
+
+            # alternative procedure below with y_long(itudinal)
+            # y_long = (h.y3d(1, sec=sect) - h.y3d(0, sec=sect)) * pos
+            # y_diff = np.diff(y_long)
+
+            # doing range to index multiple values of the same
+            # np.array simultaneously
+            for idx, pos in enumerate(pos_all[1:-1]):
+                # assign the ri value to the dipole
+                # ri not defined at 0 and L
+                sect(pos).dipole.ri = h.ri(pos, sec=sect)
+                # range variable 'dipole'
+                # set pointers to previous segment's voltage, with
+                # boundary condition
+                sect(pos).dipole._ref_pv = sect(pos_all[idx])._ref_v
+
+                # set aggregate pointers
+                sect(pos).dipole._ref_Qsum = dpp._ref_Qsum
+                sect(pos).dipole._ref_Qtotal = self.dpl_ref
+                # add ztan values
+                sect(pos).dipole.ztan = seg_lens_z[idx]
+            # set the pp dipole's ztan value to the last value from seg_lens_z
+            dpp.ztan = seg_lens_z[-1]
+        self.dipole = h.Vector().record(self.dpl_ref)
 
 
 

@@ -211,3 +211,10 @@ def fig_compartments(model, clamp_current, l_stim=200):
     fig.tight_layout()
 
     return fig
+
+def _hammfilt(x, winsz):
+    """Convolve with a hamming window."""
+    assert len(x) > winsz
+    win = np.hamming(winsz)
+    win /= sum(win)
+    return np.convolve(x, win, 'same')
