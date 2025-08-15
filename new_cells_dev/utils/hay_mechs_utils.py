@@ -14,7 +14,10 @@ def Ih_condu_hay(gsoma, x):
 
     sl = 1.
     a = 2.087
-    return gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
+
+    gbar = gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
+
+    return gbar
 
 def linear_gbar(gsoma, gdend, xkink, x):
 
@@ -108,7 +111,7 @@ class Mechs:
                         seg.pas.g = params['dend']['pas']['g']             # Hay increases all conductances by 2 because resistance is also increased by 2
                         seg.pas.e = params['dend']['pas']['e']    
                         if distance > 1500:
-                            seg.pas.g *= 1.2
+                            seg.pas.g *= 1.6
                               
                     elif m == 'Ih':
                         distance = h.distance(seg.x, sec=seg.sec)

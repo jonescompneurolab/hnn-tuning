@@ -97,7 +97,7 @@ def fig_conductances(model, apical_sections=['apical_trunk', 'apical_1', 'apical
         for segx in voltg[s].keys():
             vmax = np.max(voltg[s][segx].as_numpy())
             vmin = np.min(voltg[s][segx].as_numpy())
-            amp.append((vmax - vmin)/(np.max(v_soma) - np.min(v_soma)) * 100)
+            amp.append((vmax - vmin)/(np.max(v_soma)-np.min(v_soma)) * 100)
 
         ax[1,0].plot(dist, Nagbar, 'o', color=col_basal[s], alpha=0.5)
         ax[1,0].set_xlabel('distance from soma')
@@ -112,7 +112,7 @@ def fig_conductances(model, apical_sections=['apical_trunk', 'apical_1', 'apical
         ax[1,1].set_yticks([0, 0.0001, 0.0002])
         ax[1,2].plot(dist, amp, 'o', color=col_basal[s], alpha=0.5, label=section)
         ax[1,2].set_xlabel('distance from soma')
-        ax[1,2].set_ylabel('normalized BAP amplitude (mV)')
+        ax[1,2].set_ylabel('BAP amplitude (mV)')
         ax[1,2].set_ylim([50, 90])
         ax[1,2].set_yticks(np.arange(50, 91, 10))
         ax[1,2].legend()
