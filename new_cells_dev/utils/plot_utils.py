@@ -25,21 +25,21 @@ def fig_conductances(model, apical_sections=['apical_trunk', 'apical_1', 'apical
     ax[0,0].plot(distance_apical, gbar_Ih_apical, color='k')
     ax[0,0].set_ylabel('$gbar_{Ih} (S/cm^2)$')
     ax[0,0].set_xlabel('distance to soma ($\mu m$)')
-    ax[0,0].set_ylim([0, 0.04])
-    ax[0,0].set_yticks([0, 0.02, 0.04])
+   # ax[0,0].set_ylim([0, 0.04])
+   # ax[0,0].set_yticks([0, 0.02, 0.04])
 
     ax[0,1].plot(distance_apical, gbar_Ca_HVA_apical, color='k')
     ax[0,1].set_ylabel('$gbar_{Ca_{HVA}} (S/cm^2)$')
     ax[0,1].set_xlabel('distance to soma ($\mu m$)')
-    ax[0,1].set_ylim([0, 0.0004])
-    ax[0,1].set_yticks([0, 0.0002, 0.0004])
+   #ax[0,1].set_ylim([0, 0.0004])
+   # ax[0,1].set_yticks([0, 0.0002, 0.0004])
 
 
     ax[0,2].plot(distance_apical, gbar_Ca_LVA_apical, color='k')
     ax[0,2].set_ylabel('$gbar_{Ca_{LVA}} (S/cm^2)$')
     ax[0,2].set_xlabel('distance to soma ($\mu m$)')
-    ax[0,2].set_ylim([0, 0.0004])
-    ax[0,2].set_yticks([0, 0.0002, 0.0004])
+    #ax[0,2].set_ylim([0, 0.0004])
+   # ax[0,2].set_yticks([0, 0.0002, 0.0004])
 
     for a in ax[0]:
         a.set_xlim([0, 2000])

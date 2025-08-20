@@ -12,6 +12,15 @@ def distribute_gbar(gbar, slope, offset, x):
 
     return (slope * x + offset) * gbar
 
+def linear_gbar(gsoma, gdend, xkink, x, hotzone=[0,0], hotzone_factor=1):
+
+    gbar = gsoma + np.min([xkink, x]) * (gdend - gsoma) / xkink
+
+    if x > hotzone[0] and x < hotzone[1]:
+        gbar *= hotzone_factor
+
+    return gbar
+
 def get_iascone_params():
 
     iascone_model_gbar = {'soma': {'NaTs2_t': 0.926705, 
@@ -101,14 +110,17 @@ class Mechs:
                         gbar_fun = partial(Ih_condu_apical, params['dend'][m]['gbar'], params['dend'][m]['offset'], params['dend'][m]['slope'], params['dend'][m]['factor_exp'])
                         gbar = gbar_fun(distance)
                         setattr(seg, 'gbar_'+m, gbar)
+                    elif m == 'Ca_HVA' or m == 'Ca_LVAst':
+                        gbar = params['dend'][m](distance)
+                        setattr(seg,'gbar_'+m, gbar)
                     else:
                         gbar_fun = partial(distribute_gbar, params['dend'][m], 0, 1)
                         gbar = gbar_fun(distance)
                         setattr(seg,'gbar_'+m, gbar)
             cell._nrn_sections[sec_name].insert('CaDynamics_E2')
             for seg in cell._nrn_sections[sec_name]:
-                seg.CaDynamics_E2.decay = 342.544232
-                seg.CaDynamics_E2.gamma = 0.000533
+                seg.CaDynamics_E2.decay = 122 #342.544232
+                seg.CaDynamics_E2.gamma = .0005096*1.1 #0.000533
 
         return cell
     

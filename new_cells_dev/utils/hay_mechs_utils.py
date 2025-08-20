@@ -19,9 +19,14 @@ def Ih_condu_hay(gsoma, x):
 
     return gbar
 
-def linear_gbar(gsoma, gdend, xkink, x):
+def linear_gbar(gsoma, gdend, xkink, x, hotzone=[0,0], hotzone_factor=1):
 
-    return gsoma + np.min([xkink, x]) * (gdend - gsoma) / xkink
+    gbar = gsoma + np.min([xkink, x]) * (gdend - gsoma) / xkink
+
+    if x > hotzone[0] and x < hotzone[1]:
+        gbar *= hotzone_factor
+
+    return gbar
 
 def get_hay_params():
 
@@ -122,14 +127,12 @@ class Mechs:
                     elif m == 'Ca_HVA':
                         distance = h.distance(seg.x, sec=seg.sec)
                         gbar = params['dend']['Ca_HVA'](distance)
-                        if (distance >= hotzone[0]) and (distance < hotzone[1]):
-                            gbar *= 3.9
+
                         setattr(seg, 'gbar_'+m, gbar)
                     elif m == 'Ca_LVAst':
                         distance = h.distance(seg.x, sec=seg.sec)
                         gbar = params['dend']['Ca_LVAst'](distance)
-                        if (distance >= hotzone[0]) and (distance < hotzone[1]):
-                            gbar *= 3.
+
                         setattr(seg, 'gbar_'+m, gbar) 
                     else:
                         setattr(seg, 'gbar_'+m, params['dend'][m])       # Hay increases all conductances by 2 because resistance is also increased by 2

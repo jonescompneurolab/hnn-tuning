@@ -533,11 +533,11 @@ def l2_params():
         # Soma
         'L2Pyr_soma_L': 22.1,
         'L2Pyr_soma_diam': 23.4,
-        'L2Pyr_soma_cm': 0.6195,
+        'L2Pyr_soma_cm': 2,
         'L2Pyr_soma_Ra': 100.,
 
         # Dendrites
-        'L2Pyr_dend_cm': 0.6195,
+        'L2Pyr_dend_cm': 2,
         'L2Pyr_dend_Ra': 100.,
 
         'L2Pyr_apicaltrunk_L': 59.5,
