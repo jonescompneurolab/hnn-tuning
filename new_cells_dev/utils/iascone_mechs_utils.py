@@ -119,8 +119,8 @@ class Mechs:
                         setattr(seg,'gbar_'+m, gbar)
             cell._nrn_sections[sec_name].insert('CaDynamics_E2')
             for seg in cell._nrn_sections[sec_name]:
-                seg.CaDynamics_E2.decay = 122 #342.544232
-                seg.CaDynamics_E2.gamma = .0005096*1.1 #0.000533
+                seg.CaDynamics_E2.decay = 122#122 #342.544232
+                seg.CaDynamics_E2.gamma = 0.000533
 
         return cell
     
