@@ -32,10 +32,7 @@ pth_rslts = os.path.join(main_pth, 'new_cells_dev/cells')
 import sys
 sys.path.append(os.path.join(main_pth, 'new_cells_dev/utils'))
 from cell_builder_utils import l2_params, _get_dends, _get_pyr_soma, Cell
-from iascone_mechs_utils import Mechs, get_iascone_params, Ih_condu_apical, distribute_gbar
-from hay_mechs_utils import linear_gbar
-
-
+from iascone_mechs_utils import Mechs, get_iascone_params
 
 # target attenuation from literature
 
@@ -147,11 +144,8 @@ def objective(trial):
 
     print(f"Running trial {trial.number=} in process {os.getpid()}")
 
-    ca_hva_gbar = trial.suggest_float('ca_hva_gbar', 0, 2e-3)
-
-    ca_lva_gbar = trial.suggest_float('ca_lva_gbar', 0, 2e-3)
-
     Rm = trial.suggest_int('Rm', 5000, 40000)
+    Rm_soma = trial.suggest_int('Rm_soma', 5000, 40000)
     
     suggest_params = {'soma': {'NaTs2_t_32d': 20_400e-4,
                                 'SKv3_1': 6_930e-4,
@@ -160,11 +154,11 @@ def objective(trial):
                                 'Ca_LVAst': 34.3e-4*0.1,
                                 
                                 #'SK_E2': 0.099433/2*0.001,
-                                'pas': 1.0 / 10000.0,
-                                'Ih': 0.000080*2,
+                                'pas': 1.0 / Rm_soma,
+                                'Ih': trial.suggest_float('Ih_gbar_soma', 0, 1e-2),
                                 'Im': 8e-3*0.01},
-                        'basal': {'NaTs2_t_32d': 0.008009*0.01,#partial(linear_gbar,0.008009/2,0,255),
-                                  'SKv3_1': 0.000513*0.01,#partial(linear_gbar,0,6_930e-4*0.1,255),
+                        'basal': {'NaTs2_t_32d': 0.008009*0.01,
+                                  'SKv3_1': 0.000513*0.01,
                                   'Ih': 0.00008,
                                   'pas':  1.0 / 10000.0},
                             'dend': {'NaTa_t_32d': trial.suggest_float('NaTa_t_32d_apical', 0, 1e-2),
@@ -173,7 +167,7 @@ def objective(trial):
                                     'Ca_LVAst': trial.suggest_float('ca_lva_gbar', 0, 2e-3), 
                                     'pas': 1/Rm,
                                     'SK_E2': trial.suggest_float('SK_E2_apical', 0, 1e-4),
-                                    'Ih': trial.suggest_float('Ih_gbar', 0, 1e-5),
+                                    'Ih': trial.suggest_float('Ih_gbar', 0, 1e-2),
                                     'Im': trial.suggest_float('Im_apical', 0, 1e-2),
                                     'CaDynamics_E2': {'decay': 342.544232, 'gamma': 0.000533*2.7}},
                             'e_pas': -75}
@@ -206,7 +200,7 @@ def run_optimization(study_name, journal_file, sampler, process_id):
     )
     
     # Run trials
-    study.optimize(objective, n_trials=1000)
+    study.optimize(objective, n_trials=100)
     
     return study.best_value, study.best_params
 
