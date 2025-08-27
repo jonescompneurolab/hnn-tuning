@@ -25,17 +25,18 @@ from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 from scipy import signal
 # Load custom modules
-pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/local_hnn/hnn_core/mod'
-pth_rslts = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_dev/cells'
+main_pth = '/users/kduecker/hnn-tuning'
+pth_mod = os.path.join(main_pth, 'local_hnn/hnn_core/mod')
+pth_rslts = os.path.join(main_pth, 'new_cells_dev/cells')
 import sys
-sys.path.append('/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_dev/utils')
+sys.path.append(os.path.join(main_pth, 'new_cells_dev/utils'))
 from cell_builder_utils import l2_params, _get_dends, _get_pyr_soma, Cell
 from iascone_mechs_utils import Mechs, get_iascone_params, Ih_condu_apical, distribute_gbar
 from hay_mechs_utils import linear_gbar
 
 
 """ Load human data """
-pth_data = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/data/l23'
+pth_data = os.path.join(main_pth, 'data/l23')
 with open(os.path.join(pth_data, 'ephys_l2.pkl'), 'rb') as f:
     l2_allen = pickle.load(f)
 with open(os.path.join(pth_data, 'ephys_l3.pkl'), 'rb') as f:
@@ -56,7 +57,7 @@ def _get_target_measures():
 
     # get the hand-tuned ca spike
     import pickle
-    with open(os.path.join('/Users/katharinaduecker/Documents/projects_brown/hnn_dev/figures/newl3_iascone/', 'l23_ca_spike.pkl'), 'rb') as f:
+    with open(os.path.join(data_pth, 'l23_ca_spike.pkl'), 'rb') as f:
         ca_properties = pickle.load(f)
 
     for key in ca_properties.keys():
@@ -597,5 +598,5 @@ def run_optimization(_):
         pickle.dump(study.best_trial, f)
 
 if __name__ == "__main__":
-    with Pool(processes=10) as pool:
+    with Pool(processes=3) as pool:
         pool.map(run_optimization, range(10))
