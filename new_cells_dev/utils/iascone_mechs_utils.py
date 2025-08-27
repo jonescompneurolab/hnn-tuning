@@ -21,6 +21,13 @@ def linear_gbar(gsoma, gdend, xkink, x, hotzone=[0,0], hotzone_factor=1):
 
     return gbar
 
+def hotzone_gbar(gbar, hotzone, hotzone_factor, x):
+
+    if x > hotzone[0] and x < hotzone[1]:
+        gbar *= hotzone_factor
+
+    return gbar
+
 def get_iascone_params():
 
     iascone_model_gbar = {'soma': {'NaTs2_t': 0.926705, 
@@ -106,21 +113,23 @@ class Mechs:
                         seg.pas.g = params['dend']['pas']               # Hay increases all conductances by 2 because resistance is also increased by 2
                         seg.pas.e = params['e_pas']
                     
-                    elif m == 'Ih':
-                        gbar_fun = partial(Ih_condu_apical, params['dend'][m]['gbar'], params['dend'][m]['offset'], params['dend'][m]['slope'], params['dend'][m]['factor_exp'])
-                        gbar = gbar_fun(distance)
-                        setattr(seg, 'gbar_'+m, gbar)
-                    elif m == 'Ca_HVA' or m == 'Ca_LVAst':
-                        gbar = params['dend'][m](distance)
-                        setattr(seg,'gbar_'+m, gbar)
+                    # elif m == 'Ih':
+                    #     gbar_fun = partial(Ih_condu_apical, params['dend'][m]['gbar'], params['dend'][m]['offset'], params['dend'][m]['slope'], params['dend'][m]['factor_exp'])
+                    #     gbar = gbar_fun(distance)
+                    #     setattr(seg, 'gbar_'+m, gbar)
+                    # elif m == 'Ca_HVA' or m == 'Ca_LVAst':
+                    #     gbar = params['dend'][m](distance)
+                    #     setattr(seg,'gbar_'+m, gbar)
+                    elif m == 'CaDynamics_E2':
+                        cell._nrn_sections[sec_name].insert(m)
+                        for seg in cell._nrn_sections[sec_name]:
+                            seg.CaDynamics_E2.decay = params['dend'][m]['decay']
+                            seg.CaDynamics_E2.gamma = params['dend'][m]['gamma']
                     else:
                         gbar_fun = partial(distribute_gbar, params['dend'][m], 0, 1)
                         gbar = gbar_fun(distance)
                         setattr(seg,'gbar_'+m, gbar)
-            cell._nrn_sections[sec_name].insert('CaDynamics_E2')
-            for seg in cell._nrn_sections[sec_name]:
-                seg.CaDynamics_E2.decay = 122#122 #342.544232
-                seg.CaDynamics_E2.gamma = 0.000533
+            
 
         return cell
     
