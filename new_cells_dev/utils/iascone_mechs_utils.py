@@ -113,23 +113,17 @@ class Mechs:
                         seg.pas.g = params['dend']['pas']               # Hay increases all conductances by 2 because resistance is also increased by 2
                         seg.pas.e = params['e_pas']
                     
-                    # elif m == 'Ih':
-                    #     gbar_fun = partial(Ih_condu_apical, params['dend'][m]['gbar'], params['dend'][m]['offset'], params['dend'][m]['slope'], params['dend'][m]['factor_exp'])
-                    #     gbar = gbar_fun(distance)
-                    #     setattr(seg, 'gbar_'+m, gbar)
-                    # elif m == 'Ca_HVA' or m == 'Ca_LVAst':
-                    #     gbar = params['dend'][m](distance)
-                    #     setattr(seg,'gbar_'+m, gbar)
-                    elif m == 'CaDynamics_E2':
-                        cell._nrn_sections[sec_name].insert(m)
-                        for seg in cell._nrn_sections[sec_name]:
-                            seg.CaDynamics_E2.decay = params['dend'][m]['decay']
-                            seg.CaDynamics_E2.gamma = params['dend'][m]['gamma']
+                    elif m == 'Ih':
+                        gbar_fun = partial(Ih_condu_apical, params['dend'][m]['gbar'], params['dend'][m]['offset'], params['dend'][m]['slope'], params['dend'][m]['factor_exp'])
+                        gbar = gbar_fun(distance)
+                        setattr(seg, 'gbar_'+m, gbar)
+                    elif m == 'Ca_HVA' or m == 'Ca_LVAst':
+                        gbar = params['dend'][m](distance)
+                        setattr(seg,'gbar_'+m, gbar)
                     else:
                         gbar_fun = partial(distribute_gbar, params['dend'][m], 0, 1)
                         gbar = gbar_fun(distance)
                         setattr(seg,'gbar_'+m, gbar)
-            
 
         return cell
     

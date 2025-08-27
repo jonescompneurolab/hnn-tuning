@@ -5,12 +5,13 @@ Step 1: Perisomatic measures"""
 
 # set up
 import optuna
-from multiprocessing import Pool
+from multiprocessing import Pool, Lock
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
 from optuna.trial import Trial
 import threading
-
+import sqlite3
+import json
 
 import neuron
 from neuron import h
@@ -57,7 +58,7 @@ def _get_target_measures():
 
     # get the hand-tuned ca spike
     import pickle
-    with open(os.path.join(data_pth, 'l23_ca_spike.pkl'), 'rb') as f:
+    with open(os.path.join(pth_data, 'l23_ca_spike.pkl'), 'rb') as f:
         ca_properties = pickle.load(f)
 
     for key in ca_properties.keys():
@@ -535,37 +536,39 @@ def objective(trial):
 
     protocols = _get_protocols()
 
-    ca_hva_gbar = trial.suggest_float('ca_hva_gbar', 0, 2e-3)
-    ca_hva_slope = trial.suggest_float('ca_hva_slope', 0, 10)
-    ca_hva_hotfact = trial.suggest_float('ca_hva_hotfact', 0, 20)
+    ca_hva_gbar = trial.suggest_float('ca_hva_gbar', 1e-6, 2e-4)
+    ca_hva_slope = trial.suggest_float('ca_hva_slope', 2, 5)
+    ca_hva_hotfact = trial.suggest_float('ca_hva_hotfact', 2, 8)
 
-    ca_lva_gbar = trial.suggest_float('ca_lva_gbar', 0, 2e-3)
-    ca_lva_slope = trial.suggest_float('ca_lva_slope', 0, 10)
-    ca_lva_hotfact = trial.suggest_float('ca_lva_hotfact', 0, 20)
+    ca_lva_gbar = trial.suggest_float('ca_lva_gbar', 1e-6, 2e-4)
+    ca_lva_slope = trial.suggest_float('ca_lva_slope', 2, 5)
+    ca_lva_hotfact = trial.suggest_float('ca_lva_hotfact', 2, 8)
     
-    suggest_params = {'soma': {'NaTs2_t_32d': trial.suggest_float('NaTs2_t_32d', 0, 8),
-                                    'SKv3_1': trial.suggest_float('SKv3_1', 0, 5),
-                                    'Nap_Et2': trial.suggest_float('Nap_Et2', 0, 1),
-                                    'Ca_HVA': trial.suggest_float('Ca_HVA', 0, 1),
-                                    'Ca_LVAst': trial.suggest_float('Ca_LVAst', 0, 1),
-                                    'pas': trial.suggest_float('pas', 0, 1e-3),
-                                    'Ih': trial.suggest_float('Ih', 0, 1e-4),
-                                    'Im': trial.suggest_float('Im', 0, 1e-2)},
-                  'basal': {'NaTs2_t_32d': trial.suggest_float('NaTs2_t_32d_basal', 0, 2e-3),
-                                    'SKv3_1': trial.suggest_float('SKv3_1_basal', 0, 2e-3),
-                                    'Ih': trial.suggest_float('Ih_basal', 0, 1e-3),
-                                    'pas':  trial.suggest_float('pas_basal', 0, 1/9000)},
-                            'dend': {'NaTa_t_32d': trial.suggest_float('NaTa_t_32d_apical', 0, 1e-2),
-                                    'SKv3_1': trial.suggest_float('SKv3_1_apical', 0, 1e-2),
-                                    'Ca_HVA': partial(linear_gbar, ca_hva_gbar, ca_hva_gbar*ca_hva_slope, 400, hotzone=[400, 600], hotzone_factor=ca_hva_hotfact),
-                                    'Ca_LVAst': partial(linear_gbar, ca_lva_gbar, ca_lva_gbar*ca_lva_slope, 400, hotzone=[400, 600], hotzone_factor=ca_lva_hotfact),
-                                    'pas': trial.suggest_float('pas_apical', 0, 1/9000.0),
-                                    'SK_E2': trial.suggest_float('SK_E2_apical', 0, 1e-4),
-                                    'Ih': {'gbar': trial.suggest_float('Ih_gbar', 0, 1e-2), 'offset': -0.869600, 'slope':2, 'factor_exp':1/110},
-                                    'Im': trial.suggest_float('Im_apical', 0, 1e-2)},
+    suggest_params = {'soma': {'NaTs2_t_32d': trial.suggest_float('NaTs2_t_32d', 1, 8),
+                                    'SKv3_1': trial.suggest_float('SKv3_1', 0.5, 5),
+                                    'Nap_Et2': trial.suggest_float('Nap_Et2', 1e-5, 1e-3),
+                                    'Ca_HVA': trial.suggest_float('Ca_HVA', 1e-6, 1e-2),
+                                    'Ca_LVAst': trial.suggest_float('Ca_LVAst', 1e-6, 1e-2),
+                                    'pas': trial.suggest_float('pas', 1/40000, 1/9000),
+                                    'Ih': trial.suggest_float('Ih', 8e-7, 1e-4),
+                                    'Im': trial.suggest_float('Im', 1e-6, 5e-2)},
+                    'basal': {'NaTs2_t_32d': 0.008009*0.01,#partial(linear_gbar,0.008009/2,0,255),
+                                    'SKv3_1': 0.000513*0.01,#partial(linear_gbar,0,6_930e-4*0.1,255),
+                                    'Ih': 0.00008,
+                                    'pas':  1.0 / 37000.0},
+                            'dend': {'NaTa_t_32d': 0.008009,
+                                    'SKv3_1': 0.000513,
+                                    'Ca_HVA': partial(linear_gbar, 2.78e-5/2*1., 2.78e-5/2*1, 400, hotzone=[400, 600], hotzone_factor=1),
+                                    'Ca_LVAst': partial(linear_gbar, 93.5e-6, 93.5e-6*1, 400, hotzone=[400, 600], hotzone_factor=1),
+                                    'pas': 1.0 / 37000.0,
+                                    #'SK_E2': 0.099433/2*0.00001,
+                                    'Ih': {'gbar': 0.000080, 'offset': -0.869600, 'slope':2, 'factor_exp':1/110},
+                                    'Im': 8e-3*0},
                             'e_pas': -75}
+        
     
-    # work in stages like Hay et al
+    # start with tuning soma
+    
     one_opt = ['RMP', 'sag', 'tau', 'FR_slope']
 
     loss = 0
@@ -591,12 +594,84 @@ def objective(trial):
 
     return loss
 
-def run_optimization(_):
-    study = optuna.create_study(study_name='l23_soma_optimization', direction='minimize', storage=JournalStorage(JournalFileBackend(file_path=os.path.join(pth_rslts, "journal.log"))), load_if_exists=True)
-    study.optimize(objective, n_trials=3)
-    with open(os.path.join(pth_rslts, 'optuna_l23soma_optim.pkl'), 'wb') as f:
-        pickle.dump(study.best_trial, f)
+# Create a lock for thread-safe operations
+result_lock = Lock()
+
+def run_optimization(process_id):
+    # Each process gets its own study instance but shares the same storage
+    study = optuna.create_study(
+        study_name='l23_soma', 
+        direction='minimize', 
+        storage=JournalStorage(JournalFileBackend(
+            file_path=os.path.join(pth_rslts, "journal_soma.log")
+        )), 
+        load_if_exists=True
+    )
+    
+    # Run trials
+    study.optimize(objective, n_trials=100000)
+    
+    # Store the best result from this process
+    with result_lock:
+        # Read existing results
+        try:
+            with open(os.path.join(pth_rslts, 'best_results.json'), 'r') as f:
+                all_results = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            all_results = []
+        
+        # Add current result
+        all_results.append({
+            'process_id': process_id,
+            'best_value': study.best_value,
+            'best_params': study.best_params,
+            'trial_count': len(study.trials)
+        })
+        
+        # Save updated results
+        with open(os.path.join(pth_rslts, 'best_results.json'), 'w') as f:
+            json.dump(all_results, f, indent=2)
+    
+    return study.best_value, study.best_params
 
 if __name__ == "__main__":
-    with Pool(processes=3) as pool:
-        pool.map(run_optimization, range(10))
+    # Create the study first to ensure it exists
+    study = optuna.create_study(
+        study_name='l23_soma', 
+        direction='minimize', 
+        storage=JournalStorage(JournalFileBackend(
+            file_path=os.path.join(pth_rslts, "journal_soma.log")
+        )), 
+        load_if_exists=True
+    )
+    
+    # Run optimization in parallel
+    with Pool(processes=60) as pool:
+        results = pool.map(run_optimization, range(1000))
+    
+    # Find the overall best result
+    best_value = float('inf')
+    best_params = None
+    
+    for value, params in results:
+        if value < best_value:
+            best_value = value
+            best_params = params
+    
+    # Save the overall best result
+    with open(os.path.join(pth_rslts, 'overall_best_soma.pkl'), 'wb') as f:
+        pickle.dump({'best_value': best_value, 'best_params': best_params}, f)
+    
+    print(f"Overall best value: {best_value}")
+    print(f"Overall best parameters: {best_params}")
+    
+    # Optional: Also save the complete study from storage
+    final_study = optuna.load_study(
+        study_name='l23_soma',
+        storage=JournalStorage(JournalFileBackend(
+            file_path=os.path.join(pth_rslts, "journal_soma.log")
+        ))
+    )
+    
+    with open(os.path.join(pth_rslts, 'complete_study_soma.pkl'), 'wb') as f:
+        pickle.dump(final_study, f)
