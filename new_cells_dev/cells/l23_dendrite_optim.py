@@ -29,6 +29,7 @@ from scipy import signal
 main_pth = '/users/kduecker/hnn-tuning'
 pth_mod = os.path.join(main_pth, 'local_hnn/hnn_core/mod')
 pth_rslts = os.path.join(main_pth, 'new_cells_dev/cells')
+pth_data = os.path.join(main_pth, 'data/l23')
 import sys
 sys.path.append(os.path.join(main_pth, 'new_cells_dev/utils'))
 from cell_builder_utils import l2_params, _get_dends, _get_pyr_soma, Cell
@@ -36,13 +37,22 @@ from iascone_mechs_utils import Mechs, get_iascone_params
 
 # target attenuation from literature
 
-soma_dend_atten = {
-    'bAp': 290, # Gidon, 2020 Fig. S5
-    'bAp_upstroke': 121,
-    'sEPSP': 613, # Gooch, 2022
-    'hyperpol': np.mean((475, 620)), #Gidon, 2020 Fig. S1; Gooch, 2022
-}
+def get_targets():
 
+    soma_dend_atten = {
+        'bAp': 290, # Gidon, 2020 Fig. S5
+        'bAp_upstroke': 121,
+        'sEPSP': 613, # Gooch, 2022
+        'hyperpol': np.mean((475, 620)), #Gidon, 2020 Fig. S1; Gooch, 2022
+    }
+
+    with open(os.path.join(pth_data,'ephys_l2.pkl'), 'rb') as f:
+        l2_allen = pickle.load(f)
+
+    with open(os.path.join(pth_data,'ephys_l3.pkl'), 'rb') as f:
+        l3_allen = pickle.load(f)
+
+    return soma_dend_allen, l2_allen, l3_allen
 
 def exp_decay(x, lambda_val, A):
     return A * np.exp(-x / lambda_val)
@@ -139,6 +149,23 @@ def attenuation_from_section(ref_sect, params, amp, stim_dur, stim_l):
 
     return atten, distance, upstroke
 
+def membrane_time_constant(params):
+    
+    # load sections
+    sections, mech_class, cell_tree = get_sections_load_mechs()
+
+    # load allen data for 
+    _, l2_allen, l3_allen = get_targets()
+
+
+
+
+    l2pyr= Cell(sections, cell_tree, cell_type='L2_pyramidal', gid=0)
+    l2pyr.build()
+    l2pyr = mech_class.add_mechs(l2pyr, params)
+
+
+
 def objective(trial):
 
 
@@ -155,7 +182,7 @@ def objective(trial):
                                 
                                 #'SK_E2': 0.099433/2*0.001,
                                 'pas': 1.0 / Rm_soma,
-                                'Ih': trial.suggest_float('Ih_gbar_soma', 0, 1e-2),
+                                'Ih': 0.000080*10,
                                 'Im': 8e-3*0.01},
                         'basal': {'NaTs2_t_32d': 0.008009*0.01,
                                   'SKv3_1': 0.000513*0.01,
@@ -182,6 +209,9 @@ def objective(trial):
     hyperpol_amp, elec_sep, _ = attenuation_from_section('soma', suggest_params, amp=-0.3, stim_dur=1000, stim_l=1020)
     popt, pcov = curve_fit(exp_decay, np.array(elec_sep), np.array(hyperpol_amp), p0=[100, hyperpol_amp[0]])
     lambda_hyperpol_amp = popt[0]
+
+    # get targets
+    soma_dend_atten, l2_allen, l3_allen = get_targets()
 
     loss = (np.abs(soma_dend_atten['bAp'] - lambda_spike_amp) + np.abs(soma_dend_atten['bAp_upstroke'] - lambda_upstroke) + np.abs(soma_dend_atten['hyperpol'] - lambda_hyperpol_amp))
 
