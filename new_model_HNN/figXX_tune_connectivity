@@ -1,0 +1,49 @@
+""""Tuning connectivity in duecker_ET_model"""
+
+import matplotlib.pyplot as plt
+import numpy as np
+from hnn_core import duecker_ET_model, simulate_dipole, jones_2009_model, MPIBackend
+from hnn_core.params import compare_dictionaries
+from hnn_core.viz import plot_cell_morphology
+
+# import pandas as pd
+from scipy import signal
+from matplotlib.gridspec import GridSpec
+import os
+import matplotlib as mpl
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+
+mainpth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/'
+pathfig = os.path.join(mainpth, 'new_model_HNN', 'figures', 'conn')
+os.makedirs(pathfig, exist_ok=True)
+pathpaper = os.path.join(mainpth, 'methods_paper')
+
+import sys
+sys.path.append(mainpth)
+from general_plot_utils import assign_color, get_cmap_neurons
+
+from scipy.interpolate import RectBivariateSpline
+from hnn_core.extracellular import _get_laminar_z_coords, calculate_csd2d
+from hnn_core.viz import plot_laminar_csd
+
+from conn_plot_utils import find_basal_rheo, plot_rheo
+
+## 1. Comparison of rheobase between duecker_ET_model and jones_2009_model
+
+# find rheobase Jones model
+net = jones_2009_model(mesh_shape=(1,1))
+net.clear_connectivity()
+
+rheo_jones = find_basal_rheo(net)
+
+# find rheobase Duecker ET model
+net = duecker_ET_model(mesh_shape=(1,1))
+net.clear_connectivity()
+rheo_duecker = find_basal_rheo(net)
+
+# Plot rheobase comparison
+fig, ax = plt.subplots(2,3, figsize=(8, 4))
+
+ax[0] = plot_rheo(net, rheo_jones, ax[0])
+ax[1] = plot_rheo(net, rheo_duecker, ax[1])
