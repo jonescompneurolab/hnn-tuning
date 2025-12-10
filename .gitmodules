@@ -2,3 +2,6 @@
 	path = local_hnn
 	url = https://github.com/katduecker/hnn-core
 	branch = new_model
+[submodule "hnn-core"]
+	path = hnn-core
+	url = https://github.com/katduecker/hnn-core
