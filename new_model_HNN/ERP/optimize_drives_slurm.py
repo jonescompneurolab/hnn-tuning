@@ -7,15 +7,119 @@ import matplotlib.pyplot as plt
 import hnn_core
 from hnn_core.params import _short_name
 
-from hnn_core import duecker_ET_model, simulate_dipole, read_dipole, MPIBackend
+from hnn_core import duecker_ET_model, simulate_dipole, read_dipole, MPIBackend, average_dipoles
 from hnn_core.optimization import Optimizer
+
 import numpy as np
 
 import pickle
 hnn_core_root = op.join(op.dirname(hnn_core.__file__))
+from scipy.stats import pearsonr
 
 pathfig = os.path.join(os.getcwd(), 'figures')
-#os.mkdir(pathfig)
+pathgen = '/users/kduecker/hnn-data/'
+
+def _rmse_corr(dpl, exp_dpl):
+
+    """Calculates RMSE between data in dpl and exp_dpl
+    weighted by correlation
+    Parameters
+    ----------
+    dpl : instance of Dipole
+        A dipole object with simulated data
+    exp_dpl : instance of Dipole
+        A dipole object with experimental data
+
+    Returns
+    -------
+    err : float
+        Weighted RMSE between data in dpl and exp_dpl
+    """
+    from scipy import signal
+
+    exp_start_index = exp_dpl.times.argmin()
+    exp_end_index = exp_dpl.times.argmax()
+    exp_length = exp_end_index - exp_start_index + 1
+
+    sim_start_index = dpl.times.argmin()
+    sim_end_index = dpl.times.argmax()
+    sim_length = sim_end_index - sim_start_index + 1
+
+
+    dpl1 = dpl.data["agg"]
+    dpl2 = exp_dpl.data["agg"]
+
+    if sim_length > exp_length:
+        # downsample simulation timeseries to match exp data
+        dpl1 = signal.resample(dpl1, exp_length)
+    elif sim_length < exp_length:
+        # downsample exp timeseries to match simulation data
+        dpl2 = signal.resample(dpl2, sim_length)
+
+    rmse = np.sqrt(((dpl1 - dpl2) ** 2).mean())
+    sig_corr = pearsonr(dpl1, dpl2)[0]
+
+    return rmse*(2-sig_corr)
+
+def rmse_evk_corr(
+    initial_net,
+    initial_params,
+    set_params,
+    predicted_params,
+    update_params,
+    obj_values,
+    tstop,
+    obj_fun_kwargs,
+):
+    """The objective function for evoked responses.
+
+    Parameters
+    ----------
+    initial_net : instance of Network
+        The network object.
+    initial_params : dict
+        Keys are parameter names, values are initial parameters.
+    set_params : func
+        User-defined function that sets network drives and parameters.
+    predicted_params : list
+        Parameters selected by the optimizer.
+    update_params : func
+        Function to update params.
+    tstop : float
+        The simulated dipole's duration.
+    target : instance of Dipole
+        A dipole object with experimental data.
+    n_trials : int
+        Number of trials to simulate and average.
+
+    Returns
+    -------
+    obj : float
+        Normalized RMSE between recorded and simulated dipole.
+    """
+
+    params = update_params(initial_params, predicted_params)
+
+    # simulate dpl with predicted params
+    new_net = initial_net.copy()
+    set_params(new_net, params)
+
+    if 'bsl_cor' in obj_fun_kwargs:
+        dpls = simulate_dipole(new_net, tstop=tstop, n_trials=obj_fun_kwargs["n_trials"], bsl_cor=obj_fun_kwargs['bsl_cor'])
+    else:
+        dpls = simulate_dipole(new_net, tstop=tstop, n_trials=obj_fun_kwargs["n_trials"])
+
+    # smooth & scale
+    if "scale_factor" in obj_fun_kwargs:
+        [dpl.scale(obj_fun_kwargs["scale_factor"]) for dpl in dpls]
+    if "smooth_window_len" in obj_fun_kwargs:
+        [dpl.smooth(obj_fun_kwargs["smooth_window_len"]) for dpl in dpls]
+
+    dpl = average_dipoles(dpls)
+    obj = _rmse_corr(dpl, obj_fun_kwargs["target"])
+    obj_values.append(obj)
+
+    return obj
 
 def set_params(net, params):
 
@@ -41,16 +145,16 @@ def set_params(net, params):
                        params['prox1_nmda_L5_pyramidal']}
     
     net.add_evoked_drive('prox1',
-                         mu=16.,
-                         sigma=2.5,
-                         numspikes=2,
+                         mu=18.5,
+                         sigma=4.5,
+                         numspikes=1,
                          location='proximal',
                          weights_ampa=weights_ampa_p1,
                          weights_nmda=weights_nmda_p1,
-                         synaptic_delays=synaptic_delays_p, event_seed=544)
+                         synaptic_delays=synaptic_delays_p)
 
     # Distal
-    synaptic_delays_d = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 1.}
+    synaptic_delays_d = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 0.1}
     
     weights_ampa_d = {'L2_basket':
                        params['dist_ampa_L2_basket'],
@@ -67,13 +171,13 @@ def set_params(net, params):
     
 
     net.add_evoked_drive('dist',
-                         mu=56.5,
-                        sigma=2.5,
-                        numspikes=3,
+                         mu=55.5,
+                        sigma=6.5,
+                        numspikes=1,
                          location='distal',
                          weights_ampa=weights_ampa_d,
                          weights_nmda=weights_nmda_d,
-                         synaptic_delays=synaptic_delays_d, event_seed=544)
+                         synaptic_delays=synaptic_delays_d)
 
 
     weights_ampa_p2 = {'L2_basket':
@@ -95,77 +199,105 @@ def set_params(net, params):
     
     net.add_evoked_drive('prox2',
                         mu=95,
-                        sigma=10,
-                        numspikes=3,
+                        sigma=12,
+                        numspikes=2,
                         location='proximal',
                         weights_ampa=weights_ampa_p2,
                         weights_nmda=weights_nmda_p2,
-                        synaptic_delays=synaptic_delays_p, event_seed=544)
+                        synaptic_delays=synaptic_delays_p)
     
     delay = net.delay
 
 def optimize_drives(max_iter=1, n_procs=1, scale_factor=1000, smooth_window_len=5):
 
-    data_url = '/oscar/home/kduecker/hnn-tuning/hnn-data/MEG_detection_data/S1_SupraT.txt'  # Added data loading
+    data_url = f'{pathgen}MEG_detection_data/S1_SupraT.txt'
     exp_dpl = read_dipole(data_url)
 
     tstop = exp_dpl.times[-1]
 
 
-    constraints = dict({'prox1_ampa_L2_basket': (0.01, 0.03),
-                    'prox1_ampa_L2_pyramidal': (0.1, 0.3),
-                    'prox1_ampa_L5_basket': (0.001, 0.1),
-                    'prox1_ampa_L5_pyramidal': (0.001, 0.01),
+    constraints = dict({'prox1_ampa_L2_basket': (0.001, 0.01),
+                    'prox1_ampa_L2_pyramidal': (0.04, 0.3),
+                    'prox1_ampa_L5_basket': (0.00005, 0.0005),
+                    'prox1_ampa_L5_pyramidal': (0.0005, 0.003),
 
-                    'prox1_nmda_L2_basket': (0.0001, 0.0003),
-                    'prox1_nmda_L2_pyramidal': (0.001, 0.1),
-                    'prox1_nmda_L5_basket': (0.003, 0.005),
-                    'prox1_nmda_L5_pyramidal': (0.001, 0.003),
+                    'prox1_nmda_L2_basket': (0.001, 0.01),
+                    'prox1_nmda_L2_pyramidal': (0.001, 0.01),
+                    'prox1_nmda_L5_basket': (0.00001, 0.0001),
+                    'prox1_nmda_L5_pyramidal': (0.0001, .001),
 
-                    'dist_ampa_L2_basket': (0.0001, 0.01),
+                    'dist_ampa_L2_basket': (0.001, 0.01),
                     'dist_ampa_L2_pyramidal': (0.01, .1),
-                    'dist_ampa_L5_pyramidal': (0.05, 1.),
+                    'dist_ampa_L5_pyramidal': (0.1, 1.),
 
-                    'dist_nmda_L2_basket': (0.0001, 0.0005),
-                    'dist_nmda_L2_pyramidal': (0.0005, .1),
-                    'dist_nmda_L5_pyramidal': (0.1, 1.),
+                    'dist_nmda_L2_basket': (0.0, 0.0005),
+                    'dist_nmda_L2_pyramidal': (0.0005, .02),
+                    'dist_nmda_L5_pyramidal': (0.1, .6),
 
-                    'prox2_ampa_L2_basket': (0.0005, .01),
-                    'prox2_ampa_L2_pyramidal': (0.001, 1.),
-                    'prox2_ampa_L5_basket': (0.0001, .1),
-                    'prox2_ampa_L5_pyramidal': (0.1, .5),
+                    'prox2_ampa_L2_basket': (0.001, .2),
+                    'prox2_ampa_L2_pyramidal': (0.1, 1.),
+                    'prox2_ampa_L5_basket': (0.005, .1),
+                    'prox2_ampa_L5_pyramidal': (0.1, 1.),
 
-                    'prox2_nmda_L2_basket': (0.0001, 0.04),
-                    'prox2_nmda_L2_pyramidal': (0.01, 0.5),
-                    'prox2_nmda_L5_basket': (0.00005, 0.01),
-                    'prox2_nmda_L5_pyramidal': (0.1, 1.)})
+                    'prox2_nmda_L2_basket': (0.001, 0.04),
+                    'prox2_nmda_L2_pyramidal': (0.01, 0.3),
+                    'prox2_nmda_L5_basket': (0.00005, 0.001),
+                    'prox2_nmda_L5_pyramidal': (0.05, 0.5)})
 
-    net = duecker_2025_ET_model()
+    initial_params = dict({'prox1_ampa_L2_basket': 0.0025,
+                    'prox1_ampa_L2_pyramidal': 0.15,
+                    'prox1_ampa_L5_basket': 0.00015,
+                    'prox1_ampa_L5_pyramidal': 0.0015,
+
+                    'prox1_nmda_L2_basket': 0.0025,
+                    'prox1_nmda_L2_pyramidal': 0.005,
+                    'prox1_nmda_L5_basket': 0.00005,
+                    'prox1_nmda_L5_pyramidal': .0005,
+
+                    'dist_ampa_L2_basket': 0.005,
+                    'dist_ampa_L2_pyramidal': 0.05,
+                    'dist_ampa_L5_pyramidal': 0.6,
+
+                    'dist_nmda_L2_basket': 0.0,
+                    'dist_nmda_L2_pyramidal': 0.015,
+                    'dist_nmda_L5_pyramidal': 0.35,
+
+                    'prox2_ampa_L2_basket': 0.05,
+                    'prox2_ampa_L2_pyramidal': 0.75,
+                    'prox2_ampa_L5_basket': 0.03,
+                    'prox2_ampa_L5_pyramidal': 0.7,
+
+                    'prox2_nmda_L2_basket': 0.01,
+                    'prox2_nmda_L2_pyramidal': 0.1,
+                    'prox2_nmda_L5_basket': 0.0003,
+                    'prox2_nmda_L5_pyramidal':  0.2})
+
+    net = duecker_ET_model()
 
     optim = Optimizer(net, tstop=tstop, constraints=constraints,
-                    set_params=set_params, solver='bayesian', obj_fun='dipole_rmse', max_iter=max_iter)
+                    set_params=set_params, solver='bayesian', obj_fun=rmse_evk_corr, max_iter=max_iter, initial_params=initial_params)
 
     with MPIBackend(n_procs=n_procs, mpi_cmd='mpiexec'):
-        optim.fit(target=exp_dpl, scale_factor=scale_factor, n_trials=1,
-                smooth_window_len=smooth_window_len, bsl_cor='calcium')
+        optim.fit(target=exp_dpl, scale_factor=scale_factor, n_trials=5,
+                smooth_window_len=smooth_window_len, bsl_cor='duecker')
 
-    opt_dpl = simulate_dipole(optim.net_, tstop=tstop, n_trials=1, bsl_cor='calcium')[0]  # Added simulation
+    opt_dpl = simulate_dipole(optim.net_, tstop=tstop, n_trials=1, bsl_cor='duecker')[0]  # Added simulation
     opt_dpl.scale(scale_factor)
     opt_dpl.smooth(smooth_window_len)
 
-    with open(f'optim_drives_{scale_factor}.pkl', 'wb') as file:
+    with open(f'optim_drives_{scale_factor}_nmdamodel.pkl', 'wb') as file:
             pickle.dump(optim, file)
-    with open(f'dpl_drives_{scale_factor}.pkl', 'wb') as file:
+    with open(f'dpl_drives_{scale_factor}_nmdamodel.pkl', 'wb') as file:
             pickle.dump(opt_dpl, file)
         
 def set_params_time(scale_factor, net, params):
 
     synaptic_delays_p = {'L2_basket': 0.1, 'L2_pyramidal': 0.1,
                         'L5_basket': 1., 'L5_pyramidal': 1.}
-    synaptic_delays_d = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 1.}
+    synaptic_delays_d = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 0.1}
 
 
-    with open(f'optim_drives_{scale_factor}.pkl', 'rb') as file:
+    with open(f'optim_drives_{scale_factor}_nmdamodel.pkl', 'rb') as file:
         optim_drives = pickle.load(file)
 
     prox2_weights_ampa = optim_drives.net_.external_drives['prox2']['weights_ampa']
@@ -186,7 +318,7 @@ def set_params_time(scale_factor, net, params):
                          location='proximal',
                          weights_ampa=prox1_weights_ampa,
                          weights_nmda=prox1_weights_nmda,
-                         synaptic_delays=synaptic_delays_p, event_seed=544)
+                         synaptic_delays=synaptic_delays_p)
 
     # Distal
     
@@ -197,7 +329,7 @@ def set_params_time(scale_factor, net, params):
                          location='distal',
                          weights_ampa=dist_weights_ampa,
                          weights_nmda=dist_weights_nmda,
-                         synaptic_delays=synaptic_delays_d, event_seed=544)
+                         synaptic_delays=synaptic_delays_d)
     
     net.add_evoked_drive('prox2',
                         mu=params['prox2_mu'],
@@ -206,7 +338,7 @@ def set_params_time(scale_factor, net, params):
                         location='proximal',
                         weights_ampa=prox2_weights_ampa,
                         weights_nmda=prox2_weights_nmda,
-                        synaptic_delays=synaptic_delays_p, event_seed=544)
+                        synaptic_delays=synaptic_delays_p)
     
     delay = net.delay
 
@@ -214,34 +346,42 @@ def set_params_time(scale_factor, net, params):
 
 def optimize_time(max_iter=1, n_procs=1, scale_factor=1000, smooth_window_len=5):
 
-    data_url = '/oscar/home/kduecker/hnn-tuning/hnn-data/MEG_detection_data/S1_SupraT.txt'
+    data_url = f'{pathgen}MEG_detection_data/S1_SupraT.txt'
     exp_dpl = read_dipole(data_url)
     tstop = exp_dpl.times[-1]
 
-    constraints = dict({'dist_mu': (57, 62),
-                    'dist_sigma': (2, 3),
-                    'dist_num_spikes': (1, 6),
-                    'prox2_mu': (94, 120),
-                    'prox2_sigma': (8, 12),
-                    'prox2_num_spikes': (1, 13)})
+    constraints = dict({'dist_mu': (53, 62),
+                    'dist_sigma': (3, 8),
+                    'dist_num_spikes': (1, 2),
+                    'prox2_mu': (90, 100),
+                    'prox2_sigma': (5, 15),
+                    'prox2_num_spikes': (1, 3)})
 
-    net = duecker_2025_ET_model()
+    initial_params = dict({'dist_mu': 55.5,
+                    'dist_sigma': 6.5,
+                    'dist_num_spikes': 1,
+                    'prox2_mu': 95,
+                    'prox2_sigma': 12,
+                    'prox2_num_spikes': 2})
+
+    net = duecker_ET_model()
     set_par = partial(set_params_time,scale_factor)
     optim_time = Optimizer(net, tstop=tstop, constraints=constraints,
-                    set_params=set_par, solver='bayesian', obj_fun='dipole_rmse', max_iter=max_iter)
+                    set_params=set_par, solver='bayesian', obj_fun=rmse_evk_corr, max_iter=max_iter, initial_params=initial_params)
+                    
     with MPIBackend(n_procs=n_procs, mpi_cmd='mpiexec'):
-        optim_time.fit(target=exp_dpl, scale_factor=scale_factor, n_trials=1,
-                smooth_window_len=smooth_window_len, bsl_cor='calcium')
+        optim_time.fit(target=exp_dpl, scale_factor=scale_factor, n_trials=5,
+                smooth_window_len=smooth_window_len, bsl_cor='duecker')
 
     with MPIBackend(n_procs=n_procs, mpi_cmd='mpiexec'):
-        opt_dpl = simulate_dipole(optim_time.net_, tstop=tstop, n_trials=1, bsl_cor='calcium')[0]
+        opt_dpl = simulate_dipole(optim_time.net_, tstop=tstop, n_trials=1, bsl_cor='duecker')[0]
 
     opt_dpl.scale(scale_factor)
     opt_dpl.smooth(smooth_window_len)
 
-    with open(f'optim_time_scale_{scale_factor}.pkl', 'wb') as file:
+    with open(f'optim_time_{scale_factor}_nmdamodel.pkl', 'wb') as file:
         pickle.dump(optim_time, file)
-    with open(f'dpl_time_{scale_factor}.pkl', 'wb') as file:
+    with open(f'dpl_time_{scale_factor}_nmdamodel.pkl', 'wb') as file:
         pickle.dump(opt_dpl, file)
 
 
