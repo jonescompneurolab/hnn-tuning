@@ -40,6 +40,7 @@ class Mechs:
         for sec_name in basal_sections:
             cell._nrn_sections[sec_name].insert('extracellular')
             for i, m in enumerate(mechs):
+                print(m)
                 cell._nrn_sections[sec_name].insert(m)
                 for seg in cell._nrn_sections[sec_name]:
                     if m == 'pas':
