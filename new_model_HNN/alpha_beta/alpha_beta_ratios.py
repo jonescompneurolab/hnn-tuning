@@ -9,8 +9,8 @@ from alpha_beta_complex import run_alpha_beta_complex_simulations, sim_analysis_
 
 # custom scripts and paths
 import sys
-sys.path.append('/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_model_HNN/')
-main_pth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_model_HNN/alpha_beta/'
+sys.path.append('/users/kduecker/hnn-tuning/new_model_HNN/')
+main_pth = '/users/kduecker/hnn-tuning/new_model_HNN/alpha_beta/'
 out_pth = op.join(main_pth, 'sim_results')
 os.makedirs(out_pth, exist_ok=True)
 

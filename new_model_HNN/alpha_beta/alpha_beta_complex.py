@@ -17,19 +17,16 @@ from hnn_core import MPIBackend, JoblibBackend
 from hnn_core.dipole import _rmse
 from hnn_core.params import _short_name
 
-from hnn_core import duecker_2025_ET_model, simulate_dipole, jones_2009_model
+from hnn_core import duecker_ET_model, simulate_dipole, jones_2009_model
 from hnn_core.externals.mne import tfr_array_morlet
 from hnn_core.viz import plot_dipole, plot_psd, plot_tfr_morlet
 
 # custom scripts and paths
 import sys
-sys.path.append('/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_model_HNN/')
-main_pth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_model_HNN/alpha_beta/'
+sys.path.append('/users/kduecker/hnn-tuning/new_model_HNN/new_model_HNN/')
+main_pth = '/users/kduecker/hnn-tuning/new_model_HNN/new_model_HNN/alpha_beta/'
 out_pth = op.join(main_pth, 'sim_results')
 os.makedirs(out_pth, exist_ok=True)
-
-from optim_utils import set_params
-
 
 ## Set up parameters for simulations
 
@@ -55,7 +52,7 @@ def sim_analysis_params_default():
     # simulation parameters
     params['tstop'] = 1000.  # ms
     params['burst_std_prox'] = 20 # Jones 2009: input bursts variance = 400
-    params['burst_std_dist'] = 20
+    params['burst_std_dist'] = 15
     params['default_ff_fb_seeds'] = (180, 120)  # seeds
     params['weights_ampa_p'] = {'L2_basket': 0.0, 'L2_pyramidal': 2.5e-4, 'L5_pyramidal': 2.5e-4, 'L5_basket': 0.0} # proximal weights
     params['weights_ampa_d'] = {'L2_basket': 0, 'L5_pyramidal': 2.5e-4*4, 'L2_pyramidal': 2.5e-4*4} # distal weights
@@ -67,7 +64,7 @@ def sim_analysis_params_default():
     params['nperseg_div'] = 4
     params['noverlap_div'] = 6
 
-    params['fb_delay'] = 10
+    params['fb_delay'] = 3
 
     params['n_procs'] = 10
 
@@ -79,7 +76,7 @@ def sim_analysis_params_default():
 def run_alpha_beta_complex_simulations(params):
     """Run alpha-beta complex simulations"""
 
-    net = duecker_2025_ET_model()
+    net = duecker_ET_model()
 
     if params.get('prox_seed') is None:
         params['prox_seed'] = params['default_ff_fb_seeds'][0]
