@@ -35,7 +35,7 @@ def attenuation_from_section(model, ref_sect, section_names, amp, stim_dur, ax, 
     
     #section_oi = section_names.copy()
     if ref_sect == 'apical_tuft':
-        section_oi = section_names
+        section_oi = section_names[::-1]
     else:
         section_oi = [section for section in section_names if section != ref_sect]
 
@@ -45,6 +45,7 @@ def attenuation_from_section(model, ref_sect, section_names, amp, stim_dur, ax, 
     distance = []
     
     for s, section in enumerate(section_oi):
+        print(f'ref section: {ref_sect}, recording from section: {section}')
         for sg, seg in enumerate(model._nrn_sections[section]):
 
             dend_voltg.append(h.Vector().record(model._nrn_sections[section](seg.x)._ref_v))
@@ -113,7 +114,7 @@ def attenuation_from_section(model, ref_sect, section_names, amp, stim_dur, ax, 
 
 def plot_attenuation(cols_dist, model_name='l2pyr', ref_sect='soma', epsp=False, amp_hyperpol=-2, amp_spike=2):
     
-    fig, ax = plt.subplots(1,5, figsize=(16,3), constrained_layout=True)
+    fig, ax = plt.subplots(1,5, figsize=(17, 2.5), constrained_layout=True)
 
     if model_name == 'l2pyr':
         model = get_l2pyr()
@@ -128,10 +129,12 @@ def plot_attenuation(cols_dist, model_name='l2pyr', ref_sect='soma', epsp=False,
     popt, pcov = curve_fit(exp_decay, np.array(elec_sep), np.array(hyperpol_atten), p0=[100, hyperpol_atten[0] ])
     lambda_hyperpol = popt[0]
 
-    ax[1].plot(elec_sep, hyperpol_atten, 'o', color='k')
-    ax[1].set_xlabel('distance from soma ($\mu m$)')
+    ax[1].plot(elec_sep, hyperpol_atten, 'o', color='w', markeredgecolor='k', markersize=7)
+    ax[1].set_xlim(np.floor(elec_sep[0]), np.round(elec_sep[-1]+100, -2))
+    ax[1].set_xticks(np.linspace(0, np.round(elec_sep[-1]+100, -2), 3))
+    ax[1].set_xlabel(f'distance from {ref_sect} ($\mu m$)')
     ax[1].set_ylabel('hyperpolarization attenuation (%)')
-
+    ax[1].set_ylim(0, 101)
     ax[1].plot(elec_sep, exp_decay(np.array(elec_sep), *popt), color='k')
     ax[1].text(300, 70, f'lamba_hyperpol={lambda_hyperpol:.2f}') # Gidon 2020 475
     # spike attenuation
@@ -143,20 +146,24 @@ def plot_attenuation(cols_dist, model_name='l2pyr', ref_sect='soma', epsp=False,
         raise ValueError('model must be either "l2pyr" or "l5pyr"')
     spike_amp, _, upstroke, ax[2] = attenuation_from_section(model, ref_sect, section_names, amp=2, stim_dur=5,ax=ax[2], cols_dist=cols_dist, epsp=epsp)
 
-    ax[3].plot(elec_sep, spike_amp, 'o', color='k')
+    ax[3].plot(elec_sep, spike_amp, 'o', color='w', markeredgecolor='k', markersize=7)
+    ax[3].set_xlim(np.floor(elec_sep[0]), np.round(elec_sep[-1]+100, -2))
+    ax[3].set_xticks(np.linspace(0, np.round(elec_sep[-1]+100, -2), 3))
     popt, pcov = curve_fit(exp_decay, np.array(elec_sep), np.array(spike_amp), p0=[100, spike_amp[0] ])
     lambda_spike_amp = popt[0]
     ax[3].plot(elec_sep, exp_decay(np.array(elec_sep), *popt), color='k')
     ax[3].text(300, 70, f'lamba_bAP={lambda_spike_amp:.2f}') # Gidon 2020, 290
 
-    ax[3].set_xlabel('distance from soma ($\mu m$)')
+    ax[3].set_xlabel(f'distance from {ref_sect} ($\mu m$)')
     ax[3].set_ylabel('spike amplitude (mV)')
 
     ax[2].set_xlim([0, 60])
     ax[3].set_yticks(np.arange(0, 101, 25))
 
 
-    ax[4].plot(elec_sep, upstroke, 'o', color='k')
+    ax[4].plot(elec_sep, upstroke, 'o', color='w', markeredgecolor='k', markersize=7)
+    ax[4].set_xlim(np.floor(elec_sep[0]), np.round(elec_sep[-1]+100, -2))
+    ax[4].set_xticks(np.linspace(0, np.round(elec_sep[-1]+100, -2), 3))
     popt, pcov = curve_fit(exp_decay, np.array(elec_sep), np.array(upstroke), p0=[100, upstroke[0] ])
     ax[4].plot(elec_sep, exp_decay(np.array(elec_sep), *popt), color='k')
     lambda_upstroke = popt[0]

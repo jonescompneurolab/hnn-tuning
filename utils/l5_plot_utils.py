@@ -2,7 +2,11 @@
 from neuron import h
 from neuron.units import ms, mV
 from scipy.signal import find_peaks
-pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/local_hnn/hnn_core/mod'
+pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/hnn-core/hnn_core/mod'
+
+import os.path as op
+pth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning'
+figpth = op.join(pth, 'new_cells_dev/figures/l5_ET_tuning/')
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,6 +39,9 @@ def get_colormap(cmap_name='inferno'):
             distance.append(h.distance(seg))
 
     im = plt.pcolormesh(np.tile(np.array(distance),(2,1)), cmap=cmap_name, vmin=0, vmax=2000)
+    cb = plt.colorbar(im, orientation='horizontal', pad=0.2)
+    cb.set_ticks([0, 1000, 2000])
+    plt.savefig(op.join(figpth, 'l5_distance_colormap.pdf'), format='pdf', dpi=300)
     plt.clf()
 
     return im, cols_dist, col_basal, cols_experiments
@@ -78,7 +85,7 @@ def get_l5pyr(v_init={'soma': -70.62820902070445,
                 'apical_trunk': -70.5815879670308,
                 'apical_1': -69.62883464685193,
                 'apical_2': -65.7496819357426,
-                'apical_tuft': -61.28751781712565}):
+                'apical_tuft': -61.28751781712565}, add_syn=None, syn_loc=None):
     
     # get paramaters
     section_params, end_pts, cell_tree = l5_params()
@@ -95,7 +102,7 @@ def get_l5pyr(v_init={'soma': -70.62820902070445,
     hotzone = [1500, 1700]
 
     l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
-    l5pyr.build()
+    l5pyr.build(add_syn=add_syn, syn_loc=syn_loc)
 
     model_params = get_model_params()
     l5pyr = mech_class.add_mechs(l5pyr, model_params, hotzone=hotzone)
@@ -268,15 +275,15 @@ def fig_caspike_critical_frequency(cols):
 
         
         ax[n, 0].plot(t.as_numpy(), np.zeros_like(t.as_numpy()), color='black', alpha=0.5, linewidth=0.5, linestyle='--')
-        ax[n, 0].plot(t, voltg[0], color=cols[n], alpha=.5, linewidth=1)
+        ax[n, 0].plot(t, voltg[0], color='k', linewidth=1)
         ax[n, 0].plot(t.as_numpy(), clamp_current*2-80, color='black', alpha=0.75, linewidth=0.75)
-        ax[n, 1].plot(t, ca[0], color=cols[n], alpha=0.5, linewidth=1)
+        ax[n, 1].plot(t, ca[0], color='k', linewidth=1)
 
         v_max = np.max(voltg[1].as_numpy())
         t_max = np.argmax(voltg[1].as_numpy())
         ax[n, 0].text(t[t_max], v_max, f'{v_max:.2f}', fontsize=8)
-        ax[n, 0].plot(t, voltg[1], color=cols[n], alpha=1, linewidth=1)
-        ax[n, 1].plot(t, ca[1], label=f'{num_pulse} pulses, {time_diff[n]} ms apart', color=cols[n], alpha=1, linewidth=1)
+        ax[n, 0].plot(t, voltg[1], color='#5c72b7', alpha=1, linewidth=1)
+        ax[n, 1].plot(t, ca[1], label=f'{num_pulse} pulses, {time_diff[n]} ms apart', color='#5c72b7', alpha=1, linewidth=1)
         
         ax[n, 0].set_xlim([15, 90])
         ax[n, 1].set_yticks(np.arange(0, 0.0005, 0.0001))
@@ -360,15 +367,15 @@ def fig_caspike_coincidence(cols):
             # ax[n, 1].plot(t.as_numpy(), c, color=col, alpha=0.75, linewidth=1)
 
         ax[n, 0].plot(t.as_numpy(), np.zeros_like(t.as_numpy()), color='black', alpha=0.5, linewidth=0.5, linestyle='--')
-        ax[n, 0].plot(t, voltg[0], color=cols[n], alpha=0.5, linewidth=1)
+        ax[n, 0].plot(t, voltg[0], color='k', linewidth=1)
 
         v_max = np.max(voltg[1].as_numpy())
         t_max = np.argmax(voltg[1].as_numpy())
         ax[n, 0].text(t[t_max], v_max, f'{v_max:.2f}', fontsize=8)
-        ax[n, 0].plot(t, voltg[1], color=cols[n], alpha=1, linewidth=1)
+        ax[n, 0].plot(t, voltg[1], color='#5c72b7', alpha=1, linewidth=1)
 
-        ax[n, 1].plot(t, ca[0], color=cols[n], alpha=0.5, linewidth=1)
-        ax[n, 1].plot(t, ca[1], color=cols[n], alpha=1, linewidth=1)
+        ax[n, 1].plot(t, ca[0], color='k', linewidth=1)
+        ax[n, 1].plot(t, ca[1], color='#5c72b7', alpha=1, linewidth=1)
                                 
         ax[n, 0].set_xlim([15, 70])
         ax[n, 1].set_yticks(np.arange(0, 0.0005, 0.0001))
@@ -512,22 +519,28 @@ def fig_electro_measures():
             distance.append(h.distance(seg.x, sec=seg.sec)) 
 
     fig, ax = plt.subplots(1,4, figsize=(16, 3), constrained_layout=True)
-    ax[0].plot(distance, threshold, 'o', color='k',markersize=9)
+    ax[0].plot(distance, threshold, 'o', color='k',markersize=7)
     ax[0].set_ylabel('threshold (nA)')
     ax[0].set_xlabel('distance from soma ($\mu m$)')
 
-    ax[1].plot(freqs, apcl_integr, 'o', color='black', markersize=9)
+    ax[1].plot(freqs, apcl_integr, 'o', color='black', markersize=7)
     ax[1].set_xlim([np.min(freqs)-1, np.max(freqs)+1])
     ax[1].set_ylim([0.4, 1.6])
     ax[1].set_yticks([0.4, 1.0, 1.6])
     ax[1].set_ylabel('membr. pot. integral (mV$\cdot$s)')
     ax[1].set_xlabel('input frequency (Hz)')
-    ax[2].plot(distance, sag_ratio, 'o', color='k',markersize=9)
+    ax[2].plot(distance, sag_ratio, 'o', color='k',markersize=7)
     ax[2].set_ylabel('sag ratio')
     ax[2].set_xlabel('distance from soma ($\mu m$)')
-    ax[3].plot(distance, inp_res, 'o', color='k',markersize=9)
+    ax[3].plot(distance, inp_res, 'o', color='k',markersize=7)
     ax[3].set_xlabel('distance from soma ($\mu m$)')
     ax[3].set_ylabel('input resistance (M$\Omega$)')
+
+    for a in ax:
+        a.spines['top'].set_visible(False)
+        a.spines['right'].set_visible(False)
+        a.set_xlim([0, 2000])
+        a.set_xticks([0, 1000, 2000])
     
     return fig, distance
 

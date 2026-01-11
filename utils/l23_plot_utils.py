@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 from neuron.units import ms, mV
 import numpy as np
-pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/local_hnn/hnn_core/mod'
+pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/hnn-core/hnn_core/mod'
 figpth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_dev/figures/l23_tuning/'
 import os
 os.makedirs(figpth, exist_ok=True)
@@ -212,7 +212,7 @@ def plot_conductances():
             elif 'apical' in section:
                 tau_m_apcl_cf.append(tau_m_fitted)
 
-    fig, ax = plt.subplots(3,2,figsize=(8,6), constrained_layout=True)
+    fig, ax = plt.subplots(2,4,figsize=(16,6), constrained_layout=True)
     ax = ax.flatten()
     ax[0].plot(distance_apical, gbar_Ih_apical, color='k')
     ax[0].set_ylabel('$gbar_{Ih} (S/cm^2)$')
@@ -232,6 +232,8 @@ def plot_conductances():
     ax[3].set_yticks([0, 0.02, 0.04])
     ax[3].set_xlabel('distance to soma ($\mu m$)')
     ax[2].set_xlabel('distance to soma ($\mu m$)')
+    ax[1].set_xlabel('distance to soma ($\mu m$)')
+    ax[0].set_xlabel('distance to soma ($\mu m$)')
     ax[4].plot(0, inp_res_soma, 'o', color='k')
     ax[4].plot(distance_basal, inp_res_basal, 'o', color=cols_basal[0], label='basal')
     ax[4].plot(distance_oblq, inp_res_oblq, 'o', color=cols_basal[2], label='apcl oblqu')
@@ -247,7 +249,7 @@ def plot_conductances():
     ax[5].set_xlabel('distance to soma ($\mu m$)')
 
     for a in ax:
-        a.set_xlim([0, 600])
+        a.set_xlim([50, 600])
         a.spines['top'].set_visible(False)
         a.spines['right'].set_visible(False)
 

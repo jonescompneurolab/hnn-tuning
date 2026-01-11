@@ -5,11 +5,11 @@ from neuron import h
 import matplotlib.pyplot as plt
 from neuron.units import ms, mV
 import numpy as np
-pth_mod_inh = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/local_hnn/hnn_core/mod'
+pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/hnn-core/hnn_core/mod'
 pth_data = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/data/interneuron'
 figpth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_dev/figures/interneuron/'
 import os
-#os.mkdir(figpth)
+os.makedirs(figpth, exist_ok=True)
 import pickle
 plt.rcParams['svg.fonttype'] = 'none'
 
@@ -47,7 +47,7 @@ plt.rcParams['legend.fontsize'] = 16     # Legend text
 section = dict()
 section['soma'] = _get_basket_soma()
 
-mech_class = inhmechs(pth_mod_inh)
+mech_class = inhmechs(pth_mod)
 
 # Cumberland 2023 and Golomb 2007 parameters
 inh_params = {'soma': {'nas': 0.1125, 
@@ -84,7 +84,7 @@ soma_v = h.Vector().record(inh_cell._nrn_sections['soma'](0.5)._ref_v)
 h.celsius = 37
 h.dt = 0.01
 h.finitialize(-65 * mV)
-h.continuerun(200 * ms)
+h.continuerun(100 * ms)
 
 
 # RMP
@@ -92,8 +92,10 @@ ephys_measures['RMP'] = soma_v[-3]
 
 print('RMP:', ephys_measures['RMP'], flush=True)
 
-ax[0].plot(t, soma_v, color=cm_neurons[2], linewidth=2)
+ax[0].plot(t, soma_v, color=cm_neurons[0], linewidth=2)
 ax[0].plot(t.as_numpy()[-3],soma_v[-3],'o', color='k', markersize=9)
+ax[0].set_xticks([0, 20])
+#ax[0].set_yticks([0, 50])
 ax[0].set_ylabel('membrane \n potential (mV)')
 ax[0].set_xlabel('time (ms)')
 
@@ -141,10 +143,11 @@ downstroke = np.mean(np.gradient(v_np[int(ap[0]):elbow_p]))
 ap_up_down = np.abs(upstroke/downstroke)
 
 
-ax[1].plot(t, v_soma, color=cm_neurons[2], linewidth=2)
+ax[1].plot(t, v_soma, color=cm_neurons[0], linewidth=2)
 ax[1].plot(t[np.argmax(v_soma)], ap_peak, 'o', color=cols[0], markersize=9)
 ax[1].set_ylim([-85, 50])
 ax[1].set_yticks([-70,0, 50])
+ax[1].set_yticks([0, 50])
 ax[1].plot(t[ap_thresh_idx], ap_thresh, 'o', color=cols[1], markersize=9)
 ax[1].set_xlim([0, 20])
 ax[1].set_xticks([0, 10, 20])
@@ -174,10 +177,12 @@ h.celsius = 37
 h.finitialize()
 h.continuerun(1020 * ms)
 
-ax[2].plot(t,soma_v, color=cm_neurons[2], linewidth=2)
+ax[2].plot(t,soma_v, color=cm_neurons[0], linewidth=2)
 ax[2].set_xlim([0, 1000])
 ax[2].set_yticks([-70,0, 50])
 ax[2].set_ylim([-80, 50])
+ax[2].set_yticks([0, 50])
+ax[2].set_xticks([0, 200])
 ax[2].set_xlabel('time (ms)')
 
 aps = find_peaks(soma_v,height=0)[0]
@@ -219,10 +224,11 @@ for i,amp in enumerate(ampl):
     fr[i] = len(pk[0])
 
 
-ax[3].plot(ampl,fr, color=cm_neurons[2], linewidth=2)
+ax[3].plot(ampl,fr, color=cm_neurons[0], linewidth=2)
 ax[3].set_ylabel('FR (Hz)')
 ax[3].set_xlabel('amplitude (nA)')
 ax[3].set_xlim([ampl[0], ampl[-1]])
+ax[3].set_xticks([0.2, 0.4, 0.6])
 pA = 0.001 # nA (convert nA to pA)
 ephys_measures['FR_slope'] = np.polyfit(ampl,fr,1)[0]
 ephys_measures['FR_slope'] *= pA
@@ -275,7 +281,7 @@ for i, amp in enumerate(sag_stim_amp):
     popt, pcov = curve_fit(exp_func, t_rise, v_rise, p0=[2, abs(delta_v), v_rise[0]])
     tau_ms[i] = popt[0] # This is the fitted time constant in ms
 
-    ax[5].plot(t_np, v_np, color=cm_neurons[2], linewidth=2)
+    ax[5].plot(t_np, v_np, color=cm_neurons[0], linewidth=2)
     idx = np.argmin(np.abs(t_np-tau_ms[i]))
     ax[5].plot(t_np[idx+start_idx], v_np[idx+start_idx], 'o', color='k', markersize=9)
 
@@ -307,7 +313,7 @@ plt.close('all')
 measures = ['RMP', 'sag', 'mean_isi', 'first_isi', 'upstroke_downstroke', 'ap_width', 'ap_threshold', 'FR_slope', 'tau']
 label = ['resting potential (mV)', 'sag ratio', 'mean isi (ms)', 'first isi (ms)', 'upstroke/downstroke', 'AP width (ms)', 'AP threshold (mV)', 'FI slope (spikes/pA)', r'$\tau_{m}$']
 ylims = [(-85,-50), (-0.1,.4), (0, 450), (0, 450), (1, 6), (0, 2), (-75, -25), (0, 0.5), (0, 65)]
-fig, ax = plt.subplots(2,5, figsize=(22,6))
+fig, ax = plt.subplots(3,4, figsize=(12,9))
 cm_neurons = np.array([[218,166,156], [164,30,79], [119,161,187],[92,114,183]])/255
 
 ax = ax.ravel()
@@ -316,10 +322,12 @@ for i,m in enumerate(measures):
     data = inh_allen[m].dropna().values
     v = ax[i].violinplot(data, vert=True, showmeans=False,showmedians=True)
 
-    ax[i].plot(1., ephys_measures[m], 'o', color=cm_neurons[2], markersize=8)
+    ax[i].plot(1., ephys_measures[m], 'o', color=cm_neurons[0], markersize=10, markeredgecolor='#c05d4d')
     ax[i].set_ylabel(label[i])
     ax[i].spines['top'].set_visible(False)
     ax[i].spines['right'].set_visible(False)
+    ax[i].set_xticks([])
+    ax[i].spines['bottom'].set_visible(False)
 
     for pc in v['bodies']:
         pc.set_facecolor('black')

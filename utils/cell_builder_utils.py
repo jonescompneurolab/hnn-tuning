@@ -235,15 +235,6 @@ class Cell:
                         p_mech[attr] = [seg_xs, seg_vals]
         return self.sections
 
-    # def _create_synapses(self, sections, synapses):
-    #     """Create synapses."""
-    #     for sec_name in sections:
-    #         for receptor in sections[sec_name].syns:
-    #             syn_key = f'{sec_name}_{receptor}'
-    #             seg = self._nrn_sections[sec_name](0.5)
-    #             self._nrn_synapses[syn_key] = self.syn_create(
-    #                 seg, **synapses[receptor])
-    
     def _create_sections(self): 
         
         for sec_name in self.sections:
@@ -314,22 +305,26 @@ class Cell:
             mech_props[sec_name] = this_sec_prop
         return mech_props
 
-    def _create_synapses(self):
+    def _create_synapses(self, add_syn=None, syn_loc=None):
 
-        # try:
-        #     self.syn = h.Exp2Syn(self._nrn_sections['basal_2'](0.5))
-        # except Exception as e:
-        #     print('neuron does not have a basal_2 section, adding syn to soma')
-        self.syn = h.Exp2Syn(self._nrn_sections['soma'](0.5))
+        if add_syn == 'Exp2Syn':
+            self.syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
+        elif add_syn == 'NMDA_gao':
+            self.syn = h.NMDA_gao(self._nrn_sections[syn_loc](0.5))
+        elif add_syn == 'gabab':
+            self.syn = h.gabab(self._nrn_sections[syn_loc](0.5))
+            self.syn.e = -80
+            self.syn.tau1 = 45
+            self.syn.tau2 = 200
         #self.syn.tau = 2
 
-    def build(self, sec_name_apical=None, add_syn=False):
+    def build(self, sec_name_apical=None, add_syn=None, syn_loc=None):
 
         self._create_sections()
         if sec_name_apical in self._nrn_sections:
             self._insert_dipole(sec_name_apical)
-        if add_syn:
-            self._create_synapses()
+        if add_syn is not None:
+            self._create_synapses(add_syn, syn_loc=syn_loc)
 
     def _insert_dipole(self, sec_name_apical):
         """Insert dipole into each section of this cell.

@@ -5,8 +5,7 @@ from neuron import h
 import matplotlib.pyplot as plt
 from neuron.units import ms, mV
 import numpy as np
-pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/local_hnn/hnn_core/mod'
-pth_mod_inh = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/models/fs_internrn_neuron/mod'
+pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/hnn-core/hnn_core/mod'
 pth_data = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/data/l23'
 figpth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_dev/figures/l23_tuning/'
 # import os

@@ -40,7 +40,6 @@ class Mechs:
         for sec_name in basal_sections:
             cell._nrn_sections[sec_name].insert('extracellular')
             for i, m in enumerate(mechs):
-                print(m)
                 cell._nrn_sections[sec_name].insert(m)
                 for seg in cell._nrn_sections[sec_name]:
                     if m == 'pas':
@@ -52,6 +51,10 @@ class Mechs:
                             distance = h.distance(seg.x, sec=seg.sec)
                             gbar = gbar(distance)
                         setattr(seg, 'gbar_'+m, gbar)
+            cell._nrn_sections[sec_name].insert('CaDynamics_E2')
+            for seg in cell._nrn_sections[sec_name]:
+                seg.CaDynamics_E2.decay = 50
+                seg.CaDynamics_E2.gamma = .0005096
             
         # soma
         mechs = params['soma'].keys()
