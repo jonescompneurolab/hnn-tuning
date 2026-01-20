@@ -152,6 +152,8 @@ def compute_tfr(scale_dpl):
             end = len(convolved) - (wavelets[fi].size // 2)
             # take the middle values
             tfr[t, fi, :] = np.abs(convolved[start:end])**2
+    
+    tfr = tfr.astype(np.float32)
 
     return frequencies, tfr
 
