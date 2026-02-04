@@ -55,7 +55,7 @@ ephys_measures = dict()
 cm_neurons = get_colormap('inferno')[2]
 cols = np.array(([27, 158, 119], [217,95,2], [117,112,179], [231,41,138], [102,166,30]))/255
 
-
+plt.close('all')
 ## RMP
 fig, ax = plt.subplots(2, 3, width_ratios=[0.5, 0.5, 1], figsize=(16, 6), constrained_layout=True)
 ax = ax.flatten()

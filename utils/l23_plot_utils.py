@@ -56,40 +56,40 @@ def get_colormap(cmap_name='inferno'):
 def get_model_params():
 
     return {'soma': {'NaTs2_t_32d': 20_400e-4*1.2,
-                                'SKv3_1': 6_930e-4*1.5,
+                                'SKv3_1': 6_930e-4,
                                 'Nap_Et2': 1e-4/2*0,
                                 'Ca_HVA': 9.92e-04,
                                 'Ca_LVAst': 34.3e-4,
                                 
                                 'SK_E2': 3.e-05,
-                                'pas': 1.0 / 37000,
-                                'Ih': 0.000080*2,#/2,
+                                'pas': 1.0 / 15000,
+                                'Ih': 0.000080/2,
                                 'Im': 8e-3*0.05,
                                 'CaDynamics_E2': {'decay': 90, 'gamma': 0.00053300}},
                         'basal': {'NaTs2_t_32d': 0.008009,#partial(linear_gbar,0.008009/2,0,255),
                                   'SKv3_1': 0.000513,#partial(linear_gbar,0,6_930e-4*0.1,255),
-                                  'Ih': 0.00008*2,#/2,
-                                  'pas':  1.0 / 37000.0},
-                        'dend': {'NaTa_t_32d': 0.008*0.01,
-                                'SKv3_1': 0.003*4,
+                                  'Ih': 0.00008/2,
+                                  'pas':  1.0 / 13000.0},
+                        'dend': {'NaTa_t_32d': 0.008*0.0001,
+                                'SKv3_1': 0.003*3,
                                 'Ca_HVA': partial(linear_gbar, 0.00001, 0.002, 200, hotzone=[200, 400], hotzone_factor=4),#0.0013791999171895088/10,
                                 'Ca_LVAst': partial(linear_gbar, 0.0000001, 0.001, 200, hotzone=[200, 400], hotzone_factor=4),
-                                'pas': 1.0 /37000,
+                                'pas': 1.0 /9000,
                                 'SK_E2': partial(linear_gbar, 3.e-06, 3.e-03, 200, hotzone=[200, 400], hotzone_factor=10), #3.547577318022417e-05,
                                 'Ih': partial(Ih_condu_hay, 0.00008),
                                 'Im': 0.0009*0.0001,
-                                'CaDynamics_E2': {'decay': 70, 'gamma': 0.00053300*2.5}},
+                                'CaDynamics_E2': {'decay': 50, 'gamma': .0005096}},
                         'e_pas': -75}
 
-def get_l2pyr(v_init={'soma': -73.91534035708615,
-                    'basal_1': -73.93352687563397,
-                    'basal_2': -73.98646383934121,
-                    'basal_3': -73.98646383934121,
-                    'apical_oblique': -73.9142120929283,
-                    'apical_trunk': -73.88877758950669,
-                    'apical_1': -73.64560269252749,
-                    'apical_tuft': -73.27793049058006}):
-    
+def get_l2pyr(v_init={'soma': -73.91534035708573,
+                        'basal_1': -73.93352687563383,
+                        'basal_2': -73.98646383934111,
+                        'basal_3': -73.98646383934111,
+                        'apical_oblique': -73.91421209292815,
+                        'apical_trunk': -73.88877758950657,
+                        'apical_1': -73.64560269252748,
+                        'apical_tuft': -73.27793049058045}):
+                
     model_params = get_model_params()
     
     # get paramaters

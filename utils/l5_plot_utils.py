@@ -128,17 +128,22 @@ def fig_conductances(col_basal, cell_type='ET'):
 
     fig, ax = plt.subplots(2,3,figsize=(11,5))
     ax[0,0].plot(distance_apical, gbar_Ih_apical, color='k')
+    ax[0,0].set_ylim([0.0,0.05])
+    ax[0,0].set_yticks([0.0,0.025,0.05])
     ax[0,0].set_ylabel('$gbar_{Ih} (S/cm^2)$')
     ax[0,0].set_xlabel('distance to soma ($\mu m$)')
 
     ax[0,1].plot(distance_apical, gbar_Ca_HVA_apical, color='k')
     ax[0,1].set_ylabel('$gbar_{Ca_{HVA}} (S/cm^2)$')
     ax[0,1].set_xlabel('distance to soma ($\mu m$)')
-
+    ax[0,1].set_ylim([0.0,0.0008])
+    ax[0,1].set_yticks([0.0,0.0008/2,0.0008])
 
     ax[0,2].plot(distance_apical, gbar_Ca_LVA_apical, color='k')
     ax[0,2].set_ylabel('$gbar_{Ca_{LVA}} (S/cm^2)$')
     ax[0,2].set_xlabel('distance to soma ($\mu m$)')
+    ax[0,2].set_ylim([0.0,0.0003])
+    ax[0,2].set_yticks([0.0,0.0003/2,0.0003])
 
     for a in ax[0]:
         a.set_xlim([0, 2000])
@@ -211,12 +216,12 @@ def fig_conductances(col_basal, cell_type='ET'):
         ax[1,2].plot(dist, amp, 'o', color=col_basal[s], alpha=0.5, label=section)
         ax[1,2].set_xlabel('distance from soma')
         ax[1,2].set_ylabel('BAP amplitude (mV)')
-        
+        ax[1,2].set_ylim([70, 90])
+        ax[1,2].set_yticks([70, 80, 90])
         ax12_tw.plot(dist, amp_percent, 'o', color=col_basal[s], alpha=0.01)
-        
-        
-        # ax[1,2].set_ylim([50, 90])
-        # ax[1,2].set_yticks(np.arange(50, 91, 10))
+        ax12_tw.set_ylim([60, 80])
+        ax12_tw.set_yticks([60, 70, 80])
+
         ax[1,2].legend()
 
         for a in ax[1]:
@@ -307,9 +312,91 @@ def fig_caspike_critical_frequency(cols):
 
     return fig
 
+def fig_ca_spike_measures():
+
+    fig, ax = plt.subplots(1,2, figsize=(8,2), constrained_layout=True)
+
+    # depolarization integral
+    time_diff = np.linspace(17, 7, 10)
+    freqs = np.zeros_like(time_diff)
+    apcl_integr = np.zeros_like(time_diff)
+    for n, td in enumerate(time_diff):
+        
+        l5pyr = get_l5pyr()
+
+        t = h.Vector().record(h._ref_t)
+        num_pulse = 4
+        stim = [None]*4
+        t = h.Vector().record(h._ref_t)
+        for i in range(num_pulse):
+            stim[i] = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
+            stim[i].delay = 20+(td*i)  
+            stim[i].dur = 5
+            stim[i].amp = 3
+
+        v_apcl = h.Vector().record(l5pyr._nrn_sections['apical_tuft'](0.5)._ref_v)
+        h.celsius = 37
+        h.finitialize()
+        h.continuerun(1020 * ms)
+
+        freqs[n] = 1000/td
+        v_apcl = v_apcl.as_numpy()
+        pk = find_peaks(v_apcl, prominence=15)
+
+        apcl_integr[n] = np.sum(v_apcl-v_apcl[pk[1]['left_bases'][0]])*h.dt*0.001
+    ax[0].plot(freqs, apcl_integr, 'o', color='black', markersize=7)
+    ax[0].set_xlim([np.min(freqs)-1, np.max(freqs)+1])
+    ax[0].set_ylim([0.4, 1.6])
+    ax[0].set_yticks([0.4, 1.0, 1.6])
+    ax[0].set_ylabel('membr. pot. integral (mV$\cdot$s)')
+    ax[0].set_xlabel('input frequency (Hz)')
+
+    # input threshold
+    section_names = ['soma', 'apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']
+    l5pyr = get_l5pyr()
+    threshold = []
+    for s, section in enumerate(section_names):
+        for i, seg in enumerate(l5pyr._nrn_sections[section]):
+            tuft_mp = -70 # initialize to a value below threshold
+            amp = 0.1 # starting value for stimulation amplitude
+            
+            while tuft_mp < 0: # has MP reached critical threshold?
+                del l5pyr
+                l5pyr = get_l5pyr()
+
+                stim = h.IClamp(l5pyr._nrn_sections[section](seg.x))
+                stim.delay = 20 
+                stim.dur = 100
+                stim.amp = amp
+
+                v = h.Vector().record(l5pyr._nrn_sections[section](seg.x)._ref_v)
+                t = h.Vector().record(h._ref_t)
+
+                h.celsius = 37
+                h.finitialize()
+                h.continuerun(100 * ms)
+
+                tuft_mp =np.max(v.as_numpy())
+                amp += 0.2
+
+            threshold.append(amp)
+
+    # get distance from soma (this does not work in any of the above loops because I keep deleting l5pyr)
+    distance = []
+    h.distance(sec = l5pyr._nrn_sections['soma'])
+    for section in section_names:
+        for i, seg in enumerate(l5pyr._nrn_sections[section]):
+            distance.append(h.distance(seg.x, sec=seg.sec)) 
+
+    ax[1].plot(distance, threshold, 'o', color='k',markersize=7)
+    ax[1].set_ylabel('threshold (nA)')
+    ax[1].set_xlabel('distance from soma ($\mu m$)')
+
+    return fig
+
 def fig_caspike_coincidence(cols):
 
-    fig, ax = plt.subplots(4, 2, figsize=(4,6))
+    fig, ax = plt.subplots(4, 2, figsize=(6, 6))
 
     nums_pulse = [1, 1, 2, 1]
     pulse_sect = [['soma'], ['apical_tuft'],['soma', 'apical_tuft'], ['apical_tuft']]
@@ -377,9 +464,9 @@ def fig_caspike_coincidence(cols):
         ax[n, 1].plot(t, ca[0], color='k', linewidth=1)
         ax[n, 1].plot(t, ca[1], color='#5c72b7', alpha=1, linewidth=1)
                                 
-        ax[n, 0].set_xlim([15, 70])
+        ax[n, 0].set_xlim([15, 90])
         ax[n, 1].set_yticks(np.arange(0, 0.0005, 0.0001))
-        ax[n, 1].set_xlim([15, 70])
+        ax[n, 1].set_xlim([15, 90])
         ax[n, 0].set_yticks(np.arange(-70, 70, 20))
         ax[n, 0].set_ylim(-95, 70)
 
@@ -402,66 +489,8 @@ def fig_caspike_coincidence(cols):
 
 def fig_electro_measures():
 
-    # input threshold
-    section_names = ['soma', 'apical_trunk', 'apical_1', 'apical_2', 'apical_tuft']
     l5pyr = get_l5pyr()
-    threshold = []
-    for s, section in enumerate(section_names):
-        for i, seg in enumerate(l5pyr._nrn_sections[section]):
-            tuft_mp = -70 # initialize to a value below threshold
-            amp = 0.1 # starting value for stimulation amplitude
-            
-            while tuft_mp < 0: # has MP reached critical threshold?
-                del l5pyr
-                l5pyr = get_l5pyr()
-
-                stim = h.IClamp(l5pyr._nrn_sections[section](seg.x))
-                stim.delay = 20 
-                stim.dur = 100
-                stim.amp = amp
-
-                v = h.Vector().record(l5pyr._nrn_sections[section](seg.x)._ref_v)
-                t = h.Vector().record(h._ref_t)
-
-                h.celsius = 37
-                h.finitialize()
-                h.continuerun(100 * ms)
-
-                tuft_mp =np.max(v.as_numpy())
-                amp += 0.2
-
-            threshold.append(amp)
-
-
-    # depolarization integral
-    time_diff = np.linspace(17, 7, 10)
-    freqs = np.zeros_like(time_diff)
-    apcl_integr = np.zeros_like(time_diff)
-    for n, td in enumerate(time_diff):
-        
-        l5pyr = get_l5pyr()
-
-        t = h.Vector().record(h._ref_t)
-        num_pulse = 4
-        stim = [None]*4
-        t = h.Vector().record(h._ref_t)
-        for i in range(num_pulse):
-            stim[i] = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
-            stim[i].delay = 20+(td*i)  
-            stim[i].dur = 5
-            stim[i].amp = 3
-
-        v_apcl = h.Vector().record(l5pyr._nrn_sections['apical_tuft'](0.5)._ref_v)
-        h.celsius = 37
-        h.finitialize()
-        h.continuerun(1020 * ms)
-
-        freqs[n] = 1000/td
-        v_apcl = v_apcl.as_numpy()
-        pk = find_peaks(v_apcl, prominence=15)
-
-        apcl_integr[n] = np.sum(v_apcl-v_apcl[pk[1]['left_bases'][0]])*h.dt*0.001
-
+    
     # Voltage sag as a function of distance (Beaulieu-Laroche et al. 2018)
     amp = -.5
     sag_ratio = []
@@ -518,23 +547,14 @@ def fig_electro_measures():
         for i, seg in enumerate(l5pyr._nrn_sections[section]):
             distance.append(h.distance(seg.x, sec=seg.sec)) 
 
-    fig, ax = plt.subplots(1,4, figsize=(16, 3), constrained_layout=True)
-    ax[0].plot(distance, threshold, 'o', color='k',markersize=7)
-    ax[0].set_ylabel('threshold (nA)')
-    ax[0].set_xlabel('distance from soma ($\mu m$)')
+    fig, ax = plt.subplots(1,2, figsize=(8, 3), constrained_layout=True)
 
-    ax[1].plot(freqs, apcl_integr, 'o', color='black', markersize=7)
-    ax[1].set_xlim([np.min(freqs)-1, np.max(freqs)+1])
-    ax[1].set_ylim([0.4, 1.6])
-    ax[1].set_yticks([0.4, 1.0, 1.6])
-    ax[1].set_ylabel('membr. pot. integral (mV$\cdot$s)')
-    ax[1].set_xlabel('input frequency (Hz)')
-    ax[2].plot(distance, sag_ratio, 'o', color='k',markersize=7)
-    ax[2].set_ylabel('sag ratio')
-    ax[2].set_xlabel('distance from soma ($\mu m$)')
-    ax[3].plot(distance, inp_res, 'o', color='k',markersize=7)
-    ax[3].set_xlabel('distance from soma ($\mu m$)')
-    ax[3].set_ylabel('input resistance (M$\Omega$)')
+    ax[0].plot(distance, sag_ratio, 'o', color='k',markersize=7)
+    ax[0].set_ylabel('sag ratio')
+    ax[0].set_xlabel('distance from soma ($\mu m$)')
+    ax[1].plot(distance, inp_res, 'o', color='k',markersize=7)
+    ax[1].set_xlabel('distance from soma ($\mu m$)')
+    ax[1].set_ylabel('input resistance (M$\Omega$)')
 
     for a in ax:
         a.spines['top'].set_visible(False)
