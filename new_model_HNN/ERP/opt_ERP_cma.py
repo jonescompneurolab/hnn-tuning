@@ -154,7 +154,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win):
     dt = 0.05           # increase dt to speed up 
     net_base._verbose = True
 
-
+    constraints, initial_params = get_constraints_init_params()
     # Run optimization
     optim = Optimizer(net_base, tstop=tstop, constraints=constraints, solver='cma',
                     set_params=set_params_opt_drives, initial_params=initial_params, max_iter=max_iter, obj_fun="dipole_rmse_corr")
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     opt_cma(max_iter=args.max_iter,
-                popsize=args.max_iter_weights,
+                popsize=args.popsize,
                 n_procs=args.n_procs, 
                 scaling_factor=args.scale_factor,
                 smooth_win=args.smooth_window_len)
