@@ -19,86 +19,85 @@ from scipy.stats import pearsonr
 pathfig = os.path.join(os.getcwd(), 'figures')
 pathgen = '/users/kduecker/hnn-data/'
 
-n_procs = 64
 
 def get_constraints_init_params():
 
-    initial_params = dict({'prox1_L2_basket_ampa': 0.001,
-                    'prox1_L2_pyramidal_ampa': 0.15,
-                    'prox1_L5_basket_ampa': 0.0,
-                    'prox1_L5_pyramidal_ampa': 0.001,
+    initial_params = dict({'prox1_L2_basket_ampa': np.log10(0.001),
+                    'prox1_L2_pyramidal_ampa': np.log10(0.15),
+                    'prox1_L5_basket_ampa': np.log10(1e-15),
+                    'prox1_L5_pyramidal_ampa': np.log10(0.001),
 
-                    'prox1_L2_basket_nmda': 0.01,
-                    'prox1_L2_pyramidal_nmda': 0.05,
-                    'prox1_L5_basket_nmda': 0.0075,
-                    'prox1_L5_pyramidal_nmda': .0,
+                    'prox1_L2_basket_nmda': np.log10(0.01),
+                    'prox1_L2_pyramidal_nmda': np.log10(0.05),
+                    'prox1_L5_basket_nmda': np.log10(0.0075),
+                    'prox1_L5_pyramidal_nmda': np.log10(1e-15),
 
-                    'dist1_L2_basket_ampa': 0.005,
-                    'dist1_L2_pyramidal_ampa': 1,
-                    'dist1_L5_pyramidal_ampa': 0.8,
+                    'dist1_L2_basket_ampa': np.log10(0.005),
+                    'dist1_L2_pyramidal_ampa': np.log10(1),
+                    'dist1_L5_pyramidal_ampa': np.log10(0.8),
 
-                    'dist1_L2_basket_nmda': 0.0,
-                    'dist1_L2_pyramidal_nmda': 0.5,
-                    'dist1_L5_pyramidal_nmda': 0.1,
+                    'dist1_L2_basket_nmda': np.log10(1e-15),
+                    'dist1_L2_pyramidal_nmda': np.log10(0.5),
+                    'dist1_L5_pyramidal_nmda': np.log10(0.1),
 
-                    'prox2_L2_basket_ampa': 0.009,
-                    'prox2_L2_pyramidal_ampa': 0.4,
-                    'prox2_L5_basket_ampa': 0.006,
-                    'prox2_L5_pyramidal_ampa': 0.2,
+                    'prox2_L2_basket_ampa': np.log10(0.009),
+                    'prox2_L2_pyramidal_ampa': np.log10(0.4),
+                    'prox2_L5_basket_ampa': np.log10(0.006),
+                    'prox2_L5_pyramidal_ampa': np.log10(0.2),
 
-                    'prox2_L2_basket_nmda': 0.1,
-                    'prox2_L2_pyramidal_nmda': 0.05,
-                    'prox2_L5_basket_nmda': 0.005,
-                    'prox2_L5_pyramidal_nmda':  0.8,
+                    'prox2_L2_basket_nmda': np.log10(0.1),
+                    'prox2_L2_pyramidal_nmda': np.log10(0.05),
+                    'prox2_L5_basket_nmda': np.log10(0.005),
+                    'prox2_L5_pyramidal_nmda':  np.log10(0.8),
                     
                     'prox1_mu': 20,
                     'prox1_sigma': 6,
-                    'prox1_num_spikes': 1,
+                    'prox1_numspikes': 1,
                     'dist1_mu': 62,
                     'dist1_sigma': 7,
-                    'dist1_num_spikes': 2,
+                    'dist1_numspikes': 2,
                     'prox2_mu': 95,
                     'prox2_sigma': 10,
-                    'prox2_num_spikes': 1})
+                    'prox2_numspikes': 1})
 
 
-    constraints = dict({'prox1_L2_basket_ampa': (-5., 1.),
-                        'prox1_L2_pyramidal_ampa': (-5., 1.),
-                        'prox1_L5_basket_ampa': (-5., 1.),
-                        'prox1_L5_pyramidal_ampa': (-5., 1.),
+    constraints = dict({'prox1_L2_basket_ampa': (-15, 0),
+                        'prox1_L2_pyramidal_ampa': (-15, 0),
+                        'prox1_L5_basket_ampa': (-15, 0),
+                        'prox1_L5_pyramidal_ampa': (-15, 0),
 
-                        'prox1_L2_basket_nmda': (0-5., 1.),
-                        'prox1_L2_pyramidal_nmda': (-5., 1.),
-                        'prox1_L5_basket_nmda': (-5., 1.),
-                        'prox1_L5_pyramidal_nmda': (-5., 1.),
+                        'prox1_L2_basket_nmda': (-15, 0),
+                        'prox1_L2_pyramidal_nmda': (-15, 0),
+                        'prox1_L5_basket_nmda': (-15, 0),
+                        'prox1_L5_pyramidal_nmda': (-15, 0),
 
-                        'dist1_L2_basket_ampa': (-5., 1.),
-                        'dist1_L2_pyramidal_ampa': (-5., 1.),
-                        'dist1_L5_pyramidal_ampa': (-5., 1.),
+                        'dist1_L2_basket_ampa': (-15, 0),
+                        'dist1_L2_pyramidal_ampa': (-15, 0),
+                        'dist1_L5_pyramidal_ampa': (-15, 0),
 
-                        'dist1_L2_basket_nmda': (-5., 1.),
-                        'dist1_L2_pyramidal_nmda': (-5., 1.),
-                        'dist1_L5_pyramidal_nmda': (-5., 1.),
+                        'dist1_L2_basket_nmda': (-15, 0),
+                        'dist1_L2_pyramidal_nmda': (-15, 0),
+                        'dist1_L5_pyramidal_nmda': (-15, 0),
 
-                        'prox2_L2_basket_ampa': (-5., 1.),
-                        'prox2_L2_pyramidal_ampa': (-5., 1.),
-                        'prox2_L5_basket_ampa': (-5., 1.),
-                        'prox2_L5_pyramidal_ampa': (-5., 1.),
+                        'prox2_L2_basket_ampa': (-15, 0),
+                        'prox2_L2_pyramidal_ampa': (-15, 0),
+                        'prox2_L5_basket_ampa': (-15, 0),
+                        'prox2_L5_pyramidal_ampa': (-15, 0),
 
-                        'prox2_L2_basket_nmda': (-5., 1.),
-                        'prox2_L2_pyramidal_nmda': (-5., 1.),
-                        'prox2_L5_basket_nmda': (-5., 1.),
-                        'prox2_L5_pyramidal_nmda': (-5., 1.),
+                        'prox2_L2_basket_nmda': (-15, 0),
+                        'prox2_L2_pyramidal_nmda': (-15, 0),
+                        'prox2_L5_basket_nmda': (-15, 0),
+                        'prox2_L5_pyramidal_nmda': (-15, 0),
                         
-                        'prox1_mu': (1, 50),
-                        'prox1_sigma': (1, 20),
-                        'prox1_num_spikes': (1, 3),
+                        'prox1_mu': (5, 30),
+                        'prox1_sigma': (0.1, 20),
+                        'prox1_numspikes': (0, 3),
                         'dist1_mu': (50, 100),
-                        'dist1_sigma': (1, 20),
-                        'dist1_num_spikes': (1,3),
+                        'dist1_sigma': (0.1, 20),
+                        'dist1_numspikes': (0,3),
                         'prox2_mu': (80, 150),
-                        'prox2_sigma': (1, 20),
-                        'prox2_num_spikes': (1, 3)})
+                        'prox2_sigma': (0.1, 20),
+                        'prox2_numspikes': (0, 3)})
         
     return constraints, initial_params
 
@@ -151,7 +150,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win):
     net_base = duecker_ET_model()
     # set up empty drives
     set_up_drives_empty(net_base)
-    dt = 0.05           # increase dt to speed up 
+    dt = 0.025           # increase dt to speed up 
     net_base._verbose = True
 
     constraints, initial_params = get_constraints_init_params()
@@ -164,7 +163,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win):
         optim.fit(target=exp_dpl, n_trials=5, scale_factor=scaling_factor,
                 smooth_window_len=smooth_win, dt=dt, popsize=popsize, bsl_cor="duecker")
 
-    with open(f'opt_ERP_cma.pkl', 'wb') as file:
+    with open(f'opt_ERP_cma_strict_constraints.pkl', 'wb') as file:
         pickle.dump(optim, file)
 
 
