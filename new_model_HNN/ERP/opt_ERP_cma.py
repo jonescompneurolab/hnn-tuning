@@ -61,14 +61,14 @@ def get_constraints_init_params():
                     'prox2_numspikes': 1})
 
 
-    constraints = dict({'prox1_L2_basket_ampa': (-15, 0),
-                        'prox1_L2_pyramidal_ampa': (-15, 0),
-                        'prox1_L5_basket_ampa': (-15, 0),
+    constraints = dict({'prox1_L2_basket_ampa': (-15, -1.75),
+                        'prox1_L2_pyramidal_ampa': (-2, 0.25),
+                        'prox1_L5_basket_ampa': (-15, -1.75),
                         'prox1_L5_pyramidal_ampa': (-15, 0),
 
-                        'prox1_L2_basket_nmda': (-15, 0),
-                        'prox1_L2_pyramidal_nmda': (-15, 0),
-                        'prox1_L5_basket_nmda': (-15, 0),
+                        'prox1_L2_basket_nmda': (-15, -1.75),
+                        'prox1_L2_pyramidal_nmda': (-2, 0.25),
+                        'prox1_L5_basket_nmda': (-15, -1.75),
                         'prox1_L5_pyramidal_nmda': (-15, 0),
 
                         'dist1_L2_basket_ampa': (-15, 0),
@@ -161,7 +161,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win):
 
     with MPIBackend(n_procs=n_procs, mpi_cmd='mpiexec'):        
         optim.fit(target=exp_dpl, n_trials=5, scale_factor=scaling_factor,
-                smooth_window_len=smooth_win, dt=dt, popsize=popsize, bsl_cor="duecker")
+                smooth_window_len=smooth_win, dt=dt, popsize=popsize, bsl_cor="duecker", n_jobs=n_procs)
 
     with open(f'opt_ERP_cma_strict_constraints.pkl', 'wb') as file:
         pickle.dump(optim, file)
