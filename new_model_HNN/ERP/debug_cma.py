@@ -43,7 +43,7 @@ result = subprocess.run(['which', 'mpiexec'], capture_output=True, text=True)
 print(result.stdout if result.returncode == 0 else "mpiexec not found")
 
 tstop = 200
-dt = 0.5  # Just used for testing, 0.025 is the default but will be slower
+dt = 0.1  # Just used for testing, 0.025 is the default but will be slower
 scaling_factor = 3000
 smooth_win = 30
 
