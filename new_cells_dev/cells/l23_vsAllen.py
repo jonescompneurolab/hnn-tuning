@@ -31,6 +31,8 @@ import pandas as pd
 h.load_file('stdrun.hoc')
 
 plt.rcParams['svg.fonttype'] = 'none'
+plt.rcParams['pdf.fonttype'] = '42'
+
 # Set global font sizes
 plt.rcParams['font.size'] = 10          # Default text size
 plt.rcParams['axes.titlesize'] = 10      # Title size
@@ -38,6 +40,7 @@ plt.rcParams['axes.labelsize'] = 10      # Axis labels (xlabel, ylabel)
 plt.rcParams['xtick.labelsize'] = 10    # X-axis tick labels
 plt.rcParams['ytick.labelsize'] = 10     # Y-axis tick labels
 plt.rcParams['legend.fontsize'] = 10     # Legend text
+
 
 def exp_func(t, tau, A, C):
     return A * (1 - np.exp(-t / tau)) + C
@@ -57,8 +60,15 @@ cols = np.array(([27, 158, 119], [217,95,2], [117,112,179], [231,41,138], [102,1
 
 plt.close('all')
 ## RMP
-fig, ax = plt.subplots(2, 3, width_ratios=[0.5, 0.5, 1], figsize=(16, 6), constrained_layout=True)
-ax = ax.flatten()
+
+from matplotlib.gridspec import GridSpec
+
+fig = plt.figure(figsize=(8, 4), constrained_layout=True)
+gs = GridSpec(2, 3, figure=fig, width_ratios=[0.5, 0.5, 1.4])
+ax = [fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[0, 2]), fig.add_subplot(gs[1, :2]), fig.add_subplot(gs[1, 2])]
+
+# fig, ax = plt.subplots(2, 3, width_ratios=[0.5, 0.5, 1], figsize=(8, 4), constrained_layout=True)
+# ax = ax.flatten()
 
 l2pyr = get_l2pyr()
  
@@ -85,11 +95,12 @@ print(v_init, flush=True)
 
 ephys_measures['RMP'] = v_init['soma']
 
-ax[0].plot(t,soma_voltg, color=cm_neurons[1], linewidth=2)
-ax[0].plot(t.as_numpy()[-3],soma_voltg[-3],'o', color='k', markersize=9)
+ax[0].plot(t,soma_voltg, color=cm_neurons[1], linewidth=1.5)
+ax[0].plot(t.as_numpy()[-3],soma_voltg[-3],'o', color='k', markersize=7)
 ax[0].set_ylabel('membrane potential (mV)')
 ax[0].set_xlabel('time (ms)')
-
+ax[0].set_ylim([-75, -65])
+ax[0].set_yticks([-75, -65])
 ## Action potential
 l2pyr = get_l2pyr(v_init=v_init)
 
@@ -132,17 +143,17 @@ downstroke = np.mean(np.gradient(v_np[int(ap[0]):elbow_p]))
 ap_up_down = np.abs(upstroke/downstroke)
 
 
-ax[1].plot(t, v_soma, color=cm_neurons[1], linewidth=2)
+ax[1].plot(t, v_soma, color=cm_neurons[1], linewidth=1.5)
 ax[1].set_ylabel('membrane potential (mV)')
-ax[1].plot(t[np.argmax(v_soma)], ap_peak, 'o', color=cols[0], markersize=9)
+ax[1].plot(t[np.argmax(v_soma)], ap_peak, 'o', color=cols[0], markersize=7)
 ax[1].set_ylim([-75, 50])
 ax[1].set_yticks([-70,0, 50])
-ax[1].plot(t[ap_thresh_idx], ap_thresh, 'o', color=cols[1], markersize=9)
+ax[1].plot(t[ap_thresh_idx], ap_thresh, 'o', color=cols[1], markersize=7)
 ax[1].set_xlim([0, 20])
 ax[1].set_xticks([0, 10, 20])
 ax[1].set_xlabel('time (ms)')
 
-ax[1].plot(t.as_numpy()[elbow_p], v_soma.as_numpy()[elbow_p], 'o', color=cols[2], markersize=9)
+ax[1].plot(t.as_numpy()[elbow_p], v_soma.as_numpy()[elbow_p], 'o', color=cols[2], markersize=7)
 
 ap_width = properties['widths'][0]*h.dt
 ephys_measures['ap_width'] = ap_width
@@ -164,7 +175,7 @@ h.celsius = 37
 h.finitialize()
 h.continuerun(1020 * ms)
 
-ax[2].plot(t,soma_v, color=cm_neurons[1], linewidth=2)
+ax[2].plot(t,soma_v, color=cm_neurons[1], linewidth=1.5)
 ax[2].set_xlim([0, 1000])
 ax[2].set_yticks([-70,0, 50])
 ax[2].set_ylim([-75, 50])
@@ -207,10 +218,13 @@ for i,amp in enumerate(ampl):
     fr[i] = len(pk[0])
 
 
-ax[3].plot(ampl,fr, color=cm_neurons[1], linewidth=2)
+ax[3].plot(ampl,fr, color=cm_neurons[1], linewidth=1.5)
+ax[3].set_yticks([0, 40, 80])
 ax[3].set_ylabel('FR (Hz)')
 ax[3].set_xlabel('amplitude (nA)')
-ax[3].set_xlim([ampl[0], ampl[-1]])
+ax[3].set_xticks([0.1, 0.3, 0.5, 0.7])
+ax[3].set_xlim([0.1, 0.7])
+ax[3].set_ylim([-1, 80])
 pA = 0.001 # nA (convert nA to pA)
 ephys_measures['FR_slope'] = np.polyfit(ampl,fr,1)[0]
 ephys_measures['FR_slope'] *= pA
@@ -244,7 +258,7 @@ for i, amp in enumerate(sag_stim_amp):
 
     h.celsius = 37
     h.finitialize()
-    h.continuerun(650 * ms)
+    h.continuerun(700 * ms)
 
     v_np = v.as_numpy()
     t_np = t.as_numpy()
@@ -267,13 +281,14 @@ for i, amp in enumerate(sag_stim_amp):
     popt, pcov = curve_fit(exp_func, t_rise, v_rise, p0=[2, abs(delta_v), v_rise[0]])
     tau_ms[i] = popt[0] # This is the fitted time constant in ms
 
-    ax[5].plot(t_np, v_np, color=cm_neurons[1], linewidth=2)
-    idx = np.argmin(np.abs(t_np-tau_ms[i]))
-    ax[5].plot(t_np[idx+start_idx], v_np[idx+start_idx], 'o', color='k', markersize=9)
+    ax[4].plot(t_np, v_np, color=cm_neurons[1], linewidth=1.5)
+    #idx = np.argmin(np.abs(t_np-tau_ms[i]))
+    #ax[5].plot(t_np[idx+start_idx], v_np[idx+start_idx], 'o', color='k', markersize=9)
 
-ax[5].set_xlim([0, 650])
-ax[5].set_ylabel('membrane potential (mV)')
-ax[5].set_xlabel('time (ms)')
+ax[4].set_xlim([0, 700])
+ax[4].set_ylabel('membrane potential (mV)')
+ax[4].set_xlabel('time (ms)')
+ax[4].set_yticks([-110, -90, -70])
 
 sag_ratio = np.mean((min_membr_pot-steady_state)/min_membr_pot)
 avg_tau_ms = np.mean(tau_ms)
@@ -281,7 +296,6 @@ avg_tau_ms = np.mean(tau_ms)
 ephys_measures['tau'] = avg_tau_ms
 ephys_measures['sag'] = np.mean((min_membr_pot-steady_state)/min_membr_pot)
 
-ax[4].set_axis_off()
 for a in ax:
     a.spines['top'].set_visible(False)
     a.spines['right'].set_visible(False)
@@ -297,8 +311,8 @@ plt.close('all')
 
 measures = ['RMP', 'sag', 'mean_isi', 'first_isi', 'upstroke_downstroke', 'ap_width', 'ap_threshold', 'FR_slope', 'tau']
 label = ['resting potential (mV)', 'sag ratio', 'mean isi (ms)', 'first isi (ms)', 'upstroke/downstroke', 'AP width (ms)', 'AP threshold (mV)', 'FI slope (spikes/pA)', r'$\tau_{m}$']
-ylims = [(-85,-50), (-0.1,.4), (0, 450), (0, 450), (1, 6), (0, 2), (-75, -25), (0, 0.5), (0, 65)]
-fig, ax = plt.subplots(2,5, figsize=(22,6))
+ylims = [(-85,-55), (-0.1,.4), (0, 450), (0, 450), (1, 6), (0, 2), (-75, -25), (0, 0.5), (0, 65)]
+fig, ax = plt.subplots(3,3, figsize=(8,6))
 cm_neurons = np.array([[218,166,156], [164,30,79], [119,161,187],[92,114,183]])/255
 
 ax = ax.ravel()
@@ -308,10 +322,12 @@ for i,m in enumerate(measures):
     v = ax[i].violinplot(data, positions=[1.2,1.8], vert=True, showmeans=False,
                   showmedians=True)
 
-    ax[i].plot(1.2, ephys_measures[m], 'o', color=cm_neurons[1], markersize=8)
-    ax[i].plot(1.8, ephys_measures[m], 'o', color=cm_neurons[1], markersize=8)
+    ax[i].plot(1.2, ephys_measures[m], 'o', color=cm_neurons[1], markersize=6)
+    ax[i].plot(1.8, ephys_measures[m], 'o', color=cm_neurons[1], markersize=6)
     ax[i].set_ylabel(label[i])
     ax[i].set_xticks([1.2,1.8],labels=['L2', 'L3'])
+    ax[i].set_ylim(ylims[i])
+    ax[i].set_yticks(ylims[i])
     ax[i].spines['top'].set_visible(False)
     ax[i].spines['right'].set_visible(False)
 
@@ -326,3 +342,4 @@ for i,m in enumerate(measures):
 fig.tight_layout()
 fig.savefig(figpth+'l23_cell_vs_allen.png')
 fig.savefig(figpth+'l23_cell_vs_allen.svg')
+fig.savefig(figpth+'l23_cell_vs_allen.pdf')
