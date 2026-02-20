@@ -1,3 +1,5 @@
-*/__pycache/*
+utils/__pycache__/
 *.out
 *.stats
+data/
+.DS_Store
