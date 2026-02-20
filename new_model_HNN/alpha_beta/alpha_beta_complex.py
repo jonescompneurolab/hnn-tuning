@@ -50,19 +50,19 @@ def sim_analysis_params_default():
     # simulation parameters
     params['tstop'] = 1000.  # ms
     params['burst_std_prox'] = 20 # Jones 2009: input bursts variance = 400
-    params['burst_std_dist'] = 15
+    params['burst_std_dist'] = 20
     params['default_ff_fb_seeds'] = (180, 120)  # seeds, this will be adjusted when running multiple trials
     params['weights_ampa_p'] = {'L2_basket': 0.0, 'L2_pyramidal': 2.5e-4, 'L5_pyramidal': 2.5e-4, 'L5_basket': 0.0} # proximal weights
-    params['weights_ampa_d'] = {'L2_basket': 0, 'L5_pyramidal': 2.5e-4*4, 'L2_pyramidal': 2.5e-4*4} # distal weights
+    params['weights_ampa_d'] = {'L2_basket': 0, 'L5_pyramidal': 2.5e-4*2, 'L2_pyramidal': 2.5e-4*2} # distal weights
     params['syn_delays_p'] = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 1., 'L5_basket': 1.}
-    params['syn_delays_d'] = {'L2_basket': .1, 'L5_pyramidal': 1., 'L2_pyramidal': .1}
+    params['syn_delays_d'] = {'L2_basket': .1, 'L5_pyramidal': .1, 'L2_pyramidal': .1}
     params['scale_factor'] = 10_000
 
     # PSD parameters
     params['nperseg_div'] = 4
     params['noverlap_div'] = 6
 
-    params['fb_delay'] = 7.5
+    params['fb_delay'] = 3
 
     params['n_procs'] = 10
 
@@ -242,38 +242,39 @@ def compute_symmetry_index(dpl, lowcut=7, highcut=29, prominence=0.01):
 
 
 
-def run_main(n_trials, n_procs):
+def run_main(n_trials, n_procs, run_idx):
 
-    for n_run in range(2):
         
-        filename = op.join(out_pth, f'alpha_beta_complex_simulation_delay_7_5ms{n_run}.pkl')
+    filename = op.join(out_pth, f'alpha_beta_complex_simulation_delay_3ms{run_idx}.pkl')
 
-        params = sim_analysis_params_default()
-        params['n_procs'] = n_procs
+    params = sim_analysis_params_default()
+    params['n_procs'] = n_procs
+    params['prox_seed'] = run_idx+100
+    params['dist_seed'] = run_idx+60
 
-        # set up dataframe
-        df_dict = dict()
+    # set up dataframe
+    df_dict = dict()
 
-        dpl, _ = run_alpha_beta_complex_simulations(params, n_trials=n_trials)
+    dpl, _ = run_alpha_beta_complex_simulations(params, n_trials=n_trials)
 
-        # alpha-beta ratio
-        ab_ratio, alpha_power, beta_power, prob_overlap = alpha_beta_ratio(dpl)
-        # symmetry index
-        s_idx = np.zeros((n_trials,), dtype=object)
-        for i, dip in enumerate(dpl):
-            s, _ = compute_symmetry_index(dip, lowcut=7, highcut=29)
-            s_idx[i] = s
+    # alpha-beta ratio
+    ab_ratio, alpha_power, beta_power, prob_overlap = alpha_beta_ratio(dpl)
+    # symmetry index
+    s_idx = np.zeros((n_trials,), dtype=object)
+    for i, dip in enumerate(dpl):
+        s, _ = compute_symmetry_index(dip, lowcut=7, highcut=29)
+        s_idx[i] = s
 
-        df = pd.DataFrame({
-            'trial_index': range(n_trials),
-            'alpha_beta_ratio': [ab_ratio[i, :] for i in range(n_trials)],
-            'alpha_power': [alpha_power[i, :] for i in range(n_trials)],
-            'beta_power': [beta_power[i, :] for i in range(n_trials)],
-            'prob_overlap': [prob_overlap for _ in range(n_trials)],
-            'symmetry_index': [s_idx[i] for i in range(n_trials)]
-        })
+    df = pd.DataFrame({
+        'trial_index': range(n_trials),
+        'alpha_beta_ratio': [ab_ratio[i, :] for i in range(n_trials)],
+        'alpha_power': [alpha_power[i, :] for i in range(n_trials)],
+        'beta_power': [beta_power[i, :] for i in range(n_trials)],
+        'prob_overlap': [prob_overlap for _ in range(n_trials)],
+        'symmetry_index': [s_idx[i] for i in range(n_trials)]
+    })
 
-        df.to_pickle(filename)
+    df.to_pickle(filename)
 
 if __name__ == '__main__':
 
@@ -283,9 +284,11 @@ if __name__ == '__main__':
                         help='Number of trials to simulate (default: 1)')
     parser.add_argument('--n_procs', type=int, default=1,
                         help='Number of cores for MPI simulation (default: 1, run serially)')
+    parser.add_argument('--run_idx', type=int, default=1,
+                        help='Number of cores for MPI simulation (default: 1, run serially)')
     
     args = parser.parse_args()
-    run_main(args.n_trials, args.n_procs)
+    run_main(args.n_trials, args.n_procs, args.run_idx)
 
     
 
