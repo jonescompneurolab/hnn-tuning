@@ -50,10 +50,10 @@ def sim_analysis_params_default():
     # simulation parameters
     params['tstop'] = 1000.  # ms
     params['burst_std_prox'] = 20 # Jones 2009: input bursts variance = 400
-    params['burst_std_dist'] = 20
+    params['burst_std_dist'] = 18
     params['default_ff_fb_seeds'] = (180, 120)  # seeds, this will be adjusted when running multiple trials
     params['weights_ampa_p'] = {'L2_basket': 0.0, 'L2_pyramidal': 2.5e-4, 'L5_pyramidal': 2.5e-4, 'L5_basket': 0.0} # proximal weights
-    params['weights_ampa_d'] = {'L2_basket': 0, 'L5_pyramidal': 2.5e-4*2, 'L2_pyramidal': 2.5e-4*2} # distal weights
+    params['weights_ampa_d'] = {'L2_basket': 0, 'L5_pyramidal': 2.5e-4*5, 'L2_pyramidal': 2.5e-4*5} # distal weights
     params['syn_delays_p'] = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 1., 'L5_basket': 1.}
     params['syn_delays_d'] = {'L2_basket': .1, 'L5_pyramidal': .1, 'L2_pyramidal': .1}
     params['scale_factor'] = 10_000
@@ -62,7 +62,7 @@ def sim_analysis_params_default():
     params['nperseg_div'] = 4
     params['noverlap_div'] = 6
 
-    params['fb_delay'] = 3
+    params['fb_delay'] = 4
 
     params['n_procs'] = 10
 
