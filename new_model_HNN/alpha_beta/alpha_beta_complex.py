@@ -3,7 +3,7 @@
 ## set up environment
 
 # HNN
-from hnn_core import MPIBackend
+from hnn_core import JoblibBackend
 from hnn_core import duecker_ET_model, simulate_dipole
 from hnn_core.externals.mne import tfr_array_morlet
 
@@ -50,23 +50,24 @@ def sim_analysis_params_default():
     # simulation parameters
     params['tstop'] = 1000.  # ms
     params['burst_std_prox'] = 20 # Jones 2009: input bursts variance = 400
-    params['burst_std_dist'] = 18
+    params['burst_std_dist'] = 15
     params['default_ff_fb_seeds'] = (180, 120)  # seeds, this will be adjusted when running multiple trials
     params['weights_ampa_p'] = {'L2_basket': 0.0, 'L2_pyramidal': 2.5e-4, 'L5_pyramidal': 2.5e-4, 'L5_basket': 0.0} # proximal weights
-    params['weights_ampa_d'] = {'L2_basket': 0, 'L5_pyramidal': 2.5e-4*5, 'L2_pyramidal': 2.5e-4*5} # distal weights
-    params['syn_delays_p'] = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 1., 'L5_basket': 1.}
-    params['syn_delays_d'] = {'L2_basket': .1, 'L5_pyramidal': .1, 'L2_pyramidal': .1}
-    params['scale_factor'] = 10_000
+    params['weights_ampa_d'] = {'L2_basket': 0, 'L5_pyramidal': 2.5e-4*4, 'L2_pyramidal': 2.5e-4*4} # distal weights
+    params['syn_delays_p'] = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 0.1, 'L5_basket': 0.1}
+    params['syn_delays_d'] = {'L2_basket': 0.1, 'L5_pyramidal': 0.1, 'L2_pyramidal': 0.1}
+    params['scale_factor'] = 2_000
 
     # PSD parameters
     params['nperseg_div'] = 4
     params['noverlap_div'] = 6
 
-    params['fb_delay'] = 4
+    params['fb_delay'] = 5
 
     params['n_procs'] = 10
 
     params['n_drive_cells_def'] = 10
+    params['dt'] = 0.5
 
     return params
 
@@ -95,8 +96,8 @@ def run_alpha_beta_complex_simulations(params, n_trials=1):
                         spike_isi=10, n_drive_cells=params['n_drive_cells_dist'], location='distal',
                         weights_ampa=params['weights_ampa_d'], synaptic_delays=params['syn_delays_d'], event_seed=params['dist_seed'])
     
-    with MPIBackend(n_procs=params['n_procs'], mpi_cmd='mpiexec'):
-        dpl = simulate_dipole(net, tstop=params['tstop'], bsl_cor='duecker', n_trials=n_trials)
+    with JoblibBackend(n_jobs=params['n_procs']):
+        dpl = simulate_dipole(net, tstop=params['tstop'], bsl_cor='duecker', n_trials=n_trials, dt=params['dt'])
     
     dpl = [d.scale(params['scale_factor']) for d in dpl]
 
@@ -222,36 +223,68 @@ def compute_symmetry_index(dpl, lowcut=7, highcut=29, prominence=0.01):
     peaks, _ = find_peaks(filt_dpl, prominence=prominence)
     troughs, _ = find_peaks(-filt_dpl, prominence=prominence)
 
-    if len(peaks) == len(troughs):
-        if troughs[0] < peaks[0]:
-            sind = (np.abs(filt_dpl[peaks[:-1]]) - np.abs(filt_dpl[troughs[1:]]))/(np.abs(filt_dpl[peaks[:-1]]) + np.abs(filt_dpl[troughs[1:]]))
-        else:
-            sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs]))
-    elif len(peaks) > len(troughs):
-         sind = (np.abs(filt_dpl[peaks[int(len(peaks)-len(troughs)):]]) - np.abs(filt_dpl[troughs]))/(np.abs(filt_dpl[peaks[int(len(peaks)-len(troughs)):]]) + np.abs(filt_dpl[troughs]))
-    elif len(peaks) < len(troughs):
+    if len(peaks) == 0 or len(troughs) == 0:
+        sind = np.ones((7,))*10
+    else:
+        if len(peaks) == len(troughs):
+            if troughs[0] < peaks[0]:
+                sind = (np.abs(filt_dpl[peaks[:-1]]) - np.abs(filt_dpl[troughs[1:]]))/(np.abs(filt_dpl[peaks[:-1]]) + np.abs(filt_dpl[troughs[1:]]))
+            else:
+                sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs]))
+        elif len(peaks) > len(troughs):
+            sind = (np.abs(filt_dpl[peaks[int(len(peaks)-len(troughs)):]]) - np.abs(filt_dpl[troughs]))/(np.abs(filt_dpl[peaks[int(len(peaks)-len(troughs)):]]) + np.abs(filt_dpl[troughs]))
+        elif len(peaks) < len(troughs):
 
-        peak_diff = int(len(troughs)-len(peaks))
-        if troughs[0] < peaks[0]:
-            sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs[peak_diff:]]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs[peak_diff:]]))
-        else:
-            sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs[:-peak_diff]]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs[:-peak_diff]]))
+            peak_diff = int(len(troughs)-len(peaks))
+            if troughs[0] < peaks[0]:
+                sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs[peak_diff:]]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs[peak_diff:]]))
+            else:
+                sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs[:-peak_diff]]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs[:-peak_diff]]))
 
     # return symmetry index and filtered dipole with peaks and troughs
     return sind, (filt_dpl, peaks, troughs)
 
+def compute_symmetry_index_mean(dpl, lowcut=7, highcut=29, prominence=0.01):
 
+    """Compute symmetry index of the dipole waveform"""
+
+    filt_dpl = _butter_bandpass_filter(dpl.data['agg'], lowcut, highcut, dpl.sfreq, order=2)
+    peaks, _ = find_peaks(filt_dpl, prominence=prominence)
+    troughs, _ = find_peaks(-filt_dpl, prominence=prominence)
+
+    if len(peaks) == 0 or len(troughs) == 0:
+        m_sind = 10
+    else:
+
+        if len(peaks) == len(troughs):
+            if troughs[0] < peaks[0]:
+                sind = (np.abs(filt_dpl[peaks[:-1]]) - np.abs(filt_dpl[troughs[1:]]))/(np.abs(filt_dpl[peaks[:-1]]) + np.abs(filt_dpl[troughs[1:]]))
+            else:
+                sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs]))
+        elif len(peaks) > len(troughs):
+            sind = (np.abs(filt_dpl[peaks[int(len(peaks)-len(troughs)):]]) - np.abs(filt_dpl[troughs]))/(np.abs(filt_dpl[peaks[int(len(peaks)-len(troughs)):]]) + np.abs(filt_dpl[troughs]))
+        elif len(peaks) < len(troughs):
+
+            peak_diff = int(len(troughs)-len(peaks))
+            if troughs[0] < peaks[0]:
+                sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs[peak_diff:]]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs[peak_diff:]]))
+            else:
+                sind = (np.abs(filt_dpl[peaks]) - np.abs(filt_dpl[troughs[:-peak_diff]]))/(np.abs(filt_dpl[peaks]) + np.abs(filt_dpl[troughs[:-peak_diff]]))
+
+        m_sind = sind.mean()
+    # return symmetry index and filtered dipole with peaks and troughs
+    return m_sind
 
 def run_main(n_trials, n_procs, run_idx):
-
-        
-    filename = op.join(out_pth, f'alpha_beta_complex_simulation_delay_3ms{run_idx}.pkl')
-
     params = sim_analysis_params_default()
-    params['n_procs'] = n_procs
-    params['prox_seed'] = run_idx+100
-    params['dist_seed'] = run_idx+60
 
+    fb_delay = params['fb_delay']
+    filename = op.join(out_pth, f'alpha_beta_complex_simulation_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
+
+    params['n_procs'] = n_procs
+    params['prox_seed'] = run_idx+544
+    params['dist_seed'] = run_idx+476
+   
     # set up dataframe
     df_dict = dict()
 
