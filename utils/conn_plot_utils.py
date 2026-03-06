@@ -1,6 +1,7 @@
 """"Utils for connectivity tuning figures."""
 
 import matplotlib.pyplot as plt
+from matplotlib import patches
 import numpy as np
 
 from hnn_core import duecker_ET_model, simulate_dipole, jones_2009_model, MPIBackend
@@ -126,7 +127,7 @@ def plot_connectivity_space_constant(net, lamtha1=6.125, lamtha2=6.125*0.8):
 
 def plot_connectivity_space_constant_jones(net):
 
-    sources = ['L5_pyramidal', 'L5_basket', 'L2_pyramidal', 'L2_basket', ]
+    sources = ['L5_pyramidal', 'L5_basket', 'L2_pyramidal', 'L2_basket']
     E_receptors = ['ampa', 'nmda']
     I_receptors = ['gabaa', 'gabab']
 
@@ -199,11 +200,12 @@ def plot_connectivity_space_constant_jones(net):
 
 def plot_conn_heatmap(net):
 
-    # Make heatmaps
-    exc_cells = ['L2_pyramidal', 'L5_pyramidal']
-    inh_cells = ['L2_basket', 'L5_basket']
+    fig, ax = plt.subplots(3,3,figsize=(10, 10), sharex=True, sharey=True)
 
     # E-E
+
+    conn = net.connectivity[2]
+
     pos_l5 = np.zeros((100, 3))
     for p, pos in enumerate(net.pos_dict['L5_pyramidal']):
         pos_l5[p] = np.array(pos)
@@ -211,106 +213,67 @@ def plot_conn_heatmap(net):
     l5_gid = 170
     pos_dict_idx = int(l5_gid)-170
     ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
-    conn = net.connectivity[2]
+    
     l5_center_conn_bl = np.zeros((10,10))
-    for pos in net.pos_dict['L5_pyramidal']:
-        target_pos = pos
-        weight, _ = _get_gaussian_connection(
-                    ref_pos, target_pos, conn['nc_dict'],
-                    inplane_distance=net._inplane_distance)
 
-        x_idx = int(target_pos[0])
-        y_idx = int(target_pos[1])
-        l5_center_conn_bl[x_idx, y_idx] = weight
+    for target_gid in conn["gid_pairs"][l5_gid]:
+        if target_gid in net.gid_ranges['L5_pyramidal']:
+            target_pos = net.pos_dict['L5_pyramidal'][int(target_gid-170)]
+            weight, _ = _get_gaussian_connection(
+                        ref_pos, target_pos, conn['nc_dict'],
+                        inplane_distance=net._inplane_distance)
 
-    ref_pos = (4, 4, 0)
+            x_idx = int(target_pos[0])
+            y_idx = int(target_pos[1])
+            l5_center_conn_bl[x_idx, y_idx] = weight
+
+    ax[0,0].imshow(l5_center_conn_bl, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_bl))
+    ax[0,0].add_patch(patches.Rectangle((ref_pos[0]-0.5, ref_pos[1]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2))
+
+    l5_gid = 170 + 44
+    pos_dict_idx = int(l5_gid)-170
+    ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
     l5_center_conn_c = np.zeros((10,10))
-    for pos in net.pos_dict['L5_pyramidal']:
-        target_pos = pos
-        weight, _ = _get_gaussian_connection(
-                    ref_pos, target_pos, conn['nc_dict'],
-                    inplane_distance=net._inplane_distance)
+    for target_gid in conn["gid_pairs"][int(l5_gid)]:
+        if target_gid in net.gid_ranges['L5_pyramidal']:
+            target_pos = net.pos_dict['L5_pyramidal'][int(target_gid-170)]
+            weight, _ = _get_gaussian_connection(
+                        ref_pos, target_pos, conn['nc_dict'],
+                        inplane_distance=net._inplane_distance)
 
-        x_idx = int(target_pos[0])
-        y_idx = int(target_pos[1])
-        l5_center_conn_c[x_idx, y_idx] = weight
+            x_idx = int(target_pos[0])
+            y_idx = int(target_pos[1])
+            l5_center_conn_c[x_idx, y_idx] = weight
+    ax[0,1].imshow(l5_center_conn_c, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_c))
+    ax[0,1].add_patch(patches.Rectangle((ref_pos[0]-0.5, ref_pos[1]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2))
 
     l5_gid = 269
     pos_dict_idx = int(l5_gid)-170
     ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
-    conn = net.connectivity[2]
     l5_center_conn_tr = np.zeros((10,10))
-    for pos in net.pos_dict['L5_pyramidal']:
-        target_pos = pos
-        weight, _ = _get_gaussian_connection(
-                    ref_pos, target_pos, conn['nc_dict'],
-                    inplane_distance=net._inplane_distance)
+    for target_gid in conn["gid_pairs"][l5_gid]:
+        if target_gid in net.gid_ranges['L5_pyramidal']:
+            target_pos = net.pos_dict['L5_pyramidal'][int(target_gid-170)]
+            weight, _ = _get_gaussian_connection(
+                        ref_pos, target_pos, conn['nc_dict'],
+                        inplane_distance=net._inplane_distance)
 
-        x_idx = int(target_pos[0])
-        y_idx = int(target_pos[1])
-        l5_center_conn_tr[x_idx, y_idx] = weight
+            x_idx = int(target_pos[0])
+            y_idx = int(target_pos[1])
+            l5_center_conn_tr[x_idx, y_idx] = weight
 
-
-    
-    # I-I
-    pos_l5 = np.zeros((100, 3))
-    for p, pos in enumerate(net.pos_dict['L5_basket']):
-        pos_l5[p] = np.array(pos)
-        
-    inh_gid = 135
-    pos_dict_idx = int(inh_gid)-135
-    ref_pos = net.pos_dict['L5_basket'][pos_dict_idx]
-    conn = net.connectivity[2]
-    inh_center_conn_bl = np.zeros((10,10))
-    for pos in net.pos_dict['L5_basket']:
-        target_pos = pos
-        weight, _ = _get_gaussian_connection(
-                    ref_pos, target_pos, conn['nc_dict'],
-                    inplane_distance=net._inplane_distance)
-
-        x_idx = int(target_pos[0])
-        y_idx = int(target_pos[1])
-        inh_center_conn_bl[x_idx, y_idx] = weight
-
-    inh_gid = 150
-    pos_dict_idx = int(inh_gid)-135
-    ref_pos = net.pos_dict['L5_basket'][pos_dict_idx]
-    inh_center_conn_c = np.zeros((10,10))
-    for pos in net.pos_dict['L5_basket']:
-        target_pos = pos
-        weight, _ = _get_gaussian_connection(
-                    ref_pos, target_pos, conn['nc_dict'],
-                    inplane_distance=net._inplane_distance)
-
-        x_idx = int(target_pos[0])
-        y_idx = int(target_pos[1])
-        inh_center_conn_c[x_idx, y_idx] = weight
-
-    inh_gid = 169
-    pos_dict_idx = int(inh_gid)-135
-    ref_pos = net.pos_dict['L5_basket'][pos_dict_idx]
-    conn = net.connectivity[2]
-    inh_center_conn_tr = np.zeros((10,10))
-    for pos in net.pos_dict['L5_basket']:
-        target_pos = pos
-        weight, _ = _get_gaussian_connection(
-                    ref_pos, target_pos, conn['nc_dict'],
-                    inplane_distance=net._inplane_distance)
-
-        x_idx = int(target_pos[0])
-        y_idx = int(target_pos[1])
-        inh_center_conn_tr[x_idx, y_idx] = weight
-
+    ax[0,2].imshow(l5_center_conn_tr, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_tr))
+    ax[0,2].add_patch(patches.Rectangle((ref_pos[0]-0.5, ref_pos[1]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2))
 
     # E-I
-        
+    conn = net.connectivity[-2]
     l5_gid = 170
     pos_dict_idx = int(l5_gid)-170
     ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
-    conn = net.connectivity[2]
     l5_center_conn_bl_ei = np.zeros((10,10))
-    for pos in net.pos_dict['L5_basket']:
-        target_pos = pos
+    for target_gid in conn["gid_pairs"][l5_gid]:
+        if target_gid in net.gid_ranges['L5_basket']:
+            target_pos = net.pos_dict['L5_basket'][int(target_gid-135)]
         weight, _ = _get_gaussian_connection(
                     ref_pos, target_pos, conn['nc_dict'],
                     inplane_distance=net._inplane_distance)
@@ -318,11 +281,16 @@ def plot_conn_heatmap(net):
         x_idx = int(target_pos[0])
         y_idx = int(target_pos[1])
         l5_center_conn_bl_ei[x_idx, y_idx] = weight
+    ax[1,0].imshow(l5_center_conn_bl_ei, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_bl_ei))
+    ax[1,0].add_patch(patches.Rectangle((ref_pos[0]-0.5, ref_pos[1]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2))
 
-    ref_pos = (4, 4, 0)
+    l5_gid = 170 + 44
+    pos_dict_idx = int(l5_gid)-170
+    ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
     l5_center_conn_c_ei = np.zeros((10,10))
-    for pos in net.pos_dict['L5_basket']:
-        target_pos = pos
+    for target_gid in conn["gid_pairs"][l5_gid]:
+        if target_gid in net.gid_ranges['L5_basket']:
+            target_pos = net.pos_dict['L5_basket'][int(target_gid-135)]
         weight, _ = _get_gaussian_connection(
                     ref_pos, target_pos, conn['nc_dict'],
                     inplane_distance=net._inplane_distance)
@@ -330,14 +298,16 @@ def plot_conn_heatmap(net):
         x_idx = int(target_pos[0])
         y_idx = int(target_pos[1])
         l5_center_conn_c_ei[x_idx, y_idx] = weight
+    ax[1,1].imshow(l5_center_conn_c_ei, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_c_ei))
+    ax[1,1].add_patch(patches.Rectangle((ref_pos[0]-0.5, ref_pos[1]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2))
 
     l5_gid = 269
     pos_dict_idx = int(l5_gid)-170
     ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
-    conn = net.connectivity[2]
     l5_center_conn_tr_ei = np.zeros((10,10))
-    for pos in net.pos_dict['L5_basket']:
-        target_pos = pos
+    for target_gid in conn["gid_pairs"][l5_gid]:
+        if target_gid in net.gid_ranges['L5_basket']:
+            target_pos = net.pos_dict['L5_basket'][int(target_gid-135)]
         weight, _ = _get_gaussian_connection(
                     ref_pos, target_pos, conn['nc_dict'],
                     inplane_distance=net._inplane_distance)
@@ -345,29 +315,81 @@ def plot_conn_heatmap(net):
         x_idx = int(target_pos[0])
         y_idx = int(target_pos[1])
         l5_center_conn_tr_ei[x_idx, y_idx] = weight
-
-
-    fig, ax = plt.subplots(3,3,figsize=(10, 10), sharex=True, sharey=True)
-    ax[0,0].imshow(l5_center_conn_bl, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_bl))
-    ax[0,1].imshow(l5_center_conn_c, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_c))
-    ax[0,2].imshow(l5_center_conn_tr, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_tr))
-
-    ax[1,0].imshow(l5_center_conn_bl_ei, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_bl_ei))
-    ax[1,1].imshow(l5_center_conn_c_ei, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_c_ei))
     ax[1,2].imshow(l5_center_conn_tr_ei, origin='lower', cmap='hot', vmin=0, vmax=np.max(l5_center_conn_tr_ei))
+    ax[1,2].add_patch(patches.Rectangle((ref_pos[0]-0.5, ref_pos[1]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2)) 
 
+    
+    # I-I
+    conn = net.connectivity[13]
+
+    pos_l5 = np.zeros((100, 3))
+    for p, pos in enumerate(net.pos_dict['L2_basket']):
+        pos_l5[p] = np.array(pos)
+        
+    inh_gid = 0
+    pos_dict_idx = int(inh_gid)
+    ref_pos = net.pos_dict['L2_basket'][pos_dict_idx]
+    
+    inh_center_conn_bl = np.zeros((10,10))
+    for target_gid in conn["gid_pairs"][inh_gid]:
+        if target_gid in net.gid_ranges['L2_basket']:
+            target_pos = net.pos_dict['L2_basket'][int(target_gid)]
+            weight, _ = _get_gaussian_connection(
+                        ref_pos, target_pos, conn['nc_dict'],
+                        inplane_distance=net._inplane_distance)
+
+            x_idx = int(target_pos[0])
+            y_idx = int(target_pos[1])
+            inh_center_conn_bl[x_idx, y_idx] = weight
     ax[2,0].imshow(inh_center_conn_bl, origin='lower', cmap='hot')
+    ax[2,0].add_patch(patches.Rectangle((ref_pos[1]-0.5, ref_pos[0]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2))
+
+    inh_gid = 15
+    pos_dict_idx = int(inh_gid)
+    ref_pos = net.pos_dict['L2_basket'][pos_dict_idx]
+    inh_center_conn_c = np.zeros((10,10))
+    for target_gid in conn["gid_pairs"][inh_gid]:
+        if target_gid in net.gid_ranges['L2_basket']:
+            target_pos = net.pos_dict['L2_basket'][int(target_gid)]
+            weight, _ = _get_gaussian_connection(
+                        ref_pos, target_pos, conn['nc_dict'],
+                        inplane_distance=net._inplane_distance)
+
+            x_idx = int(target_pos[0])
+            y_idx = int(target_pos[1])
+            inh_center_conn_c[x_idx, y_idx] = weight
     ax[2,1].imshow(inh_center_conn_c, origin='lower', cmap='hot')
+    ax[2,1].add_patch(patches.Rectangle((ref_pos[1]-0.5, ref_pos[0]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2))
+
+    inh_gid = 34
+    pos_dict_idx = int(inh_gid)
+    ref_pos = net.pos_dict['L2_basket'][pos_dict_idx]
+    inh_center_conn_tr = np.zeros((10,10))
+    for target_gid in conn["gid_pairs"][inh_gid]:
+        if target_gid in net.gid_ranges['L2_basket']:
+            target_pos = net.pos_dict['L2_basket'][int(target_gid)]
+            weight, _ = _get_gaussian_connection(
+                        ref_pos, target_pos, conn['nc_dict'],
+                        inplane_distance=net._inplane_distance)
+
+            x_idx = int(target_pos[0])
+            y_idx = int(target_pos[1])
+            inh_center_conn_tr[x_idx, y_idx] = weight
+
     im = ax[2,2].imshow(inh_center_conn_tr, origin='lower', cmap='hot')
+    ax[2,2].add_patch(patches.Rectangle((ref_pos[1]-0.5, ref_pos[0]-0.5), 1, 1, fill=False, edgecolor='violet', linewidth=2))
+
     cb = fig.colorbar(im, ax=ax, shrink=0.1, fraction=0.1, aspect=7, label='syn. weight', orientation='horizontal')
-    cb.set_ticks([0, 0.00025])
+    cb.set_ticks([0, inh_center_conn_tr.max()])
     cb.set_ticklabels([f'0', 'max'])
-    ax[0,0].set_xlim([-.5, 9.5])
-    ax[0,0].set_ylim([-.5, 9.5])
-    ax[0,0].set_xticks([0, 9])
-    ax[0,0].set_yticks([0, 9])
-    ax[0,0].set_xticklabels([1, 10])
-    ax[0,0].set_yticklabels([1, 10])
+
+    for a in ax.flatten():
+        a.set_xlim([-.5, 9.5])
+        a.set_ylim([-.5, 9.5])
+        a.set_xticks([0, 9])
+        a.set_yticks([0, 9])
+        a.set_xticklabels([1, 10])
+        a.set_yticklabels([1, 10])
 
     return fig
 
