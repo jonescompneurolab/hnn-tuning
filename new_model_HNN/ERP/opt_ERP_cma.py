@@ -20,7 +20,7 @@ pathfig = os.path.join(os.getcwd(), 'figures')
 pathgen = '/users/kduecker/hnn-data/'
 
 
-def get_constraints_init_params():
+def get_constraints_init_params(continue_checkpoint=False):
 
     initial_params = dict({'prox1_L2_basket_ampa': np.log10(0.001),
                     'prox1_L2_pyramidal_ampa': np.log10(0.3),
@@ -98,8 +98,17 @@ def get_constraints_init_params():
                         'prox2_mu': (80, 150),
                         'prox2_sigma': (0.1, 30),
                         'prox2_numspikes': (0, 3)})
-        
-    return constraints, initial_params
+
+    # if optimization crashed for some reason and we want to continue from checkpoint
+    if continue_checkpoint:
+        with open('cma_checkpoint.pkl', 'rb') as file:
+            cma =  pickle.load(file)
+        predicted_params = cma['es'].result.xbest
+        params_cma = {name: predicted_params[idx] for idx, name in enumerate(initial_params.keys())}
+
+        return constraints, params_cma
+    else:
+        return constraints, initial_params
 
 def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
 
@@ -140,7 +149,14 @@ def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
                              weights_nmda=dist_weights,
                              synaptic_delays=dist_delays)
 
-def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win):
+def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, continue_checkpoint):
+
+
+    if continue_checkpoint:
+        print('Continuing optimization from checkpoint ...', flush=True)
+    else:
+        print('Starting new optimization using CMA')
+        
     data_url = f'{pathgen}MEG_detection_data/S1_SupraT.txt'
     exp_dpl = read_dipole(data_url)
 
@@ -153,7 +169,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win):
     dt = 0.05           # increase dt to speed up 
     net_base._verbose = False
 
-    constraints, initial_params = get_constraints_init_params()
+    constraints, initial_params = get_constraints_init_params(continue_checkpoint)
     
     # Run optimization
     optim = Optimizer(net_base, tstop=tstop, constraints=constraints, solver='cma',
@@ -163,7 +179,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win):
             smooth_window_len=smooth_win, dt=dt, popsize=popsize, pth_backup='/users/kduecker/hnn-tuning/new_model_HNN/ERP', 
             bsl_cor="duecker", n_jobs=n_procs)
 
-    with open(f'opt_ERP_cma_l23bounds.pkl', 'wb') as file:
+    with open(f'opt_ERP_cma_new_sigma_{popsize}.pkl', 'wb') as file:
         pickle.dump(optim, file)
 
 
@@ -180,10 +196,13 @@ if __name__ == '__main__':
                         help='scale factor for dipole')
     parser.add_argument('--smooth_window_len', type=int, default=5,
                         help='scale factor for dipole')
+    parser.add_argument('--continue_checkpoint', type=bool, default=False,
+                        help='continue from checkpoint?')
     args = parser.parse_args()
 
     opt_cma(max_iter=args.max_iter,
                 popsize=args.popsize,
                 n_procs=args.n_procs, 
                 scaling_factor=args.scale_factor,
-                smooth_win=args.smooth_window_len)
+                smooth_win=args.smooth_window_len,
+                continue_checkpoint=args.continue_checkpoint)

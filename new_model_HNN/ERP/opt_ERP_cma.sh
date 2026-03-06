@@ -20,7 +20,7 @@ source ~/oscar-install/activate-hnn-core-conda-custom-source-env.sh
 conda activate hnn-core-env
 conda env list             # just double checking if we're in the right place
 
-python opt_ERP_cma.py --max_iter 200 --popsize 250 --n_procs 63 --scale_factor 1000 --smooth_window_len 5
+python opt_ERP_cma.py --max_iter 200 --popsize 126 --n_procs 63 --scale_factor 1000 --smooth_window_len 5 --continue_checkpoint False
 
 # stats file
 scontrol show job $SLURM_JOB_ID >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats
