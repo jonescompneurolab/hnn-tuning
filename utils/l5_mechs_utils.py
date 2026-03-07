@@ -106,6 +106,11 @@ class Mechs:
                         gbar = params['dend']['Ca_LVAst'](distance)
 
                         setattr(seg, 'gbar_'+m, gbar) 
+                    # elif m == 'SK_E2':
+                    #     distance = h.distance(seg.x, sec=seg.sec)
+                    #     gbar = params['dend']['SK_E2'](distance)
+
+                    #     setattr(seg, 'gbar_'+m, gbar)
                     else:
                         setattr(seg, 'gbar_'+m, params['dend'][m])       # Hay increases all conductances by 2 because cm is also increased by 2
 

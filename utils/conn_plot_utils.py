@@ -11,6 +11,7 @@ from hnn_core.params import compare_dictionaries
 
 from hnn_core.viz import plot_cell_morphology
 
+from neuron import h
 # import pandas as pd
 from scipy import signal
 from scipy.optimize import curve_fit
@@ -411,8 +412,8 @@ def plot_interlayer_conn():
 
         net.add_tonic_bias(cell_type=c,section='soma',bias_name='tonic_soma',amplitude=ampl,t0=t0,tstop=t0+3)
 
-        with MPIBackend(n_procs=10, mpi_cmd='mpiexec'):
-            dpl = simulate_dipole(net, tstop=30, n_trials=1)
+        #with MPIBackend(n_procs=10, mpi_cmd='mpiexec'):
+        dpl = simulate_dipole(net, tstop=30, n_trials=1)
 
         # clamp signal for plotting
         timevec = net.cell_response.times
@@ -493,7 +494,7 @@ def find_basal_rheo(model='jones'):
         for i in range(4):
 
             if i == 2:
-                rheo[i] == rheo[0]
+                rheo[i] = rheo[0]
             if rheo[i] == 0:
                 if any((np.array(net.cell_response.spike_gids[0]) == i)):
                     rheo[i] = a
@@ -563,6 +564,7 @@ def rheo_jones_vs_duecker():
         ax[0, i].set_xticks([50])
        
     fig.tight_layout()
+    h('forall delete_section()')
 
     return fig
 

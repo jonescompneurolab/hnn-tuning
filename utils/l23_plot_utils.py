@@ -438,7 +438,7 @@ def plot_ca_spike():
     from matplotlib.gridspec import GridSpec
     import matplotlib.gridspec as gridspec
 
-    gs = GridSpec(2, 4, figure=fig, width_ratios=[1, 1, 0.5, 0.75])
+    gs = GridSpec(2, 4, figure=fig, width_ratios=[1, 0.5, 0.5, 0.75])
     gs_small = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[0:2,3])
 
     ax = [None]*8
@@ -451,17 +451,19 @@ def plot_ca_spike():
 
     #ax[0].set_xlim([100, 400])#ax[0].set_xlim([100, 400])
 
+    
     ax[1] = fig.add_subplot(gs[0, 1])
-    ax[1].plot(t, soma_ca, color=cm_neurons[1], alpha=0.5, linewidth=2)
-    ax[1].plot(t, dend_ca, color=cm_neurons[1], linewidth=2)
-    ax[1].set_xlim([0, 1000])
-    ax[1].set_ylim([0, 0.0007])
+    ax[1].plot(t, soma_voltg, label='soma', color=cm_neurons[1], alpha=0.5, linewidth=2)
+    ax[1].plot(t, dend_voltg, label='apical_tuft bottom', color=cm_neurons[1], linewidth=2)
+    ax[1].set_xlim([300, 350])
+    ax[1].legend()
+    ax[1].set_ylim([-80, 50])
+
     ax[2] = fig.add_subplot(gs[0, 2])
-    ax[2].plot(t, soma_voltg, label='soma', color=cm_neurons[1], alpha=0.5, linewidth=2)
-    ax[2].plot(t, dend_voltg, label='apical_tuft bottom', color=cm_neurons[1], linewidth=2)
+    ax[2].plot(t, soma_ca, color=cm_neurons[1], alpha=0.5, linewidth=2)
+    ax[2].plot(t, dend_ca, color=cm_neurons[1], linewidth=2)
     ax[2].set_xlim([300, 350])
-    ax[2].legend()
-    ax[2].set_ylim([-80, 50])
+    ax[2].set_ylim([0, 0.0007])
 
     delay = (dend_peaks[0] - soma_peaks[0])*h.dt
     widths = dend_peaks[1]['widths'] *h.dt
@@ -512,16 +514,16 @@ def plot_ca_spike():
     ax[5].set_ylim([-90, 50])
 
     ax[6] = fig.add_subplot(gs[1, 1])
-    ax[6].plot(t, soma_ca, color=cm_neurons[1], alpha=0.5, linewidth=2)
-    ax[6].plot(t, dend_ca, color=cm_neurons[1], linewidth=2)
-    ax[6].set_xlim([0, 1000])
-    ax[6].set_ylim([0, 0.0007])
+    ax[6].plot(t, soma_voltg, label='soma', color=cm_neurons[1], alpha=0.5, linewidth=2)
+    ax[6].plot(t, dend_voltg, label='apical_tuft bottom', color=cm_neurons[1], linewidth=2)
+    ax[6].set_xlim([300, 350])
+    ax[6].set_ylim([-80, 50])
 
     ax[7] = fig.add_subplot(gs[1, 2])
-    ax[7].plot(t, soma_voltg, label='soma', color=cm_neurons[1], alpha=0.5, linewidth=2)
-    ax[7].plot(t, dend_voltg, label='apical_tuft bottom', color=cm_neurons[1], linewidth=2)
-    ax[7].set_xlim([350, 400])
-    ax[7].set_ylim([-80, 50])
+    ax[7].plot(t, soma_ca, color=cm_neurons[1], alpha=0.5, linewidth=2)
+    ax[7].plot(t, dend_ca, color=cm_neurons[1], linewidth=2)
+    ax[7].set_xlim([300, 350])
+    ax[7].set_ylim([0, 0.0007])
 
     delay = (dend_peaks[0][1:] - soma_peaks[0])*h.dt
     widths = dend_peaks[1]['widths'][1:] *h.dt
@@ -553,9 +555,9 @@ def plot_ca_spike():
         ax[i].set_xticks([])
 
     for i in [1, 6]:
-        ax[i].spines['bottom'].set_bounds([0, 200])
+        ax[i].spines['bottom'].set_bounds([300, 310])
         ax[i].spines['bottom'].set_linewidth(1.25)
-        ax[i].spines['left'].set_bounds([0, 0.0002])
+        ax[i].spines['left'].set_bounds([-80, -30])
         ax[i].spines['left'].set_linewidth(1.25)
         ax[i].set_yticks([])
         ax[i].set_xticks([])
@@ -563,7 +565,7 @@ def plot_ca_spike():
     for i in [2, 7]:
         ax[i].spines['bottom'].set_bounds([300, 310])
         ax[i].spines['bottom'].set_linewidth(1.25)
-        ax[i].spines['left'].set_bounds([-80, -30])
+        ax[i].spines['left'].set_bounds([0, 0.0002])
         ax[i].spines['left'].set_linewidth(1.25)
         ax[i].set_yticks([])
         ax[i].set_xticks([])

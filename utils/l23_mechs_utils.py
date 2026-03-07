@@ -23,34 +23,6 @@ def linear_gbar(gsoma, gdend, xkink, x, hotzone=[0,0], hotzone_factor=1):
 
     return gbar
 
-# def hotzone_gbar(gbar, hotzone, hotzone_factor, x):
-
-#     if x > hotzone[0] and x < hotzone[1]:
-#         gbar *= hotzone_factor
-
-    # return gbar
-
-def get_iascone_params():
-
-    iascone_model_gbar = {'soma': {'NaTs2_t': 0.926705, 
-                                'SKv3_1': 0.102517,
-                                'Nap_Et2': 0,
-                                'Ca_HVA': 0.000374,
-                                'Ca_LVAst': 0.000778,
-                                'SK_E2': 0.099433,
-                                'pas': 1.0 / 12000.0,
-                                'Ih': 0.000080,
-                                'Im': 0,},
-                        'dend': {'NaTs2_t': 0.008009,
-                                'SKv3_1': 0.000513,
-                                'Ca_HVA': 0,
-                                'Ca_LVAst': 0,
-                                'pas': 1.0 / 12000.0,
-                                'Ih': {'gbar': 0.000080, 'offset': -0.869600, 'slope':2.087+1, 'factor_exp':1/110},
-                                'Im': 0.000740},
-                        'e_pas': -75}
-    
-    return iascone_model_gbar
 
 
 class Mechs:
@@ -76,11 +48,6 @@ class Mechs:
                     if m == 'pas':
                         seg.pas.g = params['basal']['pas']
                         seg.pas.e = params['e_pas']
-                    # elif m in ['NaTs2_t_32d', 'SKv3_1']:
-                    #         gbar = params['basal'][m]
-                    #         distance = h.distance(seg.x, sec=seg.sec)
-                    #         gbar = gbar(distance)
-                    #         setattr(seg, 'gbar_'+m, gbar)
                     else:
                         setattr(seg, 'gbar_'+m, params['basal'][m])
 
