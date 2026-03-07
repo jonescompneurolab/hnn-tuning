@@ -20,6 +20,7 @@ from scipy.signal import find_peaks, butter, lfilter
 
 # custom scripts and paths
 import sys
+import pickle
 
 sys.path.append('/users/kduecker/hnn-tuning/new_model_HNN/new_model_HNN/')
 main_pth = '/users/kduecker/hnn-tuning/new_model_HNN/alpha_beta/'
@@ -279,16 +280,18 @@ def run_main(n_trials, n_procs, run_idx):
     params = sim_analysis_params_default()
 
     fb_delay = params['fb_delay']
+    # params['fb_delay'] = fb_delay
     filename = op.join(out_pth, f'alpha_beta_complex_simulation_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
-
+    netfilename = op.join(out_pth, f'net_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
+    dplfilename = op.join(out_pth, f'dpl_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
     params['n_procs'] = n_procs
-    params['prox_seed'] = run_idx+544
-    params['dist_seed'] = run_idx+476
+    params['prox_seed'] = run_idx-1+544
+    params['dist_seed'] = run_idx-1+476
    
     # set up dataframe
     df_dict = dict()
 
-    dpl, _ = run_alpha_beta_complex_simulations(params, n_trials=n_trials)
+    dpl, net = run_alpha_beta_complex_simulations(params, n_trials=n_trials)
 
     # alpha-beta ratio
     ab_ratio, alpha_power, beta_power, prob_overlap = alpha_beta_ratio(dpl)
@@ -308,6 +311,12 @@ def run_main(n_trials, n_procs, run_idx):
     })
 
     df.to_pickle(filename)
+
+    with open(netfilename, 'wb') as file:
+        pickle.dump(net, file) #
+
+    with open(dplfilename, 'wb') as file:
+        pickle.dump(dpl, file)
 
 if __name__ == '__main__':
 
