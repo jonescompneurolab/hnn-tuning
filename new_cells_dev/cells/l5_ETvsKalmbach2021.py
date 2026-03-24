@@ -3,16 +3,13 @@
 import neuron
 from neuron import h
 import matplotlib.pyplot as plt
-from neuron.units import ms, mV
+from neuron.units import ms
 import numpy as np
 from scipy import signal
 from scipy.signal import find_peaks
 import pickle
-from scipy.optimize import curve_fit
 from scipy.fft import fft, fftfreq
-from scipy.signal import chirp
-
-from scipy.signal import windows
+from scipy.signal import chirp, windows, savgol_filter
 
 pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/local_hnn/hnn_core/mod'
 figpth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_dev/figures/l5_ET_tuning/'
@@ -20,9 +17,8 @@ figpth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_
 import pandas as pd
 import sys
 sys.path.append('/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/utils')
-from cell_builder_utils import l5_params, _get_dends, _get_pyr_soma, Cell
-from l5_mechs_utils import Mechs, Ih_condu_hay, linear_gbar
-from l5_plot_utils import fig_conductances, fig_compartments, get_model_params, get_l5pyr
+
+from l5_plot_utils import get_model_params, get_l5pyr
 from functools import partial
 import os
 from general_plot_utils import assign_color, get_cmap_neurons
@@ -39,7 +35,7 @@ plt.rcParams['ytick.labelsize'] = 16     # Y-axis tick labels
 plt.rcParams['legend.fontsize'] = 16     # Legend text
 cols = np.array(([27, 158, 119], [217,95,2], [117,112,179], [231,41,138], [102,166,30]))/255
 
-pth_data = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/data/l5'
+pth_data = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/allen_data/l5'
 
 cm_neurons = get_cmap_neurons()
 
@@ -108,7 +104,7 @@ ax_0_0.set_yticks([-75, -65])
 l5pyr = get_l5pyr()
 stim = h.IClamp(l5pyr._nrn_sections['soma'](0.5))
 stim.delay = 5
-stim.dur = 5
+stim.dur = 3
 stim.amp = 3
 clamp_current = h.Vector().record(stim._ref_i)
 
@@ -240,10 +236,10 @@ t_chirp = np.arange(0, stim.dur, h.dt)
 
 f0 = 0.2
 f1 = 40
-A = .2
+A = .05
 
 # logarithmic chirp
-chirp_signal = A * chirp(t_chirp/1000, f0, 20, f1, method='log') - 0.1
+chirp_signal = A * chirp(t_chirp/1000, f0, 20, f1, method='log')
 
 stim.amp = 0
 # Apply the chirp stimulus using a Vector and play()
@@ -268,46 +264,42 @@ T = h.dt/1000
 freq = fftfreq(N, T)[:N//2]
 lowf = np.argmin(np.abs(freq-0.2))
 
-fft_membr = fft(v_rec.as_numpy()[1:]*hann_win)
-fft_chirp = fft(chirp_signal*hann_win)
+fft_membr = fft(v_rec.as_numpy()[1:])
+fft_chirp = fft(chirp_signal)
 
-fft_membr =  2.0/N * np.abs(fft_membr[:N//2])
-fft_chirp = 2.0/N * np.abs(fft_chirp[:N//2])
-
-impedance = fft_membr/fft_chirp
-zap = np.abs(impedance)
 maxf = int(np.where(freq == 40)[0])
-zap = zap[:maxf]
 
-# smoothen spectra
-chirp_smooth = np.zeros(fft_chirp.shape[0]-10)
-vrec_smooth = np.zeros(fft_membr.shape[0]-10)
-zap_smooth = np.zeros(zap.shape[0]-10)
+freq = freq[lowf:maxf]
+Z = fft_membr[lowf:maxf]/fft_chirp[lowf:maxf]
+zap = np.abs(Z[:N//2])
 
-for c in range(len(zap)-10):
-    chirp_smooth[c] = np.mean(fft_chirp[c:c+10])
-    vrec_smooth[c] = np.mean(fft_membr[c:c+10])
-    zap_smooth[c] = np.mean(zap[c:c+10])
+norm_zap = zap / zap.max()
 
-## Resonance frequency and 3db cutoff
-res_freq = freq[np.argmax(zap_smooth[lowf:maxf])] + 0.2
+res_freq = freq[np.argmax(zap)]
 res_freq_idx = np.argmin(np.abs(freq - res_freq))
-cutoff_3db_idx = np.argmin(np.abs(freq[lowf:maxf-10] - np.sqrt(0.5 *np.max(zap_smooth[lowf:maxf])))) + res_freq_idx
-cutoff_3db = freq[lowf:maxf-10][cutoff_3db_idx]
+cutoff3db = np.sqrt(0.5*norm_zap.max())
+cutoff3db_idx = np.argmin(np.abs(norm_zap - cutoff3db))
+cutoff3db_freq = freq[cutoff3db_idx]
+
+zap_smooth = savgol_filter(norm_zap, window_length=10, polyorder=1)  
 
 ax_1_0.plot(t_rec, v_rec.as_numpy(), color=cm_neurons[3], linewidth=2)
 ax_1_0.set_xlabel('time (ms)')
 ax_1_0.set_ylabel('membrane \n potential (mV)')
 ax_1_0.set_xlim([0,20000])
 ax_1_0.set_xticks(np.arange(0, 20001, 10000))
-ax_1_0.set_ylim([-85, -65])
-ax_1_0.set_yticks([-85, -65])
+ax_1_0.set_ylim([-76, -72])
+ax_1_0.set_yticks([-76, -72])
 
-ax_1_1.plot(freq[lowf:maxf-10], zap_smooth[lowf:maxf], color=cm_neurons[3], linewidth=2)
-ax_1_1.plot(res_freq,zap_smooth[np.argmax(zap_smooth[lowf:])], 'o', color='k', markersize=7)
-ax_1_1.plot(freq[cutoff_3db_idx],zap_smooth[cutoff_3db_idx], 'o', color=cols[0], markersize=7)
+ax_1_1.plot(freq, zap_smooth, color=cm_neurons[3], linewidth=2)
+ax_1_1.plot(res_freq,zap_smooth[np.argmax(norm_zap)], 'o', color='k', markersize=7)
+ax_1_1.plot(cutoff3db_freq,cutoff3db, 'o', color=cols[0], markersize=7)
 ax_1_1.set_xlabel('frequency (Hz)')
 ax_1_1.set_ylabel('amplitude')
+ax_1_1.set_xlim([0, 40])
+ax_1_1.set_xticks(np.arange(0, 41, 10))
+ax_1_1.set_ylim([0, 1])
+ax_1_1.set_yticks([0, 1])
 
 ## Rebound slope - MOVED TO ax_2_0
 
@@ -361,13 +353,14 @@ ax_2_0.set_ylabel('membrane \n potential (mV)')
 ax_2_0.set_xlabel('time (ms)')
 ax_2_0.set_xlim([0, 1200])
 ax_2_0.set_xticks(np.arange(0, 1201, 400))
-ax_2_0.set_ylim([-80, -70])
-ax_2_0.set_yticks([-80, -75, -70])
+ax_2_0.set_ylim([-85, -70])
+ax_2_0.set_yticks([-85, -70])
 
 ax_2_1.plot(steady_state, peak_heights, color=cm_neurons[3])
 ax_2_1.set_xlabel('steady state (mV)')
 ax_2_1.set_ylabel('depolarization \n potential (mV)')
-ax_2_1.set_ylim([-72, -70])
+ax_2_1.set_ylim([-74, -73])
+ax_2_1.set_yticks([-74, -73])
 
 rebound_slope = np.polyfit(steady_state, peak_heights,1)[0]
 
@@ -475,7 +468,7 @@ ax[10].set_yticks([1, 7])
 ax[10].set_ylabel('resonance freq')
 
 viol[11] = ax[11].violinplot(l5df['Cutoff'].values[np.isnan(l5df['Cutoff'].values)==False], vert=True, showmeans=False,showmedians=True)
-ax[11].plot(1,cutoff_3db, 'o', color=cm_neurons[3], markersize=8)
+ax[11].plot(1,cutoff3db_freq, 'o', color=cm_neurons[3], markersize=8)
 ax[11].set_ylabel('3db cutoff')
 ax[11].set_yticks([4, 16])
 for v in viol:

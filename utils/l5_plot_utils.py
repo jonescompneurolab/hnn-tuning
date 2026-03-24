@@ -54,7 +54,7 @@ def get_model_params():
                                 'Ca_HVA': 9.92e-04/2,
                                 'Ca_LVAst': 34.3e-4/2,
                                 'SK_E2': 441e-4*15,                      # increase this one to get burst followed by regular firing
-                                'Ih': 1e-4/2,
+                                'Ih': 1e-4/2*1.5,
                                 'Im': 1e-4,
                                 'K_Pst': 22.3e-4/2,#*0.1,
                                 'K_Tst': 812e-4/2,#*0.1,z

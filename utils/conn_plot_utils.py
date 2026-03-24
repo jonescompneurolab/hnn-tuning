@@ -1,5 +1,6 @@
 """"Utils for connectivity tuning figures."""
 
+from matplotlib.colors import Normalize
 import matplotlib.pyplot as plt
 from matplotlib import patches
 import numpy as np
@@ -18,6 +19,8 @@ from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 import os
 import matplotlib as mpl
+
+
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 # plt.rcParams['svg.fonttype'] = 'none'
@@ -58,144 +61,250 @@ def conn_space_constant(x, lamtha):
 
 def plot_connectivity_space_constant(net, lamtha1=6.125, lamtha2=6.125*0.8):
 
-    sources = ['L5_pyramidal', 'L5_basket', 'L2_pyramidal', 'L2_basket', ]
+    targets = ['L2_basket', 'L2_pyramidal', 'L5_basket', 'L5_pyramidal'  ]
+    src_inh = ['L2_basket', 'L5_basket']
+    src_pyr = ['L2_pyramidal', 'L5_pyramidal']
     E_receptors = ['ampa', 'nmda']
     I_receptors = ['gabaa', 'gabab']
 
     connectivity_data = dict()
 
-    for source in sources:
-        connectivity_data[source] = dict()
+    for src in targets:
+        connectivity_data[src] = dict()
+        
         for conn in net.connectivity:
-            if conn['src_type'] == source:
+            if conn['src_type'] == src:
                 t_type = conn['target_type']
-                check_t = connectivity_data[source].get(t_type)
-
+                check_t = connectivity_data[src].get(t_type)
                 if check_t is None:
-                    connectivity_data[source][t_type] = dict()       
+                    connectivity_data[src][t_type] = dict()       
                 rec = conn['receptor']
-                connectivity_data[source][t_type][rec] = conn['nc_dict']['A_weight']
+                connectivity_data[src][t_type][rec] = conn['nc_dict']['A_weight']
 
 
-    conn_im = np.zeros((len(sources), len(sources), 2))
+    conn_im_pyr = np.zeros((len(src_pyr), len(targets), 2))
+    conn_im_inh = np.zeros((len(src_inh), len(targets), 2))
 
-    xticklabels = dict()
-    for s, source in enumerate(sources):
-        xticks_source = []
-        for t, target in enumerate(sources):
+    xticklabels_pyr = []
+
+    for t, target in enumerate(targets):
+        for i, rec in enumerate(E_receptors):
+              xticklabels_pyr.append(f'{target}_{rec}')
+
+    for s, src in enumerate(src_pyr):
+        for t, target in enumerate(targets):   
+            check_t = connectivity_data[src].get(target)
             
-            check_t = connectivity_data[source].get(target)
-            if 'basket' in source and check_t is not None:
-                for i, rec in enumerate(I_receptors):
-                    if rec in connectivity_data[source][target]:
-                        conn_im[s, t, i] = -connectivity_data[source][target][rec]
-                    xticks_source.append(f'{target}_{rec}')
-            elif 'pyramidal' in source and check_t is not None:
+            if check_t is not None:
                 for i, rec in enumerate(E_receptors):
-                    if rec in connectivity_data[source][target]:
-                        conn_im[s, t, i] = connectivity_data[source][target][rec]
-                    xticks_source.append(f'{target}_{rec}')
-        xticklabels[source] = xticks_source
+                    if rec in connectivity_data[src][target]:
+                        conn_im_pyr[s, t, i] = connectivity_data[src][target][rec]
+                    
 
-    from matplotlib.colors import TwoSlopeNorm
+    xticklabels_inh = []
 
-    fig, ax = plt.subplots(1, 2,figsize=(16, 4),  width_ratios=[1, 0.5])
-    norm = TwoSlopeNorm(vmin=np.min(conn_im), vmax=np.round(np.max(conn_im),4), vcenter=0)
-    im = ax[0].pcolormesh(conn_im.reshape(len(sources), len(sources)*2), cmap='RdBu_r', norm=norm)
-    ax[0].set_yticks(np.arange(.5, 4.5, 1))
-    ax[0].set_yticklabels(sources, rotation='vertical', va='center')
+    for t, target in enumerate(targets):
+        for i, rec in enumerate(I_receptors):
+              xticklabels_inh.append(f'{target}_{rec}')
+
+    for s, src in enumerate(src_inh):
+        for t, target in enumerate(targets):
+            
+            check_t = connectivity_data[src].get(target)
+            if check_t is not None:
+                for i, rec in enumerate(I_receptors):
+                    if rec in connectivity_data[src][target]:
+                        conn_im_inh[s, t, i] = -connectivity_data[src][target][rec]
+
+    fig = plt.figure(figsize=(12, 4.), constrained_layout=True)
+    gs = GridSpec(2, 3, width_ratios=[1, 0.025, 0.75], figure=fig)
+
+    ax = [None]*3
+    ax[0] = fig.add_subplot(gs[0, 0])
+    ax[1] = fig.add_subplot(gs[1, 0])
+    cax1 = fig.add_subplot(gs[0, 1])
+    cax2 = fig.add_subplot(gs[1, 1])
+
+    ax[2] = fig.add_subplot(gs[:, 2])
+    #import ipdb; ipdb.set_trace()
+
+    conn_im_inh = conn_im_inh.reshape(len(src_inh), len(targets)*2)
+
+    conn_im_pyr = conn_im_pyr.reshape(len(src_pyr), len(targets)*2)
+
+    norm_inh = Normalize(vmin=np.min(conn_im_inh), vmax=0)
+    norm_pyr = Normalize(vmin=0, vmax=np.max(conn_im_pyr))
+
+    im = ax[0].pcolormesh(conn_im_pyr, cmap='Reds', norm=norm_pyr)
+    ax[0].set_yticks(np.arange(.5, 2.5, 1))
+    ax[0].set_yticklabels(src_pyr, rotation='vertical', va='center')
     ax[0].set_xticks(np.arange(0.5, 8.5,1))
-    ax[0].set_xticklabels(xticklabels['L2_pyramidal'])
-    cb = plt.colorbar(im)
-    cb.set_ticks([np.min(conn_im), 0, np.round(np.max(conn_im),4)])
-    cb.set_ticklabels([f'{np.min(conn_im+0.1):.4f}', '0', f'{np.round(np.max(conn_im),4):.4f}'])
-    cb.set_label('synaptic weight ($mu S$)')
+    ax[0].set_xticklabels(xticklabels_pyr)
+    axxtw = ax[0].secondary_xaxis('top')
+    axxtw.set_xticks(np.arange(0.5, 8.5,1))
+    axxtw.set_xticklabels(xticklabels_pyr)
+    #import ipdb; ipdb.set_trace()
+
+    cb2 = plt.colorbar(im, cax=cax1)
+    cb2.set_ticks([0, np.max(conn_im_pyr)])
+    cb2.set_ticklabels(['0', f'{np.max(conn_im_pyr):.4f}'])
+    cb2.set_label('synaptic weight ($mu S$)')
+
+
+    im = ax[1].pcolormesh(conn_im_inh, cmap='Blues_r', norm=norm_inh)
+    ax[1].set_yticks(np.arange(.5, 2.5, 1))
+    ax[1].set_yticklabels(src_inh, rotation='vertical', va='center')
+    ax[1].set_xticks(np.arange(0.5, 8.5,1))
+    ax[1].set_xticklabels(xticklabels_inh)
+    axxtw2 = ax[1].secondary_xaxis('top')
+    axxtw2.set_xticks(np.arange(0.5, 8.5,1))
+    axxtw2.set_xticklabels([])
+    #import ipdb; ipdb.set_trace()
+
+    cb1 = plt.colorbar(im, cax=cax2)
+    cb1.set_ticks([np.min(conn_im_inh), 0])
+    cb1.set_ticklabels([f'{np.min(conn_im_inh):.4f}', '0'])
+    cb1.set_label('synaptic weight ($mu S$)')
+
 
     # space constant
     x = np.linspace(0, 300, 1000)
     y = conn_space_constant(x, lamtha1*30)
     y2 = conn_space_constant(x, lamtha2*30)
-    ax[1].plot(x, 0.1*np.exp(-x**2/(2*129.66**2)), label='gauss with sigma=129.66, Campagnola, 2022', color='k')
-    ax[1].plot(x, y, linestyle='--', label='conn with space constant lamtha=6.125*d', color='#88e788')
-    ax[1].plot(x, y2, label='space constant lamtha=6.125*d*0.8', color='#198450')
-    ax[1].legend()
-    ax[1].set_xlabel('Distance (um)')
-    ax[1].set_ylabel('Connection weight')
-    ax[1].set_xlim([0, 300])
-    ax[1].set_ylim([0, 0.11])
+    ax[2].plot(x, 0.1*np.exp(-x**2/(2*129.66**2)), label='gauss with sigma=129.66, Campagnola, 2022', color='k')
+    ax[2].plot(x, y, linestyle='--', label='conn with space constant lamtha=6.125*d', color='#88e788')
+    ax[2].plot(x, y2, label='space constant lamtha=6.125*d*0.8', color='#198450')
+    ax[2].legend()
+    ax[2].set_xlabel('Distance (um)')
+    ax[2].set_ylabel('Connection weight')
+    ax[2].set_xlim([0, 300])
+    ax[2].set_ylim([0, 0.11])
+    ax[2].set_yticks([0, 0.02, 0.04, 0.06, 0.08, 0.1])
+    ax[2].set_yticklabels([0, 0.2, 0.4, 0.6, 0.8, 1])
 
     return fig
 
 def plot_connectivity_space_constant_jones(net):
 
-    sources = ['L5_pyramidal', 'L5_basket', 'L2_pyramidal', 'L2_basket']
+    targets = ['L2_basket', 'L2_pyramidal', 'L5_basket', 'L5_pyramidal'  ]
+    src_inh = ['L2_basket', 'L5_basket']
+    src_pyr = ['L2_pyramidal', 'L5_pyramidal']
     E_receptors = ['ampa', 'nmda']
     I_receptors = ['gabaa', 'gabab']
 
     connectivity_data = dict()
 
-    for source in sources:
-        connectivity_data[source] = dict()
+    for src in targets:
+        connectivity_data[src] = dict()
+        
         for conn in net.connectivity:
-            if conn['src_type'] == source:
+            if conn['src_type'] == src:
                 t_type = conn['target_type']
-                check_t = connectivity_data[source].get(t_type)
-
+                check_t = connectivity_data[src].get(t_type)
                 if check_t is None:
-                    connectivity_data[source][t_type] = dict()       
+                    connectivity_data[src][t_type] = dict()       
                 rec = conn['receptor']
-                connectivity_data[source][t_type][rec] = conn['nc_dict']['A_weight']
+                connectivity_data[src][t_type][rec] = conn['nc_dict']['A_weight']
 
 
-    conn_im = np.zeros((len(sources), len(sources), 2))
+    conn_im_pyr = np.zeros((len(src_pyr), len(targets), 2))
+    conn_im_inh = np.zeros((len(src_inh), len(targets), 2))
 
-    xticklabels = dict()
-    for s, source in enumerate(sources):
-        xticks_source = []
-        for t, target in enumerate(sources):
+    xticklabels_pyr = []
+
+    for t, target in enumerate(targets):
+        for i, rec in enumerate(E_receptors):
+              xticklabels_pyr.append(f'{target}_{rec}')
+
+    for s, src in enumerate(src_pyr):
+        for t, target in enumerate(targets):   
+            check_t = connectivity_data[src].get(target)
             
-            check_t = connectivity_data[source].get(target)
-            if 'basket' in source and check_t is not None:
-                for i, rec in enumerate(I_receptors):
-                    if rec in connectivity_data[source][target]:
-                        conn_im[s, t, i] = -connectivity_data[source][target][rec]
-                    xticks_source.append(f'{target}_{rec}')
-            elif 'pyramidal' in source and check_t is not None:
+            if check_t is not None:
                 for i, rec in enumerate(E_receptors):
-                    if rec in connectivity_data[source][target]:
-                        conn_im[s, t, i] = connectivity_data[source][target][rec]
-                    xticks_source.append(f'{target}_{rec}')
-        xticklabels[source] = xticks_source
+                    if rec in connectivity_data[src][target]:
+                        conn_im_pyr[s, t, i] = connectivity_data[src][target][rec]
+                    
 
-    from matplotlib.colors import TwoSlopeNorm
+    xticklabels_inh = []
 
-    fig, ax = plt.subplots(1, 2,figsize=(16, 4),  width_ratios=[1, 0.5])
-    norm = TwoSlopeNorm(vmin=np.min(conn_im), vmax=np.round(np.max(conn_im),4), vcenter=0)
-    im = ax[0].pcolormesh(conn_im.reshape(len(sources), len(sources)*2), cmap='RdBu_r', norm=norm)
-    ax[0].set_yticks(np.arange(.5, 4.5, 1))
-    ax[0].set_yticklabels(sources, rotation='vertical', va='center')
+    for t, target in enumerate(targets):
+        for i, rec in enumerate(I_receptors):
+              xticklabels_inh.append(f'{target}_{rec}')
+
+    for s, src in enumerate(src_inh):
+        for t, target in enumerate(targets):
+            
+            check_t = connectivity_data[src].get(target)
+            if check_t is not None:
+                for i, rec in enumerate(I_receptors):
+                    if rec in connectivity_data[src][target]:
+                        conn_im_inh[s, t, i] = -connectivity_data[src][target][rec]
+
+    fig = plt.figure(figsize=(12, 4.), constrained_layout=True)
+    gs = GridSpec(2, 3, width_ratios=[1, 0.025, 0.75], figure=fig)
+
+    ax = [None]*3
+    ax[0] = fig.add_subplot(gs[0, 0])
+    ax[1] = fig.add_subplot(gs[1, 0])
+    cax1 = fig.add_subplot(gs[0, 1])
+    cax2 = fig.add_subplot(gs[1, 1])
+
+    ax[2] = fig.add_subplot(gs[:, 2])
+    #import ipdb; ipdb.set_trace()
+
+    conn_im_inh = conn_im_inh.reshape(len(src_inh), len(targets)*2)
+
+    conn_im_pyr = conn_im_pyr.reshape(len(src_pyr), len(targets)*2)
+
+    norm_inh = Normalize(vmin=np.min(conn_im_inh), vmax=0)
+    norm_pyr = Normalize(vmin=0, vmax=np.max(conn_im_pyr))
+
+    im = ax[0].pcolormesh(conn_im_pyr, cmap='Reds', norm=norm_pyr)
+    ax[0].set_yticks(np.arange(.5, 2.5, 1))
+    ax[0].set_yticklabels(src_pyr, rotation='vertical', va='center')
     ax[0].set_xticks(np.arange(0.5, 8.5,1))
-    ax[0].set_xticklabels(xticklabels['L2_pyramidal'])
-    cb = plt.colorbar(im)
-    cb.set_ticks([np.min(conn_im), 0, np.round(np.max(conn_im),4)])
-    cb.set_ticklabels([f'{np.min(conn_im+0.1):.4f}', '0', f'{np.round(np.max(conn_im),4):.4f}'])
-    cb.set_label('synaptic weight ($mu S$)')
+    ax[0].set_xticklabels(xticklabels_pyr)
+    axxtw = ax[0].secondary_xaxis('top')
+    axxtw.set_xticks(np.arange(0.5, 8.5,1))
+    axxtw.set_xticklabels(xticklabels_pyr)
+    #import ipdb; ipdb.set_trace()
 
+    cb2 = plt.colorbar(im, cax=cax1)
+    cb2.set_ticks([0, np.max(conn_im_pyr)])
+    cb2.set_ticklabels(['0', f'{np.max(conn_im_pyr):.4f}'])
+    cb2.set_label('synaptic weight ($mu S$)')
+
+
+    im = ax[1].pcolormesh(conn_im_inh, cmap='Blues_r', norm=norm_inh)
+    ax[1].set_yticks(np.arange(.5, 2.5, 1))
+    ax[1].set_yticklabels(src_inh, rotation='vertical', va='center')
+    ax[1].set_xticks(np.arange(0.5, 8.5,1))
+    ax[1].set_xticklabels(xticklabels_inh)
+    axxtw2 = ax[1].secondary_xaxis('top')
+    axxtw2.set_xticks(np.arange(0.5, 8.5,1))
+    axxtw2.set_xticklabels([])
+    #import ipdb; ipdb.set_trace()
+
+    cb1 = plt.colorbar(im, cax=cax2)
+    cb1.set_ticks([np.min(conn_im_inh), 0])
+    cb1.set_ticklabels([f'{np.min(conn_im_inh):.4f}', '0'])
+    cb1.set_label('synaptic weight ($mu S$)')
     # space constant
     x = np.linspace(0, 300, 1000)
     y = conn_space_constant(x, 6.125*30)
     y1 = conn_space_constant(x, 3*30)
     y2 = conn_space_constant(x, 50*30)
     y3 = conn_space_constant(x, 20*30)
-    ax[1].plot(x, y, label='Campagnola', color='k')
-    ax[1].plot(x, y1, label='E-E', color='#2eb774')
-    ax[1].plot(x, y2, label='I-E', color='#88e788')
-    ax[1].plot(x, y3, label='I-I', color='#198450')
-    ax[1].legend()
-    ax[1].set_xlabel('Distance (um)')
-    ax[1].set_ylabel('Connection weight')
-    ax[1].set_xlim([0, 300])
-    ax[1].set_ylim([0, 0.11])
+    ax[2].plot(x, y, label='Campagnola', color='k')
+    ax[2].plot(x, y1, label='E-E', color='#2eb774')
+    ax[2].plot(x, y2, label='I-E', color='#88e788')
+    ax[2].plot(x, y3, label='I-I', color='#198450')
+    ax[2].legend()
+    ax[2].set_xlabel('Distance (um)')
+    ax[2].set_ylabel('Connection weight')
+    ax[2].set_xlim([0, 300])
+    ax[2].set_ylim([0, 0.11])
 
     return fig
 

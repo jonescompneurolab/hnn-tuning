@@ -307,15 +307,103 @@ class Cell:
 
     def _create_synapses(self, add_syn=None, syn_loc=None):
 
-        if add_syn == 'Exp2Syn':
-            self.syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
-        elif add_syn == 'NMDA_gao':
-            self.syn = h.NMDA_gao(self._nrn_sections[syn_loc](0.5))
-        elif add_syn == 'gabab':
-            self.syn = h.gabab(self._nrn_sections[syn_loc](0.5))
-            self.syn.e = -80
-            self.syn.tau1 = 45
-            self.syn.tau2 = 200
+        if type(add_syn) is str:
+            if syn_loc is None:
+                raise ValueError('syn_loc must be specified if add_syn is a string.')
+            elif type(syn_loc) is str:
+                if add_syn == 'Exp2Syn':
+                    self.syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
+                elif add_syn == 'NMDA_gao':
+                    self.syn = h.NMDA_gao(self._nrn_sections[syn_loc](0.5))
+                elif add_syn == 'gabab':
+                    self.syn = h.gabab(self._nrn_sections[syn_loc](0.5))
+                    self.syn.e = -80
+                    self.syn.tau1 = 45
+                    self.syn.tau2 = 200
+                elif add_syn == 'gabaa_som+':
+                    gabaa_syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
+                    gabaa_syn.e = -80
+                    gabaa_syn.tau1 = 1.5
+                    gabaa_syn.tau2 = 20
+                    self.syn.append(gabaa_syn)
+            elif type(syn_loc) is list:
+                print('Adding multiple synapses to cell. syn_loc should be a string.')
+                self.syn = list()
+                for loc in syn_loc:
+                    if add_syn == 'Exp2Syn':
+                        self.syn.append(h.Exp2Syn(self._nrn_sections[loc](0.5)))
+                    elif add_syn == 'NMDA_gao':
+                        self.syn.append(h.NMDA_gao(self._nrn_sections[loc](0.5)))
+                    elif add_syn == 'gabab':
+                        gabab_syn = h.gabab(self._nrn_sections[loc](0.5))
+                        gabab_syn.e = -80
+                        gabab_syn.tau1 = 45
+                        gabab_syn.tau2 = 200
+                        self.syn.append(gabab_syn)
+                    elif add_syn == 'gabaa_som+':
+                        gabaa_syn = h.Exp2Syn(self._nrn_sections[loc](0.5))
+                        gabaa_syn.e = -80
+                        gabaa_syn.tau1 = 1.5
+                        gabaa_syn.tau2 = 20
+                        self.syn.append(gabaa_syn)
+                    
+        elif type(add_syn) is list:
+            print('Adding multiple synapses to cell.')
+            self.syn = list()
+            for syn_name in add_syn:
+                if type(syn_loc) is None:
+                    raise ValueError('syn_loc must be specified if add_syn is a list.')
+                elif type(syn_loc) is str:
+                    if syn_name == 'Exp2Syn':
+                        exp2syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
+
+                        exp2syn.tau1 = 0.5
+                        exp2syn.tau2 = 5.0
+                        exp2syn.e = 0.0
+
+                        self.syn.append(exp2syn)
+
+                    elif syn_name == 'NMDA_gao':
+                        self.syn.append(h.NMDA_gao(self._nrn_sections[syn_loc](0.5)))
+                    elif syn_name == 'gabab':
+                        gabab_syn = h.gabab(self._nrn_sections[syn_loc](0.5))
+                        gabab_syn.e = -80
+                        gabab_syn.tau1 = 45
+                        gabab_syn.tau2 = 200
+                        self.syn.append(gabab_syn)
+                    elif syn_name == 'gabaa_som+':
+                        gabaa_syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
+                        gabaa_syn.e = -80
+                        gabaa_syn.tau1 = 1.5
+                        gabaa_syn.tau2 = 20
+                        self.syn.append(gabaa_syn)
+                elif type(syn_loc) is list:
+                    print('Adding multiple synapses to cell. syn_loc should be a string.')
+                    for loc in syn_loc:
+                        if syn_name == 'Exp2Syn':
+                            exp2syn = h.Exp2Syn(self._nrn_sections[loc](0.5))
+
+                            exp2syn.tau1 = 0.5
+                            exp2syn.tau2 = 5.0
+                            exp2syn.e = 0.0
+
+                            self.syn.append(exp2syn)
+
+                        elif syn_name == 'NMDA_gao':
+                            self.syn.append(h.NMDA_gao(self._nrn_sections[loc](0.5)))
+                        elif syn_name == 'gabab':
+                            gabab_syn = h.gabab(self._nrn_sections[loc](0.5))
+                            gabab_syn.e = -80
+                            gabab_syn.tau1 = 45
+                            gabab_syn.tau2 = 200
+                            self.syn.append(gabab_syn)
+                        elif syn_name == 'gabaa_som+':
+                            gabaa_syn = h.Exp2Syn(self._nrn_sections[loc](0.5))
+                            gabaa_syn.e = -80
+                            gabaa_syn.tau1 = 1.5
+                            gabaa_syn.tau2 = 20
+                            self.syn.append(gabaa_syn)
+
         #self.syn.tau = 2
 
     def build(self, sec_name_apical=None, add_syn=None, syn_loc=None):
@@ -388,11 +476,11 @@ def l5_params(model='hay'):
         'L5Pyr_soma_L': 39.,
         'L5Pyr_soma_diam': 28.9,
         'L5Pyr_soma_cm': 1,
-        'L5Pyr_soma_Ra': 100, #Rich 495.73, Hay: 100
+        'L5Pyr_soma_Ra': 200, #Rich 495.73, Hay: 100
 
         # Dendrite
         'L5Pyr_dend_cm': 1,
-        'L5Pyr_dend_Ra': 100, #Rich 495.73, Hay: 100
+        'L5Pyr_dend_Ra': 200, #Rich 495.73, Hay: 100
 
         'L5Pyr_apicaltrunk_L': 102.,
         'L5Pyr_apicaltrunk_diam': 10.2,

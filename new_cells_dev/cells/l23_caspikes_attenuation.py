@@ -26,13 +26,13 @@ from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 
 
-# Plot conductances
-fig = plot_conductances()
-fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.pdf'))
-fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.svg'))
+# # Plot conductances
+# fig = plot_conductances()
+# fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.pdf'))
+# fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.svg'))
 
-fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.png'))
-plt.close('all')
+# fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.png'))
+# plt.close('all')
 
 # Plot attenuation from soma
 _, cols_dist, _, _, _ = get_colormap()
