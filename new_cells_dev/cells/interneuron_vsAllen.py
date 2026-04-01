@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from neuron.units import ms, mV
 import numpy as np
 pth_mod = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/hnn-core/hnn_core/mod'
-pth_data = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/data/interneuron'
+pth_data = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/allen_data/interneuron'
 figpth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_dev/figures/interneuron/'
 import os
 os.makedirs(figpth, exist_ok=True)

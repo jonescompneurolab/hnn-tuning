@@ -84,11 +84,27 @@ l5pyr = get_l5pyr(v_init={'soma': -65,
                 'apical_tuft': -65})
  
 t = h.Vector().record(h._ref_t)
-soma_voltg = h.Vector().record(l5pyr._nrn_sections['soma'](0.5)._ref_v)
+section_names = ['soma', 'basal_1','basal_2', 'basal_3', 'apical_oblique', 'apical_trunk','apical_1', 'apical_2', 'apical_tuft']
+v_s = []
+for s, section in enumerate(section_names):
+    v_s.append(h.Vector().record(l5pyr._nrn_sections[section](0.5)._ref_v))
+
+
 
 h.celsius = 37
 h.finitialize()
 h.continuerun(100 * ms)
+
+v_init = {}
+for s, section in enumerate(section_names):
+    if section == 'soma':
+        soma_voltg = v_s[s].as_numpy()
+
+    v = v_s[s].as_numpy()
+    v_init[section] = v[-1]
+
+print(v_init, flush=True)
+
 rmp = soma_voltg[-3]
 
 ax_0_0.plot(t,soma_voltg, color=cm_neurons[3], linewidth=2)

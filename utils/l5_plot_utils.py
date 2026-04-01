@@ -77,15 +77,15 @@ def get_model_params():
                                 'pas': {'g': 0.0000589/1.5,
                                           'e': -85}}}
 
-def get_l5pyr(v_init={'soma': -70.62820902070445,
-                'basal_1': -70.68833400623593,
-                'basal_2': -70.77775514983897,
-                'basal_3': -70.77775514983897,
-                'apical_oblique': -70.59471467725159,
-                'apical_trunk': -70.5815879670308,
-                'apical_1': -69.62883464685193,
-                'apical_2': -65.7496819357426,
-                'apical_tuft': -61.28751781712565}, add_syn=None, syn_loc=None):
+def get_l5pyr(v_init={'soma': np.float64(-71), 
+              'basal_1': np.float64(-71), 
+              'basal_2': np.float64(-71), 
+              'basal_3': np.float64(-71), 
+              'apical_oblique': np.float64(-71), 
+              'apical_trunk': np.float64(-71), 
+              'apical_1': np.float64(-71), 
+              'apical_2': np.float64(-66.1144274029203), 
+              'apical_tuft': np.float64(-59.84726333175576)}, add_syn=None, syn_loc=None):
     
     # get paramaters
     section_params, end_pts, cell_tree = l5_params()
