@@ -4,7 +4,7 @@
 #SBATCH --mem=80G
 #SBATCH --ntasks=60
 #SBATCH --exclude=node2430,node2414,node2428,node2418
-#SBATCH --array 1
+#SBATCH --array 1-3
 
 # Specify an output file
 #SBATCH -o mu_sim-%j.out
