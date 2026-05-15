@@ -8,7 +8,8 @@ import hnn_core
 from hnn_core.params import _short_name
 
 from hnn_core import duecker_ET_model, simulate_dipole, read_dipole, MPIBackend, average_dipoles
-from hnn_core.optimization import Optimizer, add_opt_drives, set_params_opt_drives
+from hnn_core.optimization import Optimizer, add_opt_drives
+from hnn_core.network import pick_connection
 
 import numpy as np
 
@@ -19,6 +20,32 @@ from scipy.stats import pearsonr
 pathfig = os.path.join(os.getcwd(), 'figures')
 pathgen = '/users/kduecker/hnn-tuning/hnn-data/'
 
+def set_params_opt_drives(net, param_values):
+    drive_names = list(net.external_drives.keys())
+    for name in drive_names:
+        target_cell_types = net.external_drives[name]['target_types']
+
+        net.external_drives[name]['dynamics']['mu'] = param_values[f'{name}_mu']
+        net.external_drives[name]['dynamics']['sigma'] = param_values[f'{name}_sigma']
+        #import pdb; pdb.set_trace()
+        net.external_drives[name]['dynamics']['numspikes'] = max(1, int(np.round(param_values[f'{name}_numspikes'])))
+
+        # reinstate external drives to be able to fill in below
+        for receptor in ['ampa', 'nmda']:
+                        net.external_drives[name][f'weights_{receptor}'] = {
+                        ct: 0.0 for ct in target_cell_types
+                    }
+
+        for cell_type in target_cell_types:
+            for receptor in ['ampa', 'nmda']:
+                
+                conn_idx = pick_connection(net, src_gids=name, target_gids=cell_type, receptor=receptor)
+                assert len(conn_idx) == 1
+                
+                # KD: I still think this isn't the user-friendliest way as this is pretty hidden. 
+                # Will fix.
+                net.connectivity[conn_idx[0]]['nc_dict']['A_weight'] = 10 ** param_values[f'{name}_{cell_type}_{receptor}']
+                net.external_drives[name][f'weights_{receptor}'][cell_type] = 10 ** param_values[f'{name}_{cell_type}_{receptor}']
 
 def get_constraints_init_params(continue_checkpoint=False):
 
@@ -40,15 +67,15 @@ def get_constraints_init_params(continue_checkpoint=False):
                     'dist1_L2_pyramidal_nmda': -3,
                     'dist1_L5ET_nmda': -1,
 
-                    'prox2_L2_basket_ampa': -1.5,
-                    'prox2_L2_pyramidal_ampa': -3,
-                    'prox2_L5_basket_ampa': -1.4e-3,
-                    'prox2_L5ET_ampa': -0.026,
+                    'prox2_L2_basket_ampa': -2,
+                    'prox2_L2_pyramidal_ampa': -.5,
+                    'prox2_L5_basket_ampa': -3,
+                    'prox2_L5ET_ampa': -0.5,
 
-                    'prox2_L2_basket_nmda': -7.1,
-                    'prox2_L2_pyramidal_nmda': -6.5,
-                    'prox2_L5_basket_nmda': -0.45,
-                    'prox2_L5ET_nmda':  -0.43,
+                    'prox2_L2_basket_nmda': -2,
+                    'prox2_L2_pyramidal_nmda': -.7,
+                    'prox2_L5_basket_nmda': -3,
+                    'prox2_L5ET_nmda':  -0.7,
                     
                     'prox1_mu': 16.5,
                     'prox1_sigma': 3,
@@ -80,14 +107,14 @@ def get_constraints_init_params(continue_checkpoint=False):
                         'dist1_L5ET_nmda': (-6, 0),
 
                         'prox2_L2_basket_ampa': (-15, 0),
-                        'prox2_L2_pyramidal_ampa': (-15, -1),
+                        'prox2_L2_pyramidal_ampa': (-15, -.5),
                         'prox2_L5_basket_ampa': (-15, 0),
-                        'prox2_L5ET_ampa': (-15, 0),
+                        'prox2_L5ET_ampa': (-15, -0.5),
 
                         'prox2_L2_basket_nmda': (-15, 0),
-                        'prox2_L2_pyramidal_nmda': (-15, -1),
+                        'prox2_L2_pyramidal_nmda': (-15, -.5),
                         'prox2_L5_basket_nmda': (-15, 0),
-                        'prox2_L5ET_nmda': (-15, 0),
+                        'prox2_L5ET_nmda': (-15, -0.5),
                         
                         'prox1_mu': (15, 25),
                         'prox1_sigma': (1, 4),
@@ -120,7 +147,7 @@ def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
     prox_weights  = {cell_type: 0.0 for cell_type in prox_cell_type}
     dist_weights  = {cell_type: 0.0 for cell_type in dist_cell_type}
 
-    prox_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5_basket": 1.0, "L5ET": 1.0,}
+    prox_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5_basket": 1.0, "L5ET": 1.0}
     dist_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5ET": 0.1}
 
     # Add proximal drives
