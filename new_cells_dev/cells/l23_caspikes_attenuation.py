@@ -26,15 +26,15 @@ from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 
 
-# # Plot conductances
-# fig = plot_conductances()
-# fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.pdf'))
-# fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.svg'))
+# Plot conductances
+fig = plot_conductances()
+fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.pdf'))
+fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.svg'))
 
 # fig.savefig(os.path.join(figpth, 'l23_conductances_inp_res_membrane_time.png'))
 # plt.close('all')
 
-# Plot attenuation from soma
+#Plot attenuation from soma
 _, cols_dist, _, _, _ = get_colormap()
 # plt.close('all')
 fig = plot_attenuation(cols_dist)
@@ -48,13 +48,13 @@ fig.savefig(os.path.join(figpth, 'summary_attenuation_dend_soma.png'), dpi=300)
 fig.savefig(os.path.join(figpth, 'summary_attenuation_dend_soma.pdf'), dpi=300)
 plt.close()
 
-# Plot Ca-spike
+# # Plot Ca-spike
 
-fig = plot_ca_spike()
+# fig = plot_ca_spike()
 
-fig.savefig(os.path.join(figpth, 'ca_spikes.png'), dpi=300)
-fig.savefig(os.path.join(figpth, 'ca_spikes.pdf'), dpi=300)
-fig.savefig(os.path.join(figpth, 'ca_spikes.svg'), dpi=300)
+# fig.savefig(os.path.join(figpth, 'ca_spikes.png'), dpi=300)
+# fig.savefig(os.path.join(figpth, 'ca_spikes.pdf'), dpi=300)
+# fig.savefig(os.path.join(figpth, 'ca_spikes.svg'), dpi=300)
 
 # fig = plot_ca_spike4x2()
 

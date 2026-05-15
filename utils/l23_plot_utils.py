@@ -63,12 +63,12 @@ def get_model_params():
 
                                 'SK_E2': 3.e-05,
                                 'pas': 1.0 / 37000,
-                                'Ih': 0.000080*2,#/2,
+                                'Ih': 0.000080/4,
                                 'Im': 8e-3*0.05,
                                 'CaDynamics_E2': {'decay': 90, 'gamma': 0.00053300}},
                         'basal': {'NaTs2_t_32d': 0.008009,#partial(linear_gbar,0.008009/2,0,255),
                                   'SKv3_1': 0.000513,#partial(linear_gbar,0,6_930e-4*0.1,255),
-                                  'Ih': 0.00008*2,#/2,
+                                  'Ih': 0.00008/4,
                                   'pas':  1.0 / 37000.0},
                         'dend': {'NaTa_t_32d': 0.008*0.01,
                                 'SKv3_1': 0.003*4,
@@ -76,19 +76,19 @@ def get_model_params():
                                 'Ca_LVAst': partial(linear_gbar, 0.0000001, 0.001, 200, hotzone=[200, 400], hotzone_factor=4),
                                 'pas': 1.0 /37000,
                                 'SK_E2': partial(linear_gbar, 3.e-06, 3.e-03, 200, hotzone=[200, 400], hotzone_factor=10), #3.547577318022417e-05,
-                                'Ih': partial(Ih_condu_hay, 0.00008),
+                                'Ih': partial(Ih_condu_hay, 0.00008/2),
                                 'Im': 0.0009*0.0001,
                                 'CaDynamics_E2': {'decay': 70, 'gamma': 0.00053300*2.5}},
                         'e_pas': -75}
 
-def get_l2pyr(v_init={'soma': -73.91534035708573,
-                        'basal_1': -73.93352687563383,
-                        'basal_2': -73.98646383934111,
-                        'basal_3': -73.98646383934111,
-                        'apical_oblique': -73.91421209292815,
-                        'apical_trunk': -73.88877758950657,
-                        'apical_1': -73.64560269252748,
-                        'apical_tuft': -73.27793049058045}):
+def get_l2pyr(v_init={'soma': np.float64(-71.78874217085284), 
+              'basal_1': np.float64(-71.78937996213429), 
+              'basal_2': np.float64(-71.79124296245172), 
+              'basal_3': np.float64(-71.79124296245172), 
+              'apical_oblique': np.float64(-71.72499593245432), 
+              'apical_trunk': np.float64(-71.75508099484644), 
+              'apical_1': np.float64(-71.52576752573326), 
+              'apical_tuft': np.float64(-71.20459607525555)}):
                 
     model_params = get_model_params()
     
@@ -216,8 +216,8 @@ def plot_conductances():
     ax = ax.flatten()
     ax[0].plot(distance_apical, gbar_Ih_apical, color='k')
     ax[0].set_ylabel('$gbar_{Ih} (S/cm^2)$')
-    ax[0].set_ylim([0, 0.001])
-    ax[0].set_yticks(np.arange(0, 0.0011, 0.0005))
+    ax[0].set_ylim([0, 0.0005])
+    ax[0].set_yticks(np.arange(0, 0.00051, 0.00025))
     ax[1].plot(distance_apical, gbar_Ca_HVA_apical, color='k')
     ax[1].set_ylabel('$gbar_{Ca_{HVA}} (S/cm^2)$')
     ax[1].set_ylim([0, 0.009])
@@ -322,7 +322,7 @@ def plot_ca_spike4x2():
     soma_voltg = h.Vector().record(l2pyr._nrn_sections['soma'](0.5)._ref_v)
     clamp_current = h.Vector().record(stim._ref_i)
 
-    dend_voltg = h.Vector().record(l2pyr._nrn_sections['apical_tuft'](0.1)._ref_v)
+    dend_voltg = h.Vector().record(l2pyr._nrn_sections['apical_tuft'](0.1)._ref_v) 
 
     soma_ca = h.Vector().record(l2pyr._nrn_sections['soma'](0.5)._ref_cai)
             
@@ -525,8 +525,8 @@ def plot_ca_spike():
     ax[7].set_xlim([300, 350])
     ax[7].set_ylim([0, 0.0007])
 
-    delay = (dend_peaks[0][1:] - soma_peaks[0])*h.dt
-    widths = dend_peaks[1]['widths'][1:] *h.dt
+    delay = (dend_peaks[0]- soma_peaks[0])*h.dt
+    widths = dend_peaks[1]['widths'] *h.dt
 
     ax[3].plot(np.ones(len(delay)), delay, 'o', label='delay bAP (ms)', color='w', markeredgecolor=cm_neurons[1], markersize=9)
     ax[3].set_ylabel('delay (dendrite - soma) (ms)')

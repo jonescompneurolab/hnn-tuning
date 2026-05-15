@@ -241,7 +241,7 @@ sag_stim_amp = np.linspace(-0.5, -0.1, 10) #np.unique(np.concatenate((sag_stim_a
 tau_ms = np.zeros_like(sag_stim_amp)
 steady_state = np.zeros_like(sag_stim_amp)
 min_membr_pot = np.zeros_like(sag_stim_amp)
-
+v_bsl = np.zeros_like(sag_stim_amp)
 for i, amp in enumerate(sag_stim_amp):
     l2pyr= get_l2pyr()
 
@@ -266,8 +266,13 @@ for i, amp in enumerate(sag_stim_amp):
     # Sag ratio
     steady_idx = np.argmin(np.abs(t-((stim.delay+stim.dur)*0.9)))
     steady_state[i] = v_np[steady_idx]
-    min_membr_pot[i] = np.min(v_np)
-
+    start_peak = np.argmin(np.abs(t_np - (t_np[np.argmin(v_np)]- 5/2))) # from Allen ipfx https://github.com/AllenInstitute/ipfx/blob/c607a36e25618a6bb8ba5438c1cd945fb429e659/ipfx/subthresh_features.py#L131
+    end_peak = np.argmin(np.abs(t_np - (t_np[np.argmin(v_np)]+5/2)))
+    min_membr_pot[i] = v_np[start_peak:end_peak].mean()
+    bsl_end = np.argmin(np.abs(t-stim.delay))
+    bsl_start = np.argmin(np.abs(t-(stim.delay-10)))
+    
+    v_bsl[i] = np.mean(v_np[bsl_start:bsl_end])
     # Membrane time constant
 
     start_idx = np.where(t_np > stim.delay)[0][0]
@@ -290,11 +295,10 @@ ax[4].set_ylabel('membrane potential (mV)')
 ax[4].set_xlabel('time (ms)')
 ax[4].set_yticks([-110, -90, -70])
 
-sag_ratio = np.mean((min_membr_pot-steady_state)/min_membr_pot)
 avg_tau_ms = np.mean(tau_ms)
 
 ephys_measures['tau'] = avg_tau_ms
-ephys_measures['sag'] = np.mean((min_membr_pot-steady_state)/min_membr_pot)
+ephys_measures['sag'] = np.mean((min_membr_pot-steady_state)/(min_membr_pot-v_bsl))
 
 for a in ax:
     a.spines['top'].set_visible(False)
@@ -311,7 +315,7 @@ plt.close('all')
 
 measures = ['RMP', 'sag', 'mean_isi', 'first_isi', 'upstroke_downstroke', 'ap_width', 'ap_threshold', 'FR_slope', 'tau']
 label = ['resting potential (mV)', 'sag ratio', 'mean isi (ms)', 'first isi (ms)', 'upstroke/downstroke', 'AP width (ms)', 'AP threshold (mV)', 'FI slope (spikes/pA)', r'$\tau_{m}$']
-ylims = [(-85,-55), (-0.1,.4), (0, 450), (0, 450), (1, 6), (0, 2), (-75, -25), (0, 0.5), (0, 65)]
+ylims = [(-85,-55), (-0.1,0.4), (0, 450), (0, 450), (1, 6), (0, 2), (-75, -25), (0, 0.5), (0, 65)]
 fig, ax = plt.subplots(3,3, figsize=(8,6))
 cm_neurons = np.array([[218,166,156], [164,30,79], [119,161,187],[92,114,183]])/255
 

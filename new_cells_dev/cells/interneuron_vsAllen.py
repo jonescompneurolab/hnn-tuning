@@ -51,10 +51,10 @@ section['soma'] = _get_basket_soma()
 mech_class = inhmechs(pth_mod)
 
 # Cumberland 2023 and Golomb 2007 parameters
-inh_params = {'soma': {'nas': 0.1125, 
-                'kdr': 0.225*2,
-                'kd': 0.00039*2,
-                'Ih': 2e-5*9,
+inh_params = {'soma': {'nas': 0.11252/1.35, 
+                'kdr': 0.225,
+                'kd': 0.00039,
+                'Ih': 2e-5,
                 'pas': {'g': .0001,
                         'e': -70}}}
 
@@ -231,7 +231,8 @@ ax[3].set_ylabel('FR (Hz)')
 ax[3].set_xlabel('amplitude (nA)')
 ax[3].set_xlim([ampl[0], ampl[-1]])
 ax[3].set_xticks([0.2, 0.4, 0.6])
-ax[3].set_ylim([80, 150])
+ax[3].set_ylim([80, 160])
+ax[3].set_yticks([80, 120, 160])
 pA = 0.001 # nA (convert nA to pA)
 ephys_measures['FR_slope'] = np.polyfit(ampl,fr,1)[0]
 ephys_measures['FR_slope'] *= pA
@@ -242,7 +243,7 @@ sag_stim_amp = np.unique(np.concatenate(inh_allen['sag_stim_amp'].dropna().value
 tau_ms = np.zeros_like(sag_stim_amp)
 steady_state = np.zeros_like(sag_stim_amp)
 min_membr_pot = np.zeros_like(sag_stim_amp)
-
+v_bsl = np.zeros_like(sag_stim_amp)
 for i, amp in enumerate(sag_stim_amp):
     inh_cell = Cell(section, cell_tree=None, cell_type='Inhibitory', gid=0)
     inh_cell.build()
@@ -269,9 +270,11 @@ for i, amp in enumerate(sag_stim_amp):
     # Sag ratio
     steady_idx = np.argmin(np.abs(t-((stim.delay+stim.dur)*0.9)))
     steady_state[i] = v_np[steady_idx]
-    min_membr_pot[i] = np.min(v_np)
-
-    # Membrane time constant
+    start_peak = np.argmin(np.abs(t_np - (t_np[np.argmin(v_np)]- 5/2))) # from Allen ipfx https://github.com/AllenInstitute/ipfx/blob/c607a36e25618a6bb8ba5438c1cd945fb429e659/ipfx/subthresh_features.py#L131
+    end_peak = np.argmin(np.abs(t_np - (t_np[np.argmin(v_np)]+5/2)))
+    min_membr_pot[i] = v_np[start_peak:end_peak].mean()
+    
+    # # Membrane time constant
 
     start_idx = np.where(t_np > stim.delay)[0][0]
     end_idx = np.where(t_np > stim.delay + stim.dur*0.9)[0][0]      # steady state, see https://pmc.ncbi.nlm.nih.gov/articles/PMC2775376/
@@ -289,17 +292,14 @@ for i, amp in enumerate(sag_stim_amp):
     # ax[5].plot(t_np[idx+start_idx], v_np[idx+start_idx], 'o', color='k', markersize=9)
 
 ax[4].set_xlim([0, 700])
-ax[4].set_yticks([-120, -100, -80, -60])
+ax[4].set_yticks([-150, -100, -50])
 ax[4].set_ylabel('membrane potential (mV)')
 ax[4].set_xlabel('time (ms)')
-ax[4].set_ylim([-130, -60])
-ax[4].set_yticks([-120, -100, -80, -60])
-sag_ratio = np.mean((min_membr_pot-steady_state)/min_membr_pot)
+ax[4].set_ylim([-150, -50])
 avg_tau_ms = np.mean(tau_ms)
 
 ephys_measures['tau'] = avg_tau_ms
-ephys_measures['sag'] = np.mean((min_membr_pot-steady_state)/min_membr_pot)
-
+ephys_measures['sag'] = np.mean((min_membr_pot-steady_state)/(min_membr_pot-v_bsl))
 for a in ax:
     a.spines['top'].set_visible(False)
     a.spines['right'].set_visible(False)

@@ -66,6 +66,8 @@ def attenuation_from_section(model, ref_sect, section_names, amp, stim_dur, ax, 
     amp_ref = []
     amp_dend = []
     i = 0
+    # plot_min = 1000
+    # plot_max = -1000
     for s, section in enumerate(section_oi):
         for sg, seg in enumerate(model._nrn_sections[section]):
             # low-pass filter 5KHz like in Gidon et al.,
@@ -97,10 +99,13 @@ def attenuation_from_section(model, ref_sect, section_names, amp, stim_dur, ax, 
             
             ax.plot(t_np,v, color=cols_dist[i+1])
             i += 1
+            # plot_min = min(np.round(v.min()), plot_min)
+            # plot_max = max(np.round(v.max()), plot_max)
 
     atten = np.array(amp_dend)/np.array(amp_ref)*100
 
-
+    # ax.set_ylim([plot_min, plot_max])
+    # ax.set_yticks([plot_min, plot_max])
     idx = np.argsort(distance)
     atten = atten[idx]
     distance = np.array(distance)[idx]
@@ -133,10 +138,10 @@ def plot_attenuation(cols_dist, model_name='l2pyr', ref_sect='soma', epsp=False,
     ax[1].set_xlim(np.floor(elec_sep[0]), np.round(elec_sep[-1]+100, -2))
     ax[1].set_xticks(np.linspace(0, np.round(elec_sep[-1]+100, -2), 3))
     ax[1].set_xlabel(f'distance from {ref_sect} ($\mu m$)')
-    ax[1].set_ylabel('hyperpolarization attenuation (%)')
+    ax[1].set_ylabel('attenuation (%)')
     ax[1].set_ylim(0, 101)
     ax[1].plot(elec_sep, exp_decay(np.array(elec_sep), *popt), color='k')
-    ax[1].text(300, 70, f'lamba_hyperpol={lambda_hyperpol:.2f}') # Gidon 2020 475
+    ax[1].text(200, 70, f'{lambda_hyperpol:.2f}') # Gidon 2020 475
     # spike attenuation
     if model_name == 'l2pyr':
         model = get_l2pyr()
@@ -152,10 +157,10 @@ def plot_attenuation(cols_dist, model_name='l2pyr', ref_sect='soma', epsp=False,
     popt, pcov = curve_fit(exp_decay, np.array(elec_sep), np.array(spike_amp), p0=[100, spike_amp[0] ])
     lambda_spike_amp = popt[0]
     ax[3].plot(elec_sep, exp_decay(np.array(elec_sep), *popt), color='k')
-    ax[3].text(300, 70, f'lamba_bAP={lambda_spike_amp:.2f}') # Gidon 2020, 290
+    ax[3].text(100, spike_amp.max(), f'{lambda_spike_amp:.2f}') # Gidon 2020, 290
 
     ax[3].set_xlabel(f'distance from {ref_sect} ($\mu m$)')
-    ax[3].set_ylabel('spike amplitude (mV)')
+    ax[3].set_ylabel('attenuation (%)')
 
     ax[2].set_xlim([0, 60])
     ax[3].set_yticks(np.arange(0, 101, 25))
@@ -168,7 +173,7 @@ def plot_attenuation(cols_dist, model_name='l2pyr', ref_sect='soma', epsp=False,
     ax[4].plot(elec_sep, exp_decay(np.array(elec_sep), *popt), color='k')
     lambda_upstroke = popt[0]
     ax[4].set_ylabel('bAP upstroke (mV/ms)')
-    ax[4].text(100, 200, f'lamba_bAP={lambda_upstroke:.2f}')
+    ax[4].text(100, upstroke.max(), f'{lambda_upstroke:.2f}')
 
     for a in ax:
         a.spines['top'].set_visible(False)
