@@ -8,7 +8,6 @@ def Ih_condu_hay(gsoma, x):
 
     sl = 1.
     a = 2.087
-
     gbar = gsoma * (-0.8696 + a * np.exp(sl*(x/323)))
 
     return gbar
