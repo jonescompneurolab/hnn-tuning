@@ -48,36 +48,36 @@ def get_colormap(cmap_name='inferno'):
 
 def get_model_params():
 
-    return {'soma': {'NaTs2_t': 20_400e-4/2*1.5,
-                                'SKv3_1': 6_930e-4/2,
-                                'Nap_Et2': 17.2e-4/2*0.11,
-                                'Ca_HVA': 9.92e-04/2,
-                                'Ca_LVAst': 34.3e-4/2,
-                                'SK_E2': 441e-4*15,                      # increase this one to get burst followed by regular firing
-                                'Ih': 1e-4/2*1.5,
+    return {'soma': {'NaTs2_t': 1.53, #20_400e-4/2*1.5,
+                                'SKv3_1': 0.3465, #6_930e-4/2,
+                                'Nap_Et2': 9.46e-05, #17.2e-4/2*0.11,
+                                'Ca_HVA': 0.000496, #9.92e-04/2,
+                                'Ca_LVAst': 0.001715, #34.3e-4/2,
+                                'SK_E2': 0.6615, #441e-4*15,                      # increase this one to get burst followed by regular firing
+                                'Ih': 5e-05, #1e-4/2*1.5,
                                 'Im': 1e-4,
-                                'K_Pst': 22.3e-4/2,#*0.1,
-                                'K_Tst': 812e-4/2,#*0.1,z
-                                'pas': {'g': .338e-4/2/2,
+                                'K_Pst': 0.001115, #22.3e-4/2,#*0.1,
+                                'K_Tst': 0.0406, #812e-4/2,#*0.1,z
+                                'pas': {'g': 8.45e-06, #.338e-4/2/2,
                                           'e': -90}},
                         'basal': {'NaTs2_t': partial(linear_gbar,0.0102,0,255),
                                 'SKv3_1': partial(linear_gbar,0,0.0001305,255),
-                                  'Ih': 5.14e-5/4*2,
-                                  'pas': {'g': 1.75e-5/2*3,
+                                  'Ih': 2.57e-05, #5.14e-5/4*2,
+                                  'pas': {'g': 2.625e-05, #1.75e-5/2*3,
                                           'e': -90}},
-                        'dend': {'NaTa_t': 0.0213/2,
-                                'SKv3_1': 0.000261/2*2,
+                        'dend': {'NaTa_t': 0.01065, #0.0213/2,
+                                'SKv3_1': 0.000261, #0.000261/2*2,
                                 'Ca_HVA': partial(linear_gbar, 2.78e-5/2., 2.78e-5/2*12.0, 1500, hotzone=[1500, 1700], hotzone_factor=4.5),
                                 'Ca_LVAst': partial(linear_gbar, 93.5e-6/2, 93.5e-6/2*6.25, 1500, hotzone=[1500, 1700], hotzone_factor=2.25),
-                                'SK_E2': 0.0012/2*6,#*2,#*1.6,
-                                'Ih': partial(Ih_condu_hay, 1e-4/2*2),   
-                                'Im': 0.0000675/2,
+                                'SK_E2': 0.0036, #0.0012/2*6,#*2,#*1.6,
+                                'Ih': partial(Ih_condu_hay, 6e-05), #1e-4/2*2),   
+                                'Im': 3.375e-05, #0.0000675/2,
                                 'K_Pst': 0,
                                 'K_Tst': 0,
-                                'pas': {'g': 0.0000589/1.5,
+                                'pas': {'g': 3.9267e-05, #0.0000589/1.5,
                                           'e': -85}}}
 
-def get_l5pyr(v_init={'soma': np.float64(-72.16948524962919), 'basal_1': np.float64(-72.25341212491644), 'basal_2': np.float64(-72.37818822361831), 'basal_3': np.float64(-72.37818822361831), 'apical_oblique': np.float64(-72.14365102751712), 'apical_trunk': np.float64(-72.11338617376391), 'apical_1': np.float64(-71.03412167157627), 'apical_2': np.float64(-67.12458179380533), 'apical_tuft': np.float64(-63.832161901242785)}, add_syn=None, syn_loc=None):
+def get_l5pyr(v_init={'soma': np.float64(-71.67125875911324), 'basal_1': np.float64(-71.75753247880604), 'basal_2': np.float64(-71.88579790196557), 'basal_3': np.float64(-71.88579790196557), 'apical_oblique': np.float64(-71.64255637494517), 'apical_trunk': np.float64(-71.61254929113713), 'apical_1': np.float64(-70.48217230477142), 'apical_2': np.float64(-66.22603754763479), 'apical_tuft': np.float64(-61.4853229792584)}, add_syn=None, syn_loc=None):
     
     # get paramaters
     section_params, end_pts, cell_tree = l5_params()
