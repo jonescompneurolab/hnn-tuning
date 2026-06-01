@@ -68,24 +68,16 @@ def get_model_params():
                         'dend': {'NaTa_t': 0.0213/2,
                                 'SKv3_1': 0.000261/2*2,
                                 'Ca_HVA': partial(linear_gbar, 2.78e-5/2., 2.78e-5/2*12.0, 1500, hotzone=[1500, 1700], hotzone_factor=4.5),
-                                'Ca_LVAst': partial(linear_gbar, 93.5e-6/2, 93.5e-6/2*2.25, 1500, hotzone=[1500, 1700], hotzone_factor=2.25),
+                                'Ca_LVAst': partial(linear_gbar, 93.5e-6/2, 93.5e-6/2*6.25, 1500, hotzone=[1500, 1700], hotzone_factor=2.25),
                                 'SK_E2': 0.0012/2*6,#*2,#*1.6,
-                                'Ih': partial(Ih_condu_hay, 1e-4/2*1.2),   
+                                'Ih': partial(Ih_condu_hay, 1e-4/2*2),   
                                 'Im': 0.0000675/2,
                                 'K_Pst': 0,
                                 'K_Tst': 0,
                                 'pas': {'g': 0.0000589/1.5,
                                           'e': -85}}}
 
-def get_l5pyr(v_init={'soma': np.float64(-71.65741208226875), 
-         'basal_1': np.float64(-71.74375935294655), 
-         'basal_2': np.float64(-71.87213414681815), 
-         'basal_3': np.float64(-71.87213414681815), 
-         'apical_oblique': np.float64(-71.62925209750786), 
-         'apical_trunk': np.float64(-71.59894574216737), 
-         'apical_1': np.float64(-70.47120963492802), 
-         'apical_2': np.float64(-66.22026364879366), 
-         'apical_tuft': np.float64(-61.483011414982116)}, add_syn=None, syn_loc=None):
+def get_l5pyr(v_init={'soma': np.float64(-72.16948524962919), 'basal_1': np.float64(-72.25341212491644), 'basal_2': np.float64(-72.37818822361831), 'basal_3': np.float64(-72.37818822361831), 'apical_oblique': np.float64(-72.14365102751712), 'apical_trunk': np.float64(-72.11338617376391), 'apical_1': np.float64(-71.03412167157627), 'apical_2': np.float64(-67.12458179380533), 'apical_tuft': np.float64(-63.832161901242785)}, add_syn=None, syn_loc=None):
     
     # get paramaters
     section_params, end_pts, cell_tree = l5_params()
