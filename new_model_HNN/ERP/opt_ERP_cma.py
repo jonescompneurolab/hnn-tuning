@@ -22,16 +22,16 @@ pathgen = '/users/kduecker/hnn-tuning/hnn-data/'
 
 
 def add_opt_drives(net, tstop=200, n_prox=2, n_dist=1):
-    prox_cell_type = ['L5_pyramidal', 'L5_basket', 'L2_pyramidal', 'L2_basket']
-    dist_cell_type = ['L5_pyramidal', 'L2_pyramidal', 'L2_basket']
+    prox_cell_type = ['L5_pyramidal', 'L5_inhibitory', 'L2_pyramidal', 'L2_inhibitory']
+    dist_cell_type = ['L5_pyramidal', 'L2_pyramidal', 'L2_inhibitory']
     default_range = {'mu': (0.01, tstop), 'sigma': (0.01, 20),'numspikes':(0,1), 'ampa': (-5, 1), 'nmda': (-5, 1)}
     default_values = {'mu': tstop // 2, 'sigma': 2, 'ampa': -3, 'nmda': -3}
 
     prox_weights  = {cell_type: 0.0 for cell_type in prox_cell_type}
     dist_weights  = {cell_type: 0.0 for cell_type in dist_cell_type}
 
-    prox_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5_basket": 1.0, "L5_pyramidal": 1.0,}
-    dist_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5_pyramidal": 0.1}
+    prox_delays = {"L2_inhibitory": 0.1, "L2_pyramidal": 0.1, "L5_inhibitory": 1.0, "L5_pyramidal": 1.0,}
+    dist_delays = {"L2_inhibitory": 0.1, "L2_pyramidal": 0.1, "L5_pyramidal": 0.1}
 
     constraints, initial_params = dict(), dict()
     # Add proximal drives
@@ -121,33 +121,33 @@ def set_params_opt_drives(net, param_values):
 
 def get_constraints_init_params(continue_checkpoint=False):
 
-    initial_params = dict({'prox1_L2_basket_ampa': -1.8,
+    initial_params = dict({'prox1_L2_inhibitory_ampa': -1.8,
                     'prox1_L2_pyramidal_ampa': -1.85,
-                    'prox1_L5_basket_ampa': -15,
-                    'prox1_L5ET_ampa': -2,
+                    'prox1_L5_inhibitory_ampa': -15,
+                    'prox1_L5_pyramidal_ampa': -2,
 
-                    'prox1_L2_basket_nmda': -2.4,
+                    'prox1_L2_inhibitory_nmda': -2.4,
                     'prox1_L2_pyramidal_nmda': -1.6,
-                    'prox1_L5_basket_nmda': -12,
-                    'prox1_L5ET_nmda': -1.3,
+                    'prox1_L5_inhibitory_nmda': -12,
+                    'prox1_L5_pyramidal_nmda': -1.3,
 
-                    'dist1_L2_basket_ampa': -3.5,
+                    'dist1_L2_inhibitory_ampa': -3.5,
                     'dist1_L2_pyramidal_ampa': -4.2,
-                    'dist1_L5ET_ampa': -0.0005,
+                    'dist1_L5_pyramidal_ampa': -0.0005,
 
-                    'dist1_L2_basket_nmda': -15,
+                    'dist1_L2_inhibitory_nmda': -15,
                     'dist1_L2_pyramidal_nmda': -3,
-                    'dist1_L5ET_nmda': -1,
+                    'dist1_L5_pyramidal_nmda': -1,
 
-                    'prox2_L2_basket_ampa': -2,
+                    'prox2_L2_inhibitory_ampa': -2,
                     'prox2_L2_pyramidal_ampa': -.5,
-                    'prox2_L5_basket_ampa': -3,
-                    'prox2_L5ET_ampa': -0.5,
+                    'prox2_L5_inhibitory_ampa': -3,
+                    'prox2_L5_pyramidal_ampa': -0.5,
 
-                    'prox2_L2_basket_nmda': -2,
+                    'prox2_L2_inhibitory_nmda': -2,
                     'prox2_L2_pyramidal_nmda': -.7,
-                    'prox2_L5_basket_nmda': -3,
-                    'prox2_L5ET_nmda':  -0.7,
+                    'prox2_L5_inhibitory_nmda': -3,
+                    'prox2_L5_pyramidal_nmda':  -0.7,
                     
                     'prox1_mu': 16.5,
                     'prox1_sigma': 3,
@@ -160,33 +160,33 @@ def get_constraints_init_params(continue_checkpoint=False):
                     'prox2_numspikes': 1})
 
 
-    constraints = dict({'prox1_L2_basket_ampa': (-15, -1.8),
+    constraints = dict({'prox1_L2_inhibitory_ampa': (-15, -1.8),
                         'prox1_L2_pyramidal_ampa': (-1.85, 0),
-                        'prox1_L5_basket_ampa': (-15, -1.75),
-                        'prox1_L5ET_ampa': (-2, 0),
+                        'prox1_L5_inhibitory_ampa': (-15, -1.75),
+                        'prox1_L5_pyramidal_ampa': (-2, 0),
 
-                        'prox1_L2_basket_nmda': (-15, -2.),
+                        'prox1_L2_inhibitory_nmda': (-15, -2.),
                         'prox1_L2_pyramidal_nmda': (-1.6, 0),
-                        'prox1_L5_basket_nmda': (-15, -1.75),
-                        'prox1_L5ET_nmda': (-2, 0),
+                        'prox1_L5_inhibitory_nmda': (-15, -1.75),
+                        'prox1_L5_pyramidal_nmda': (-2, 0),
 
-                        'dist1_L2_basket_ampa': (-15, 0),
+                        'dist1_L2_inhibitory_ampa': (-15, 0),
                         'dist1_L2_pyramidal_ampa': (-6, 0),
-                        'dist1_L5ET_ampa': (-6, 0),
+                        'dist1_L5_pyramidal_ampa': (-6, 0),
 
-                        'dist1_L2_basket_nmda': (-15, 0),
+                        'dist1_L2_inhibitory_nmda': (-15, 0),
                         'dist1_L2_pyramidal_nmda': (-6, 0),
-                        'dist1_L5ET_nmda': (-6, 0),
+                        'dist1_L5_pyramidal_nmda': (-6, 0),
 
-                        'prox2_L2_basket_ampa': (-15, 0),
+                        'prox2_L2_inhibitory_ampa': (-15, 0),
                         'prox2_L2_pyramidal_ampa': (-15, -.5),
-                        'prox2_L5_basket_ampa': (-15, 0),
-                        'prox2_L5ET_ampa': (-15, -0.5),
+                        'prox2_L5_inhibitory_ampa': (-15, 0),
+                        'prox2_L5_pyramidal_ampa': (-15, -0.5),
 
-                        'prox2_L2_basket_nmda': (-15, 0),
+                        'prox2_L2_inhibitory_nmda': (-15, 0),
                         'prox2_L2_pyramidal_nmda': (-15, -.5),
-                        'prox2_L5_basket_nmda': (-15, 0),
-                        'prox2_L5ET_nmda': (-15, -0.5),
+                        'prox2_L5_inhibitory_nmda': (-15, 0),
+                        'prox2_L5_pyramidal_nmda': (-15, -0.5),
                         
                         'prox1_mu': (15, 25),
                         'prox1_sigma': (1, 4),
@@ -211,16 +211,16 @@ def get_constraints_init_params(continue_checkpoint=False):
 
 def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
 
-    prox_cell_type = ['L5ET', 'L5_basket', 'L2_pyramidal', 'L2_basket']
-    dist_cell_type = ['L5ET', 'L2_pyramidal', 'L2_basket']
+    prox_cell_type = ['L5_pyramidal', 'L5_inhibitory', 'L2_pyramidal', 'L2_inhibitory']
+    dist_cell_type = ['L5_pyramidal', 'L2_pyramidal', 'L2_inhibitory']
     default_range = {'mu': (0, tstop), 'sigma': (0, 20), 'ampa': (-5, 1), 'nmda': (-5, 1)}
     default_values = {'mu': tstop // 2, 'sigma': 2, 'ampa': -3, 'nmda': -3}
 
     prox_weights  = {cell_type: 0.0 for cell_type in prox_cell_type}
     dist_weights  = {cell_type: 0.0 for cell_type in dist_cell_type}
 
-    prox_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5_basket": 1.0, "L5ET": 1.0}
-    dist_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5ET": 0.1}
+    prox_delays = {"L2_inhibitory": 0.1, "L2_pyramidal": 0.1, "L5_inhibitory": 1.0, "L5_pyramidal": 1.0}
+    dist_delays = {"L2_inhibitory": 0.1, "L2_pyramidal": 0.1, "L5_pyramidal": 0.1}
 
     # Add proximal drives
     for idx in range(n_prox):
@@ -276,10 +276,10 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, continue_che
         print('random initialization!!!')
     
 
-    optim = Optimizer(net_base, tstop=tstop, constraints=constraints, solver='cma',
-                        set_params=set_params_opt_drives, initial_params=initial_params, max_iter=max_iter, obj_fun="dipole_rmse_corr")
+    optim = Optimizer(net_base, tstop=tstop, constraints=constraints, solver='cma', 
+        set_params=set_params_opt_drives, initial_params=initial_params, max_iter=max_iter, obj_fun="dipole_rmse_corr")
 
-    optim.fit(target=exp_dpl, n_trials=3, scale_factor=scaling_factor,
+    optim.fit(target=exp_dpl, n_trials=3, scale_factor=scaling_factor, sigma0=0.05,
             smooth_window_len=smooth_win, dt=dt, popsize=popsize, pth_backup='/users/kduecker/hnn-tuning/new_model_HNN/ERP', 
             bsl_cor="duecker", n_jobs=n_procs)
 

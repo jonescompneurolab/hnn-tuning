@@ -53,10 +53,10 @@ def sim_analysis_params_default():
     params['burst_std_prox'] = 20 # Jones 2009: input bursts variance = 400
     params['burst_std_dist'] = 15
     params['default_ff_fb_seeds'] = (180, 120)  # seeds, this will be adjusted when running multiple trials
-    params['weights_ampa_p'] = {'L2_basket': 0.0, 'L2_pyramidal': 2.5e-4, 'L5ET': 2.5e-4, 'L5_basket': 0.0} # proximal weights
-    params['weights_ampa_d'] = {'L2_basket': 0, 'L5ET': 2.5e-4*4, 'L2_pyramidal': 2.5e-4*4} # distal weights
-    params['syn_delays_p'] = {'L2_basket': 0.1, 'L2_pyramidal': 0.1, 'L5ET': 0.1, 'L5_basket': 0.1}
-    params['syn_delays_d'] = {'L2_basket': 0.1, 'L5ET': 0.1, 'L2_pyramidal': 0.1}
+    params['weights_ampa_p'] = {'L2_inhibitory': 0.0, 'L2_pyramidal': 2.5e-4, 'L5_pyramidal': 2.5e-4, 'L5_inhibitory': 0.0} # proximal weights
+    params['weights_ampa_d'] = {'L2_inhibitory': 0, 'L5_pyramidal': 2.5e-4*4, 'L2_pyramidal': 2.5e-4*4} # distal weights
+    params['syn_delays_p'] = {'L2_inhibitory': 0.1, 'L2_pyramidal': 0.1, 'L5_pyramidal': 0.1, 'L5_inhibitory': 0.1}
+    params['syn_delays_d'] = {'L2_inhibitory': 0.1, 'L5_pyramidal': 0.1, 'L2_pyramidal': 0.1}
     params['scale_factor'] = 2_000
 
     # PSD parameters
