@@ -8,7 +8,7 @@ import hnn_core
 from hnn_core.params import _short_name
 
 from hnn_core import duecker_ET_model, simulate_dipole, read_dipole, MPIBackend, average_dipoles
-from hnn_core.optimization import Optimizer, add_opt_drives
+from hnn_core.optimization import Optimizer
 from hnn_core.network import pick_connection
 
 import numpy as np
@@ -19,6 +19,78 @@ from scipy.stats import pearsonr
 
 pathfig = os.path.join(os.getcwd(), 'figures')
 pathgen = '/users/kduecker/hnn-tuning/hnn-data/'
+
+
+def add_opt_drives(net, tstop=200, n_prox=2, n_dist=1):
+    prox_cell_type = ['L5_pyramidal', 'L5_basket', 'L2_pyramidal', 'L2_basket']
+    dist_cell_type = ['L5_pyramidal', 'L2_pyramidal', 'L2_basket']
+    default_range = {'mu': (0.01, tstop), 'sigma': (0.01, 20),'numspikes':(0,1), 'ampa': (-5, 1), 'nmda': (-5, 1)}
+    default_values = {'mu': tstop // 2, 'sigma': 2, 'ampa': -3, 'nmda': -3}
+
+    prox_weights  = {cell_type: 0.0 for cell_type in prox_cell_type}
+    dist_weights  = {cell_type: 0.0 for cell_type in dist_cell_type}
+
+    prox_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5_basket": 1.0, "L5_pyramidal": 1.0,}
+    dist_delays = {"L2_basket": 0.1, "L2_pyramidal": 0.1, "L5_pyramidal": 0.1}
+
+    constraints, initial_params = dict(), dict()
+    # Add proximal drives
+    for idx in range(n_prox):
+        name = f'evprox{idx+1}'
+        constraints[f'{name}_mu'] = default_range['mu']
+        initial_params[f'{name}_mu'] = np.random.uniform(*default_range['mu'])
+
+        constraints[f'{name}_sigma'] = default_range['sigma']
+        initial_params[f'{name}_sigma'] = np.random.uniform(*default_range['sigma'])
+
+        constraints[f'{name}_numspikes'] = default_range['numspikes']
+        initial_params[f'{name}_numspikes'] = 1
+
+        for cell_type in prox_cell_type:
+            constraints[f'{name}_{cell_type}_ampa'] = default_range['ampa']
+            initial_params[f'{name}_{cell_type}_ampa'] = np.random.uniform(*default_range['ampa'])
+
+            constraints[f'{name}_{cell_type}_nmda'] = default_range['nmda']
+            initial_params[f'{name}_{cell_type}_nmda'] = np.random.uniform(*default_range['nmda'])
+
+        net.add_evoked_drive(name,
+                             mu=0.0,
+                             sigma=1.0,
+                             numspikes=1,
+                             location='proximal',
+                             weights_ampa=prox_weights,
+                             weights_nmda=prox_weights,
+                             synaptic_delays=prox_delays)
+
+    # Add distal drives
+    for idx in range(n_dist):
+        name = f'evdist{idx+1}'
+        constraints[f'{name}_mu'] = default_range['mu']
+        initial_params[f'{name}_mu'] = np.random.uniform(*default_range['mu'])
+
+        constraints[f'{name}_sigma'] = default_range['sigma']
+        initial_params[f'{name}_sigma'] = np.random.uniform(*default_range['sigma'])
+
+        constraints[f'{name}_numspikes'] = default_range['numspikes']
+        initial_params[f'{name}_numspikes'] = 1
+
+        for cell_type in prox_cell_type:
+            constraints[f'{name}_{cell_type}_ampa'] = default_range['ampa']
+            initial_params[f'{name}_{cell_type}_ampa'] = np.random.uniform(*default_range['ampa'])
+
+            constraints[f'{name}_{cell_type}_nmda'] = default_range['nmda']
+            initial_params[f'{name}_{cell_type}_nmda'] = np.random.uniform(*default_range['nmda'])
+
+        net.add_evoked_drive(name,
+                             mu=0.0,
+                             sigma=1.0,
+                             numspikes=1,
+                             location='distal',
+                             weights_ampa=dist_weights,
+                             weights_nmda=dist_weights,
+                             synaptic_delays=dist_delays)
+
+    return constraints, initial_params
 
 def set_params_opt_drives(net, param_values):
     drive_names = list(net.external_drives.keys())
