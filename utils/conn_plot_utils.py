@@ -61,9 +61,9 @@ def conn_space_constant(x, lamtha):
 
 def plot_connectivity_space_constant(net, lamtha1=6.125, lamtha2=6.125*0.8):
 
-    targets = ['L2_basket', 'L2_pyramidal', 'L5_basket', 'L5ET'  ]
+    targets = ['L2_basket', 'L2_pyramidal', 'L5_basket', 'L5_pyramidal'  ]
     src_inh = ['L2_basket', 'L5_basket']
-    src_pyr = ['L2_pyramidal', 'L5ET']
+    src_pyr = ['L2_pyramidal', 'L5_pyramidal']
     E_receptors = ['ampa', 'nmda']
     I_receptors = ['gabaa', 'gabab']
 
@@ -317,18 +317,18 @@ def plot_conn_heatmap(net):
     conn = net.connectivity[2]
 
     pos_l5 = np.zeros((100, 3))
-    for p, pos in enumerate(net.pos_dict['L5ET']):
+    for p, pos in enumerate(net.pos_dict['L5_pyramidal']):
         pos_l5[p] = np.array(pos)
         
     l5_gid = 170
     pos_dict_idx = int(l5_gid)-170
-    ref_pos = net.pos_dict['L5ET'][pos_dict_idx]
+    ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
     
     l5_center_conn_bl = np.zeros((10,10))
 
     for target_gid in conn["gid_pairs"][l5_gid]:
-        if target_gid in net.gid_ranges['L5ET']:
-            target_pos = net.pos_dict['L5ET'][int(target_gid-170)]
+        if target_gid in net.gid_ranges['L5_pyramidal']:
+            target_pos = net.pos_dict['L5_pyramidal'][int(target_gid-170)]
             weight, _ = _get_gaussian_connection(
                         ref_pos, target_pos, conn['nc_dict'],
                         inplane_distance=net._inplane_distance)
@@ -342,11 +342,11 @@ def plot_conn_heatmap(net):
 
     l5_gid = 170 + 44
     pos_dict_idx = int(l5_gid)-170
-    ref_pos = net.pos_dict['L5ET'][pos_dict_idx]
+    ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
     l5_center_conn_c = np.zeros((10,10))
     for target_gid in conn["gid_pairs"][int(l5_gid)]:
-        if target_gid in net.gid_ranges['L5ET']:
-            target_pos = net.pos_dict['L5ET'][int(target_gid-170)]
+        if target_gid in net.gid_ranges['L5_pyramidal']:
+            target_pos = net.pos_dict['L5_pyramidal'][int(target_gid-170)]
             weight, _ = _get_gaussian_connection(
                         ref_pos, target_pos, conn['nc_dict'],
                         inplane_distance=net._inplane_distance)
@@ -359,11 +359,11 @@ def plot_conn_heatmap(net):
 
     l5_gid = 269
     pos_dict_idx = int(l5_gid)-170
-    ref_pos = net.pos_dict['L5ET'][pos_dict_idx]
+    ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
     l5_center_conn_tr = np.zeros((10,10))
     for target_gid in conn["gid_pairs"][l5_gid]:
-        if target_gid in net.gid_ranges['L5ET']:
-            target_pos = net.pos_dict['L5ET'][int(target_gid-170)]
+        if target_gid in net.gid_ranges['L5_pyramidal']:
+            target_pos = net.pos_dict['L5_pyramidal'][int(target_gid-170)]
             weight, _ = _get_gaussian_connection(
                         ref_pos, target_pos, conn['nc_dict'],
                         inplane_distance=net._inplane_distance)
@@ -379,7 +379,7 @@ def plot_conn_heatmap(net):
     conn = net.connectivity[-2]
     l5_gid = 170
     pos_dict_idx = int(l5_gid)-170
-    ref_pos = net.pos_dict['L5ET'][pos_dict_idx]
+    ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
     l5_center_conn_bl_ei = np.zeros((10,10))
     for target_gid in conn["gid_pairs"][l5_gid]:
         if target_gid in net.gid_ranges['L5_basket']:
@@ -396,7 +396,7 @@ def plot_conn_heatmap(net):
 
     l5_gid = 170 + 44
     pos_dict_idx = int(l5_gid)-170
-    ref_pos = net.pos_dict['L5ET'][pos_dict_idx]
+    ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
     l5_center_conn_c_ei = np.zeros((10,10))
     for target_gid in conn["gid_pairs"][l5_gid]:
         if target_gid in net.gid_ranges['L5_basket']:
@@ -413,7 +413,7 @@ def plot_conn_heatmap(net):
 
     l5_gid = 269
     pos_dict_idx = int(l5_gid)-170
-    ref_pos = net.pos_dict['L5ET'][pos_dict_idx]
+    ref_pos = net.pos_dict['L5_pyramidal'][pos_dict_idx]
     l5_center_conn_tr_ei = np.zeros((10,10))
     for target_gid in conn["gid_pairs"][l5_gid]:
         if target_gid in net.gid_ranges['L5_basket']:
@@ -430,7 +430,7 @@ def plot_conn_heatmap(net):
 
     
     # I-I
-    conn = net.connectivity[15]
+    conn = net.connectivity[16]
     # import pdb
     # pdb.set_trace()
     pos_l5 = np.zeros((100, 3))
@@ -509,7 +509,7 @@ def plot_interlayer_conn():
 
     fig, ax = plt.subplots(2, 4, figsize=(20, 4), height_ratios=[0.05, 1], sharex=True)
 
-    cell_types = ['L2_basket', 'L2_pyramidal', 'L5_basket', 'L5ET']
+    cell_types = ['L2_basket', 'L2_pyramidal', 'L5_basket', 'L5_pyramidal']
     for i,c in enumerate(cell_types):
         # stimulate L2/3 pyramidal
         net = duecker_ET_model()
@@ -545,9 +545,9 @@ def plot_interlayer_conn():
         I = np.array(net.cell_response.spike_gids[0]) <270
         gids = np.array(net.cell_response.spike_gids).reshape(-1,)[I]
         times = np.array(net.cell_response.spike_times).reshape(-1,)[I]
-        cell_types = ['L2_inhibitory', 'L2_pyramidal', 'L5_inhibitory', 'L5ET']
+        cell_types = ['L2_inhibitory', 'L2_pyramidal', 'L5_inhibitory', 'L5_pyramidal']
         cell_type_colors = {'L2_basket': cmap.colors[0], 'L2_pyramidal': cmap.colors[1], 
-                    'L5_basket': cmap.colors[2], 'L5ET': cmap.colors[3]}
+                    'L5_basket': cmap.colors[2], 'L5_pyramidal': cmap.colors[3]}
 
         colors = [assign_color(net, gid) for gid in gids]
 
@@ -596,17 +596,17 @@ def plot_psps():
     
     fig, ax = plt.subplots(5, 4,figsize=(6, 8), constrained_layout=True, width_ratios=[1, 0.5, 1, 0.5])
     ax = ax.flatten()
-    src_cells = ["L2_pyramidal", "L5ET", "L2_pyramidal", "L2_pyramidal", "L2_pyramidal", "L5ET", "L2_basket", "L5_basket", "L2_basket", "L5_basket"]
-    trgt_cells = ["L2_pyramidal", "L5ET", "L5ET", "L2_basket", "L5_basket", "L5_basket", "L2_pyramidal", "L5ET", "L5ET", "L5_basket"]
+    src_cells = ["L2_pyramidal", "L5_pyramidal", "L2_pyramidal", "L2_pyramidal", "L2_pyramidal", "L5_pyramidal", "L2_basket", "L5_basket", "L2_basket", "L5_basket"]
+    trgt_cells = ["L2_pyramidal", "L5_pyramidal", "L5_pyramidal", "L2_basket", "L5_basket", "L5_basket", "L2_pyramidal", "L5_pyramidal", "L5_pyramidal", "L5_basket"]
     neuron_cols = {"L2_basket": '#d4a498',
                 "L2_pyramidal": '#941a49',
                 "L5_basket": '#6e97ae',
-                "L5ET": '#3a5a8a'}
+                "L5_pyramidal": '#3a5a8a'}
 
     aidx = 0
     for src, trgt in zip(src_cells, trgt_cells):
 
-        if src == "L5ET":
+        if src == "L5_pyramidal":
             ampl = 3
         elif src == "L2_pyramidal":
             ampl = 1
@@ -628,7 +628,7 @@ def plot_psps():
         ax[aidx].set_title(f'{src} - {trgt}')
         aidx +=1
         
-        if src == 'L5ET' or src == 'L2_pyramidal':
+        if src == 'L5_pyramidal' or src == 'L2_pyramidal':
             pmin = 0
             pmax = np.round(psp.max()+0.1,1)
         else:
@@ -672,7 +672,7 @@ def find_basal_rheo(model='jones'):
             l5_name = "L5_pyramidal"
         else:
             net = duecker_ET_model(mesh_shape=(1,1))
-            l5_name = "L5ET"
+            l5_name = "L5_pyramidal"
 
         net.clear_connectivity()
 
@@ -682,9 +682,9 @@ def find_basal_rheo(model='jones'):
         net.add_tonic_bias(cell_type='L2_pyramidal', amplitude=a, t0=10., tstop=100., section='basal_2', bias_name='bias_1')
         net.add_tonic_bias(cell_type='L2_pyramidal', amplitude=a, t0=10., tstop=100., section='basal_3', bias_name='bias_2')
         net.add_tonic_bias(cell_type='L2_pyramidal', amplitude=a, t0=10., tstop=100., section='apical_oblique', bias_name='bias_3')
-        net.add_tonic_bias(cell_type='L5ET', amplitude=a, t0=10., tstop=100., section='basal_1', bias_name='bias_1')
-        net.add_tonic_bias(cell_type='L5ET', amplitude=a, t0=10., tstop=100., section='basal_2', bias_name='bias_2')
-        net.add_tonic_bias(cell_type='L5ET', amplitude=a, t0=10., tstop=100., section='apical_oblique', bias_name='apical_oblique')
+        net.add_tonic_bias(cell_type='L5_pyramidal', amplitude=a, t0=10., tstop=100., section='basal_1', bias_name='bias_1')
+        net.add_tonic_bias(cell_type='L5_pyramidal', amplitude=a, t0=10., tstop=100., section='basal_2', bias_name='bias_2')
+        net.add_tonic_bias(cell_type='L5_pyramidal', amplitude=a, t0=10., tstop=100., section='apical_oblique', bias_name='apical_oblique')
 
         dpl = simulate_dipole(net, tstop=100, n_trials=1, dt =0.01, record_vsec='soma')
 

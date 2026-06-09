@@ -48,18 +48,18 @@ fig.savefig(os.path.join(figpth, 'summary_attenuation_dend_soma.png'), dpi=300)
 fig.savefig(os.path.join(figpth, 'summary_attenuation_dend_soma.pdf'), dpi=300)
 plt.close()
 
-# # Plot Ca-spike
+# Plot Ca-spike
 
-# fig = plot_ca_spike()
+fig = plot_ca_spike()
 
-# fig.savefig(os.path.join(figpth, 'ca_spikes.png'), dpi=300)
-# fig.savefig(os.path.join(figpth, 'ca_spikes.pdf'), dpi=300)
-# fig.savefig(os.path.join(figpth, 'ca_spikes.svg'), dpi=300)
+fig.savefig(os.path.join(figpth, 'ca_spikes.png'), dpi=300)
+fig.savefig(os.path.join(figpth, 'ca_spikes.pdf'), dpi=300)
+fig.savefig(os.path.join(figpth, 'ca_spikes.svg'), dpi=300)
 
-# fig = plot_ca_spike4x2()
+fig = plot_ca_spike4x2()
 
-# fig.savefig(os.path.join(figpth, 'ca_spikes_4x2.png'), dpi=300)
-# fig.savefig(os.path.join(figpth, 'ca_spikes_4x2.pdf'), dpi=300)
-# fig.savefig(os.path.join(figpth, 'ca_spikes_4x2.svg'), dpi=300)
+fig.savefig(os.path.join(figpth, 'ca_spikes_4x2.png'), dpi=300)
+fig.savefig(os.path.join(figpth, 'ca_spikes_4x2.pdf'), dpi=300)
+fig.savefig(os.path.join(figpth, 'ca_spikes_4x2.svg'), dpi=300)
 
 

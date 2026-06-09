@@ -1,4 +1,5 @@
 """"Collection of utils used for both L5 ET and L2/3"""
+import neuron
 from neuron import h
 from neuron.units import ms
 import numpy as np
@@ -8,6 +9,11 @@ from l23_plot_utils import get_l2pyr
 from l5_plot_utils import get_l5pyr
 import matplotlib.pyplot as plt
 
+import os.path as op
+pth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning'
+
+pth_epsp_mod = op.join(pth, 'new_cells_dev')            # file with EPSP point process
+neuron.load_mechanisms(pth_epsp_mod)
 def exp_func(t, tau, A, C):
     return A * (1 - np.exp(-t / tau)) + C
 

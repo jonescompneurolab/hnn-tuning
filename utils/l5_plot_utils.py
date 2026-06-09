@@ -48,32 +48,32 @@ def get_colormap(cmap_name='inferno'):
 
 def get_model_params():
 
-    return {'soma': {'NaTs2_t': 20_400e-4/2*1.5,
-                                'SKv3_1': 6_930e-4/2,
-                                'Nap_Et2': 17.2e-4/2*0.11,
-                                'Ca_HVA': 9.92e-04/2,
-                                'Ca_LVAst': 34.3e-4/2,
-                                'SK_E2': 441e-4*15,                      # increase this one to get burst followed by regular firing
-                                'Ih': 1e-4/2,
-                                'Im': 1e-4,
-                                'K_Pst': 22.3e-4/2,#*0.1,
-                                'K_Tst': 812e-4/2,#*0.1,z
+    return {'soma': {'NaTs2_t_hay2011': 20_400e-4/2*1.5,
+                                'SKv3_1_hay2011': 6_930e-4/2,
+                                'Nap_Et2_hay2011': 17.2e-4/2*0.11,
+                                'Ca_HVA_hay2011': 9.92e-04/2,
+                                'Ca_LVAst_hay2011': 34.3e-4/2,
+                                'SK_E2_hay2011': 441e-4*15,                      # increase this one to get burst followed by regular firing
+                                'Ih_hay2011': 1e-4/2,
+                                'Im_hay2011': 1e-4,
+                                'K_Pst_hay2011': 22.3e-4/2,#*0.1,
+                                'K_Tst_hay2011': 812e-4/2,#*0.1,z
                                 'pas': {'g': .338e-4/2/2,
                                           'e': -90}},
-                        'basal': {'NaTs2_t': partial(linear_gbar,0.0102,0,255),
-                                'SKv3_1': partial(linear_gbar,0,0.0001305,255),
-                                  'Ih': 5.14e-5/4*2,
+                        'basal': {'NaTs2_t_hay2011': partial(linear_gbar,0.0102,0,255),
+                                'SKv3_1_hay2011': partial(linear_gbar,0,0.0001305,255),
+                                  'Ih_hay2011': 5.14e-5/4*2,
                                   'pas': {'g': 1.75e-5/2*3,
                                           'e': -90}},
-                        'dend': {'NaTa_t': 0.0213/2,
-                                'SKv3_1': 0.000261/2*2,
-                                'Ca_HVA': partial(linear_gbar, 2.78e-5/2., 2.78e-5/2*12.0, 1500, hotzone=[1500, 1700], hotzone_factor=4.5),
-                                'Ca_LVAst': partial(linear_gbar, 93.5e-6/2, 93.5e-6/2*2.25, 1500, hotzone=[1500, 1700], hotzone_factor=2.25),
-                                'SK_E2': 0.0012/2*6,#*2,#*1.6,
-                                'Ih': partial(Ih_condu_hay, 1e-4/2*1.2),   
-                                'Im': 0.0000675/2,
-                                'K_Pst': 0,
-                                'K_Tst': 0,
+                        'dend': {'NaTa_t_hay2011': 0.0213/2,
+                                'SKv3_1_hay2011': 0.000261/2*2,
+                                'Ca_HVA_hay2011': partial(linear_gbar, 2.78e-5/2., 2.78e-5/2*12.0, 1500, hotzone=[1500, 1700], hotzone_factor=4.5),
+                                'Ca_LVAst_hay2011': partial(linear_gbar, 93.5e-6/2, 93.5e-6/2*2.25, 1500, hotzone=[1500, 1700], hotzone_factor=2.25),
+                                'SK_E2_hay2011': 0.0012/2*6,#*2,#*1.6,
+                                'Ih_hay2011': partial(Ih_condu_hay, 1e-4/2*1.2),   
+                                'Im_hay2011': 0.0000675/2,
+                                'K_Pst_hay2011': 0,
+                                'K_Tst_hay2011': 0,
                                 'pas': {'g': 0.0000589/1.5,
                                           'e': -85}}}
 
@@ -97,14 +97,11 @@ def get_l5pyr(v_init={'soma': -70.62820902070445,
 
     mech_class = Mechs(pth_mod)
 
-
-    hotzone = [1500, 1700]
-
     l5pyr= Cell(sections, cell_tree, cell_type='L5_pyramidal', gid=0)
     l5pyr.build(add_syn=add_syn, syn_loc=syn_loc)
 
     model_params = get_model_params()
-    l5pyr = mech_class.add_mechs(l5pyr, model_params, hotzone=hotzone)
+    l5pyr = mech_class.add_mechs(l5pyr, model_params)
 
     return l5pyr
 
@@ -121,9 +118,9 @@ def fig_conductances(col_basal, cell_type='ET'):
     for section in apical_sections:
         for seg in model._nrn_sections[section]:
             distance_apical.append(h.distance(seg.x, sec=seg.sec))
-            gbar_Ih_apical.append(seg.gbar_Ih)
-            gbar_Ca_HVA_apical.append(seg.gbar_Ca_HVA)
-            gbar_Ca_LVA_apical.append(seg.gbar_Ca_LVAst)
+            gbar_Ih_apical.append(seg.gbar_Ih_hay2011)
+            gbar_Ca_HVA_apical.append(seg.gbar_Ca_HVA_hay2011)
+            gbar_Ca_LVA_apical.append(seg.gbar_Ca_LVAst_hay2011)
 
     fig, ax = plt.subplots(2,3,figsize=(11,5))
     ax[0,0].plot(distance_apical, gbar_Ih_apical, color='k')
@@ -188,10 +185,10 @@ def fig_conductances(col_basal, cell_type='ET'):
             dist.append(h.distance(seg.x, sec=seg.sec))
 
             if cell_type == 'ET':
-                Nagbar.append(seg.gbar_NaTs2_t)
+                Nagbar.append(seg.gbar_NaTs2_t_hay2011)
             elif cell_type == 'IT':
-                Nagbar.append(seg.gbar_NaTs2_t_32d)
-            Kbar.append(seg.gbar_SKv3_1)
+                Nagbar.append(seg.gbar_NaTs2_t_32d_hay2011)
+            Kbar.append(seg.gbar_SKv3_1_hay2011)
             
 
         # get amplitude

@@ -51,10 +51,10 @@ section['soma'] = _get_basket_soma()
 mech_class = inhmechs(pth_mod)
 
 # Cumberland 2023 and Golomb 2007 parameters
-inh_params = {'soma': {'nas': 0.11252/1.35, 
-                'kdr': 0.225,
-                'kd': 0.00039,
-                'Ih': 2e-5,
+inh_params = {'soma': {'nas_golomb2007': 0.11252/1.35, 
+                'kdr_golomb2007': 0.225,
+                'kd_golomb2007': 0.00039,
+                'Ih_hay2011': 2e-5,
                 'pas': {'g': .0001,
                         'e': -70}}}
 

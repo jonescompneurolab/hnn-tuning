@@ -60,10 +60,10 @@ class Mechs:
                 if m == 'pas':
                     seg.pas.g = params['soma']['pas']
                     seg.pas.e = params['e_pas']
-                elif m == 'CaDynamics_E2':
+                elif m == 'CaDynamics_E2_hay2011':
                         cell._nrn_sections[sec_name].insert(m)     
-                        seg.CaDynamics_E2.decay = params['dend'][m]['decay']
-                        seg.CaDynamics_E2.gamma = params['dend'][m]['gamma']
+                        seg.CaDynamics_E2_hay2011.decay = params['dend'][m]['decay']
+                        seg.CaDynamics_E2_hay2011.gamma = params['dend'][m]['gamma']
                 else:
                     setattr(seg, 'gbar_'+m, params['soma'][m])
 
@@ -82,14 +82,14 @@ class Mechs:
                     distance = h.distance(seg.x, sec=seg.sec)
                     if m == 'pas':
                         if hasattr(params['dend'][m], "__call__"):
-                            seg.pas.g = params['dend']['pas'](distance)               # Hay increases all conductances by 2 because resistance is also increased by 2
+                            seg.pas.g = params['dend']['pas'](distance)              
                         else: 
                             seg.pas.g = params['dend']['pas']
                         seg.pas.e = params['e_pas']
-                    elif m == 'CaDynamics_E2':
+                    elif m == 'CaDynamics_E2_hay2011':
                         cell._nrn_sections[sec_name].insert(m)     
-                        seg.CaDynamics_E2.decay = params['dend'][m]['decay']
-                        seg.CaDynamics_E2.gamma = params['dend'][m]['gamma']
+                        seg.CaDynamics_E2_hay2011.decay = params['dend'][m]['decay']
+                        seg.CaDynamics_E2_hay2011.gamma = params['dend'][m]['gamma']
                     else:
                         if hasattr(params['dend'][m], "__call__"):
                             gbar = params['dend'][m](distance)

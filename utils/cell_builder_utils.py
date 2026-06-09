@@ -315,11 +315,8 @@ class Cell:
                     self.syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
                 elif add_syn == 'NMDA_gao':
                     self.syn = h.NMDA_gao(self._nrn_sections[syn_loc](0.5))
-                elif add_syn == 'gabab':
-                    self.syn = h.gabab(self._nrn_sections[syn_loc](0.5))
-                    self.syn.e = -80
-                    self.syn.tau1 = 45
-                    self.syn.tau2 = 200
+                elif add_syn == 'gabab_destexhe':
+                    self.syn = h.gabab_destexhe(self._nrn_sections[syn_loc](0.5))
                 elif add_syn == 'gabaa_som+':
                     gabaa_syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
                     gabaa_syn.e = -80
@@ -652,17 +649,6 @@ def l2_params():
         'L2Pyr_basal3_L': 255.,
         'L2Pyr_basal3_diam': 2.72,
     }
-
-    # end_pts = {
-    #     'soma': [[-50, 0, 765], [-50, 0, 778]],
-    #     'apical_trunk': [[-50, 0, 778], [-50, 0, 813]],
-    #     'apical_oblique': [[-50, 0, 813], [-250, 0, 813]],
-    #     'apical_1': [[-50, 0, 813], [-50, 0, 993]],
-    #     'apical_tuft': [[-50, 0, 993], [-50, 0, 1133]],
-    #     'basal_1': [[-50, 0, 765], [-50, 0, 715]],
-    #     'basal_2': [[-50, 0, 715], [-156, 0, 609]],
-    #     'basal_3': [[-50, 0, 715], [56, 0, 609]],
-    # }
 
     end_pts = {
             'soma': [[0, 0, 0], [0, 0, 22.1]],

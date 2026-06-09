@@ -304,8 +304,8 @@ ax_1_0.set_xlabel('time (ms)')
 ax_1_0.set_ylabel('membrane \n potential (mV)')
 ax_1_0.set_xlim([0,20000])
 ax_1_0.set_xticks(np.arange(0, 20001, 10000))
-ax_1_0.set_ylim([-76, -72])
-ax_1_0.set_yticks([-76, -72])
+ax_1_0.set_ylim([-73.5, -69.5])
+ax_1_0.set_yticks([-73.5, -69.5])
 
 ax_1_1.plot(freq, zap_smooth, color=cm_neurons[3], linewidth=2)
 ax_1_1.plot(res_freq,zap_smooth[np.argmax(norm_zap)], 'o', color='k', markersize=7)
@@ -314,7 +314,7 @@ ax_1_1.set_xlabel('frequency (Hz)')
 ax_1_1.set_ylabel('amplitude')
 ax_1_1.set_xlim([0, 40])
 ax_1_1.set_xticks(np.arange(0, 41, 10))
-ax_1_1.set_ylim([0, 1])
+ax_1_1.set_ylim([0, 1.1])
 ax_1_1.set_yticks([0, 1])
 
 ## Rebound slope - MOVED TO ax_2_0
@@ -369,15 +369,16 @@ ax_2_0.set_ylabel('membrane \n potential (mV)')
 ax_2_0.set_xlabel('time (ms)')
 ax_2_0.set_xlim([0, 1200])
 ax_2_0.set_xticks(np.arange(0, 1201, 400))
-ax_2_0.set_ylim([-85, -70])
-ax_2_0.set_yticks([-85, -70])
+ax_2_0.set_ylim([-80, -70])
+ax_2_0.set_yticks([-80, -70])
 
 ax_2_1.plot(steady_state, peak_heights, color=cm_neurons[3])
 ax_2_1.set_xlabel('steady state (mV)')
 ax_2_1.set_ylabel('depolarization \n potential (mV)')
-ax_2_1.set_ylim([-74, -73])
-ax_2_1.set_yticks([-74, -73])
-
+ax_2_1.set_ylim([-72, -70])
+ax_2_1.set_yticks([-72, -70])
+ax_2_1.set_xlim([-78, -71])
+ax_2_1.set_xticks([-78, -71])
 rebound_slope = np.polyfit(steady_state, peak_heights,1)[0]
 
 # Sag ratio

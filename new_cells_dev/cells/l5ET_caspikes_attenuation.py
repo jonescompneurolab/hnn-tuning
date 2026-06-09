@@ -17,6 +17,7 @@ import os.path as op
 
 pth = '/Users/katharinaduecker/Documents/projects_brown/hnn-tuning'
 pth_mod = op.join(pth, 'hnn-core/hnn_core/mod')
+
 figpth = op.join(pth, 'new_cells_dev/figures/l5_ET_tuning/')
 os.makedirs(figpth, exist_ok=True)
 import sys
@@ -67,6 +68,9 @@ fig.savefig(op.join(figpth, 'summary_attenuation_soma_dend.pdf'), dpi=300)
 plt.close()
 
 # Plot attenuation from tuft
+
+# path to mod file with epsp point process
+
 fig = plot_attenuation(cols_dist, ref_sect='apical_tuft', model_name='l5pyr', epsp=True, amp_hyperpol=-2, amp_spike=.5)
 fig.savefig(op.join(figpth, 'summary_attenuation_dend_soma.png'), dpi=300)
 fig.savefig(op.join(figpth, 'summary_attenuation_dend_soma.pdf'), dpi=300)

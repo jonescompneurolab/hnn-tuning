@@ -28,11 +28,10 @@ class Mechs:
         h.load_file("stdrun.hoc")
 
 
-    def add_mechs(self,cell, params, hotzone=[650, 950]):
+    def add_mechs(self,cell, params):
 
         h.distance(sec = cell._nrn_sections['soma'])
-        #params = get_rich_params()
-        # apical_oblique as part of basal because it's the target of the proximal drive?
+        # apical_oblique as part of basal because it's the target of the proximal drive
         basal_sections = ['basal_1', 'basal_2', 'basal_3', 'apical_oblique']
 
         mechs = params['basal'].keys()
@@ -46,14 +45,14 @@ class Mechs:
                         seg.pas.e = params['basal']['pas']['e']
                     else:
                         gbar = params['basal'][m]
-                        if m == 'NaTs2_t' or m == 'SKv3_1':
+                        if m == 'NaTs2_t_hay2011' or m == 'SKv3_1_hay2011':
                             distance = h.distance(seg.x, sec=seg.sec)
                             gbar = gbar(distance)
                         setattr(seg, 'gbar_'+m, gbar)
-            cell._nrn_sections[sec_name].insert('CaDynamics_E2')
+            cell._nrn_sections[sec_name].insert('CaDynamics_E2_hay2011')
             for seg in cell._nrn_sections[sec_name]:
-                seg.CaDynamics_E2.decay = 50
-                seg.CaDynamics_E2.gamma = .0005096
+                seg.CaDynamics_E2_hay2011.decay = 50
+                seg.CaDynamics_E2_hay2011.gamma = .0005096
             
         # soma
         mechs = params['soma'].keys()
@@ -67,10 +66,10 @@ class Mechs:
                 else:
                     setattr(seg, 'gbar_'+m, params['soma'][m])
 
-        cell._nrn_sections['soma'].insert('CaDynamics_E2')
+        cell._nrn_sections['soma'].insert('CaDynamics_E2_hay2011')
         for seg in cell._nrn_sections['soma']:
-            seg.CaDynamics_E2.decay = 460
-            seg.CaDynamics_E2.gamma = .000501
+            seg.CaDynamics_E2_hay2011.decay = 460
+            seg.CaDynamics_E2_hay2011.gamma = .000501
 
 
         # apical sections
@@ -84,42 +83,19 @@ class Mechs:
                 for seg in cell._nrn_sections[sec_name]:
                     if m == 'pas':
                         distance = h.distance(seg.x, sec=seg.sec) 
-                        seg.pas.g = params['dend']['pas']['g']             # Hay increases all conductances by 2 because cm is also increased by 2
+                        seg.pas.g = params['dend']['pas']['g']             
                         seg.pas.e = params['dend']['pas']['e']    
-                        # if distance > 1500:
-                        #     seg.pas.g *= 1.6
-                              
-                    elif m == 'Ih':
-                        distance = h.distance(seg.x, sec=seg.sec)
-                        gbar = params['dend']['Ih'](distance)
-                        setattr(seg, 'gbar_'+m, gbar)
-                    
-                    # set calcium according to function (new)
-                    elif m == 'Ca_HVA':
-                        distance = h.distance(seg.x, sec=seg.sec)
-                        gbar = params['dend']['Ca_HVA'](distance)
-
-                        setattr(seg, 'gbar_'+m, gbar)
-                    elif m == 'Ca_LVAst':
-                        distance = h.distance(seg.x, sec=seg.sec)
-                        gbar = params['dend']['Ca_LVAst'](distance)
-
-                        setattr(seg, 'gbar_'+m, gbar) 
-                    # elif m == 'SK_E2':
-                    #     distance = h.distance(seg.x, sec=seg.sec)
-                    #     gbar = params['dend']['SK_E2'](distance)
-
-                    #     setattr(seg, 'gbar_'+m, gbar)
+                    elif hasattr(params['dend'][m], "__call__"):
+                            distance = h.distance(seg.x, sec=seg.sec)
+                            gbar = params['dend'][m](distance)
+                            setattr(seg,'gbar_'+m, gbar)
                     else:
                         setattr(seg, 'gbar_'+m, params['dend'][m])       # Hay increases all conductances by 2 because cm is also increased by 2
 
-            cell._nrn_sections[sec_name].insert('CaDynamics_E2')
+            cell._nrn_sections[sec_name].insert('CaDynamics_E2_hay2011')
             for seg in cell._nrn_sections[sec_name]:
-                seg.CaDynamics_E2.decay = 122
-                seg.CaDynamics_E2.gamma = .0005096*1.
-                #seg.CaDynamics_E2.minCai = 5e-5
-                # seg.CaDynamics_E2.decay = 460
-                # seg.CaDynamics_E2.gamma = .000501
+                seg.CaDynamics_E2_hay2011.decay = 122
+                seg.CaDynamics_E2_hay2011.gamma = .0005096*1.
 
 
         return cell
