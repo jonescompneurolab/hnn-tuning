@@ -10,8 +10,8 @@ def assign_color(net, gid):
     cm_neurons = get_cmap_neurons()
     cmap = matplotlib.colors.ListedColormap(cm_neurons)
 
-    cell_type_colors = {'L2_basket': cmap.colors[0], 'L2_pyramidal': cmap.colors[1], 
-                'L5_basket': cmap.colors[2], 'L5ET': cmap.colors[3]}
+    cell_type_colors = {'L2_inhibitory': cmap.colors[0], 'L2_pyramidal': cmap.colors[1], 
+                'L5_inhibitory': cmap.colors[2], 'L5_pyramidal': cmap.colors[3]}
 
     for cell_type, gid_range in net.gid_ranges.items():
         if cell_type in list(cell_type_colors.keys()):
