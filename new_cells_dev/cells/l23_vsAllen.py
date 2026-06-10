@@ -293,8 +293,8 @@ for i, amp in enumerate(sag_stim_amp):
 ax[4].set_xlim([0, 700])
 ax[4].set_ylabel('membrane potential (mV)')
 ax[4].set_xlabel('time (ms)')
-ax[4].set_yticks([-110, -90, -70])
-
+ax[4].set_yticks([-130, -110, -90, -70])
+ax[4].set_ylim([-130, -70])
 avg_tau_ms = np.mean(tau_ms)
 
 ephys_measures['tau'] = avg_tau_ms
