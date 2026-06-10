@@ -266,7 +266,6 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, continue_che
     # set up empty drives
     set_up_drives_empty(net_base)
     dt = 0.05           # increase dt to speed up 
-    net_base._verbose = False
 
     constraints, initial_params = get_constraints_init_params(continue_checkpoint)
     
@@ -279,20 +278,16 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, continue_che
     optim = Optimizer(net_base, tstop=tstop, constraints=constraints, solver='cma', 
         set_params=set_params_opt_drives, initial_params=initial_params, max_iter=max_iter, obj_fun="dipole_rmse_corr")
 
-    optim.fit(target=exp_dpl, n_trials=3, scale_factor=scaling_factor, sigma0=0.05,
+    optim.fit(target=exp_dpl, n_trials=3, scale_factor=scaling_factor, sigma0=0.25,
             smooth_window_len=smooth_win, dt=dt, popsize=popsize, pth_backup='/users/kduecker/hnn-tuning/new_model_HNN/ERP', 
-            bsl_cor="duecker", n_jobs=n_procs)
+            bsl_cor="duecker", n_jobs=n_procs, verbose=False)
 
     if init_random:
         with open(f'opt_ERP_cma_{popsize}_random.pkl', 'wb') as file:
                     pickle.dump(optim, file)
     else:
-        with open(f'opt_ERP_cma_{popsize}_new_obj.pkl', 'wb') as file:
+        with open(f'opt_ERP_cma_{popsize}.pkl', 'wb') as file:
             pickle.dump(optim, file)
-
-        
-
-
 
 if __name__ == '__main__':
     import argparse
