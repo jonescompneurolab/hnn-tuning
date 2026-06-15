@@ -16,6 +16,7 @@ better conditioned for CMA.
 
 import os
 import os.path as op
+from functools import partial
 from collections import OrderedDict
 
 import numpy as np
@@ -217,14 +218,13 @@ def _clip_to_bounds(params, constraints):
             for k, v in params.items()}
 
 
-def _make_set_params(fixed_params):
-    """Return a set_params that injects fixed_params for the non-optimized drives
-    and merges in the optimizer-supplied values for the current drive."""
-    def _set(net, param_values):
-        merged = dict(fixed_params)
-        merged.update(param_values)
-        set_params_opt_drives(net, merged)
-    return _set
+def _set_params_fixed(fixed_params, net, param_values):
+    """Module-level set_params (picklable, unlike a nested closure): injects
+    fixed_params for the non-optimized drives and merges in the optimizer's
+    values for the current drive. Bind fixed_params via functools.partial."""
+    merged = dict(fixed_params)
+    merged.update(param_values)
+    set_params_opt_drives(net, merged)
 
 
 # ---------------------------------------------------------------------------
@@ -267,9 +267,9 @@ def opt_cma_iterative(max_iter, popsize, n_procs, scaling_factor, smooth_win,
         # all other drives are held fixed at the current best
         fixed_params = {k: current_best[k] for k in current_best
                         if k not in sub_keys}
-        set_params_chunk = _make_set_params(fixed_params)
+        set_params_chunk = partial(_set_params_fixed, fixed_params)
 
-        optim = Optimizer(net_base, tstop=tstop, constraints=sub_constraints,
+        optim = Optimizer(net_base, tstop=win_t1, constraints=sub_constraints,
                           solver='cma', set_params=set_params_chunk,
                           initial_params=sub_initial, max_iter=max_iter,
                           obj_fun=_rmse_corr_evoked_windowed)
@@ -294,7 +294,7 @@ def opt_cma_iterative(max_iter, popsize, n_procs, scaling_factor, smooth_win,
     if final_refine:
         print("\n=== Final joint refinement over full window ===", flush=True)
         sub_initial = _clip_to_bounds(current_best, constraints)
-        set_params_chunk = _make_set_params({})  # nothing fixed
+        set_params_chunk = partial(_set_params_fixed, {})  # nothing fixed
 
         optim = Optimizer(net_base, tstop=tstop, constraints=constraints,
                           solver='cma', set_params=set_params_chunk,

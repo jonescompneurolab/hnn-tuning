@@ -21,7 +21,7 @@ source ~/oscar-install/activate-hnn-core-conda-custom-source-env.sh
 conda activate hnn-core-env
 conda env list             # just double checking if we're in the right place
 
-python opt_ERP_thresh.py --max_iter 150 --popsize 100 --n_procs 100 --scale_factor 800 --smooth_window_len 5 --which_erp 'yes' --obj_fun 'dipole_rmse'
+python opt_ERP_thresh.py --max_iter 150 --popsize 100 --n_procs 100 --scale_factor 800 --smooth_window_len 5 --which_erp 'no' --obj_fun 'dipole_rmse' --init_random
 # stats file
 scontrol show job $SLURM_JOB_ID >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats
 sacct -j $SLURM_JOB_ID --format=JobID,JobName,MaxRSS,Elapsed >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats

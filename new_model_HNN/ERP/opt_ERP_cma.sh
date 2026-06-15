@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -J opt_cma
-#SBATCH -t 24:00:00
-#SBATCH --mem=150G
+#SBATCH -t 16:00:00
+#SBATCH --mem=200G
 #SBATCH --ntasks=100
 #SBATCH --account carney-srj3-condo2
 #SBATCH --exclude=node2430,node2414,node2428,node2418,node2416,node1940
@@ -21,7 +21,7 @@ source ~/oscar-install/activate-hnn-core-conda-custom-source-env.sh
 conda activate hnn-core-env
 conda env list             # just double checking if we're in the right place
 
-python opt_ERP_cma.py --max_iter 100 --popsize 200 --n_procs 100 --scale_factor 1000 --smooth_window_len 5 --init_random
+python opt_ERP_cma.py --max_iter 150 --popsize 100 --n_procs 100 --scale_factor 1000 --smooth_window_len 5 
 # stats file
 scontrol show job $SLURM_JOB_ID >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats
 sacct -j $SLURM_JOB_ID --format=JobID,JobName,MaxRSS,Elapsed >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats
