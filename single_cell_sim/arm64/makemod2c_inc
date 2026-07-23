@@ -1,0 +1,8 @@
+./epsp.c: ../epsp.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "epsp.mod" -o "/Users/katharinaduecker/Documents/projects_brown/hnn-tuning/new_cells_dev/arm64")
+
+./epsp.o: ./epsp.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+

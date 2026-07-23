@@ -1,0 +1,61 @@
+# PLACEHOLDER — fill in before archiving/submission.
+# Every line marked TODO needs your input. Validate with:
+#     pip install cffconvert && cffconvert --validate
+#
+# This file describes how to cite THIS repository (the code compendium).
+# The `preferred-citation` block points readers at the manuscript instead,
+# which is what you normally want them to cite.
+
+cff-version: 1.2.0
+message: "If you use this code, please cite the manuscript in `preferred-citation` below."
+title: "Code and tutorials for: TODO — manuscript title"
+abstract: "TODO — one-paragraph description of what this repository contains."
+type: software
+version: "0.1.0"                      # TODO — bump to 1.0.0 at submission
+date-released: "TODO-YYYY-MM-DD"
+license: TODO                         # e.g. BSD-3-Clause, to match hnn-core
+repository-code: "https://github.com/TODO/hnn-tuning"
+url: "https://github.com/TODO/hnn-tuning"
+# doi: "10.5281/zenodo.TODO"          # uncomment once the Zenodo archive exists
+
+authors:
+  - family-names: "Duecker"
+    given-names: "Katharina"
+    email: "katharina.duecker@gmail.com"
+    orcid: "https://orcid.org/TODO"
+    affiliation: "TODO — e.g. Department of Neuroscience, Brown University"
+  # TODO — add co-authors in manuscript order
+
+keywords:
+  - computational neuroscience
+  - HNN
+  - hnn-core
+  - NEURON
+  - biophysical modelling
+  - cortical column
+  - TODO
+
+preferred-citation:
+  type: article
+  title: "TODO — manuscript title"
+  authors:
+    - family-names: "Duecker"
+      given-names: "Katharina"
+      orcid: "https://orcid.org/TODO"
+    # TODO — add co-authors in manuscript order
+  journal: "TODO"
+  year: TODO
+  # doi: "TODO"
+
+references:
+  - type: software
+    title: "hnn-core"
+    repository-code: "https://github.com/jonescompneurolab/hnn-core"
+    authors:
+      - name: "The hnn-core developers"
+  - type: software
+    title: "NEURON"
+    version: "8.2.7"
+    url: "https://neuron.yale.edu"
+    authors:
+      - name: "The NEURON developers"

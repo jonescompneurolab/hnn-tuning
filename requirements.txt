@@ -1,0 +1,30 @@
+# Core requirements for the HNN tuning paper
+#
+# Everything needed to run the cell-development and network-model code.
+# Versions are those used to produce the results in the manuscript
+# (Python 3.12.9, macOS/arm64).
+#
+# Install with:
+#     pip install -r requirements.txt
+#
+# NEURON and hnn-core are the two dependencies that affect simulation output;
+# the rest are pinned to guard against API drift, and slightly older or newer
+# versions will very likely work.
+
+# --- simulation ---------------------------------------------------------
+NEURON==8.2.7
+
+# hnn-core version XXX
+
+# --- numerics and data --------------------------------------------------
+numpy==2.3.5
+scipy==1.16.3
+pandas==2.3.3
+
+# --- plotting -----------------------------------------------------------
+matplotlib==3.10.6
+cmcrameri==1.9          # perceptually uniform (Crameri) colour maps
+
+# --- notebooks ----------------------------------------------------------
+jupyterlab
+ipython==9.7.0

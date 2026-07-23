@@ -1,5 +1,23 @@
-utils/__pycache__/
+# byte-compiled / cache
+__pycache__/
+*.pyc
+
+# editable-install metadata
+*.egg-info/
+
+# scratch / logs
 *.out
 *.stats
-data/
 .DS_Store
+
+# generated figures / outputs (regenerable by re-running the notebooks)
+/results/
+
+# nested working copies — installed via requirements.txt instead, not tracked here
+/hnn-core/
+/submodule/
+
+# Allen Cell Types downloads: large NWB caches, re-downloadable via allensdk.
+# Keep the small computed feature tables (ephys_*.csv / .pkl) tracked.
+data/allen-data/**/cell_types/
+*.nwb

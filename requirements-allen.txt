@@ -1,0 +1,19 @@
+# Optional requirements: Allen Cell Types Database analysis
+#
+# Needed ONLY to re-run the notebooks in allen_data/ that download and
+# analyse Allen Institute electrophysiology used to constrain the cell models:
+#
+#     allen_data/download_data_allensdk.ipynb
+#     allen_data/allen_electrophysio.ipynb
+#     allen_data/tau_m.ipynb
+#
+# INSTALL THIS IN A SEPARATE ENVIRONMENT. The AllenSDK pins numpy and pandas
+# to versions that conflict with the core environment above, so the two cannot
+# be installed side by side. Deliberately left unpinned so the SDK can resolve
+# its own compatible stack.
+#
+#     conda create -n hnn-allen python=3.9
+#     conda activate hnn-allen
+#     pip install -r requirements-allen.txt
+
+allensdk
