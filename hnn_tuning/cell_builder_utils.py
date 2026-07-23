@@ -1,4 +1,8 @@
-"""HNN utils to build the L5 cell"""
+"""HNN utils to build the L5 cell
+
+
+Most functions are taking directly from the hnn-core repo.
+_create_synapses is adjusted to explore the dynamics of synapses tuned for this project. """
 
 import neuron
 from neuron import h
@@ -6,6 +10,8 @@ from neuron.units import ms, mV
 import numpy as np
 from numpy.linalg import norm
 
+
+# number of segments
 def _get_nseg(L):
     nseg = 1
     if L > 100.:  # 100 um
@@ -15,7 +21,7 @@ def _get_nseg(L):
             nseg += 1
     return nseg
 
-
+# get dendrites
 def _get_dends(params, cell_type, section_names, end_pts, v_init = {'all': -65}, cai=5e-5):
     """Convert a flat dictionary to a nested dictionary.
 
@@ -48,6 +54,7 @@ def _get_dends(params, cell_type, section_names, end_pts, v_init = {'all': -65},
                                         end_pts = end_pt)
     return sections
 
+# get soma
 def _get_pyr_soma(p_all, cell_type, end_pt, v_init = -65, cai=5e-5):
     """Get somatic properties."""
     return Section(
@@ -59,18 +66,8 @@ def _get_pyr_soma(p_all, cell_type, end_pt, v_init = -65, cai=5e-5):
         end_pts = end_pt
     )
 
-def _get_basket_soma(end_pts=None):
-    if end_pts is None:
-        end_pts = [[0, 0, 0], [0, 0, 20]]
 
-    # measures from Cumberland et al., 2023
-    return Section(
-        L=20.,
-        diam=20.,
-        cm=1.,
-        Ra=200.,
-        end_pts=end_pts)
-
+# angle of dendrite relative to apical for dipole calculation
 def _get_cos_theta(sections, sec_name_apical):
     """Get cos(theta) to compute dipole along the apical dendrite."""
     a = (np.array(sections[sec_name_apical].end_pts[1]) -
@@ -81,7 +78,7 @@ def _get_cos_theta(sections, sec_name_apical):
         cos_thetas[sec_name] = np.dot(a, b) / (norm(a) * norm(b))
     return cos_thetas
     
-
+# sections class copied from hnn-core
 class Section:
     """Section class.
 
@@ -168,7 +165,8 @@ class Section:
     @property
     def end_pts(self):
         return self._end_pts
-    
+
+# cell class from hnn-core    
 class Cell: 
 
     def __init__(self, sections, cell_tree, cell_type, gid):
@@ -305,103 +303,41 @@ class Cell:
             mech_props[sec_name] = this_sec_prop
         return mech_props
 
+    # heavily adjusted to explore synapses of interest
+    def _make_synapse(self, name, loc):
+        """Create and configure one synapse of the given type at section `loc`."""
+        seg = self._nrn_sections[loc](0.5)
+        if name == 'Exp2Syn':
+            syn = h.Exp2Syn(seg)
+            syn.tau1, syn.tau2, syn.e = 0.5, 5.0, 0.0
+        elif name == 'NMDA_gao2021':
+            syn = h.NMDA_gao2021(seg)
+        elif name == 'gabab_neymotin2016':
+            syn = h.gabab_neymotin2016(seg)   # kinetic model; uses its own defaults
+        elif name == 'gabaa_slow':
+            syn = h.Exp2Syn(seg)
+            syn.e, syn.tau1, syn.tau2 = -80, 1.5, 20
+        else:
+            raise ValueError(f'unknown synapse type: {name!r}')
+        return syn
+
     def _create_synapses(self, add_syn=None, syn_loc=None):
+        """Attach synapse(s) to the cell.
 
-        if type(add_syn) is str:
-            if syn_loc is None:
-                raise ValueError('syn_loc must be specified if add_syn is a string.')
-            elif type(syn_loc) is str:
-                if add_syn == 'Exp2Syn':
-                    self.syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
-                elif add_syn == 'NMDA_gao':
-                    self.syn = h.NMDA_gao(self._nrn_sections[syn_loc](0.5))
-                elif add_syn == 'gabab_destexhe':
-                    self.syn = h.gabab_destexhe(self._nrn_sections[syn_loc](0.5))
-                elif add_syn == 'gabaa_som+':
-                    gabaa_syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
-                    gabaa_syn.e = -80
-                    gabaa_syn.tau1 = 1.5
-                    gabaa_syn.tau2 = 20
-                    self.syn.append(gabaa_syn)
-            elif type(syn_loc) is list:
-                print('Adding multiple synapses to cell. syn_loc should be a string.')
-                self.syn = list()
-                for loc in syn_loc:
-                    if add_syn == 'Exp2Syn':
-                        self.syn.append(h.Exp2Syn(self._nrn_sections[loc](0.5)))
-                    elif add_syn == 'NMDA_gao':
-                        self.syn.append(h.NMDA_gao(self._nrn_sections[loc](0.5)))
-                    elif add_syn == 'gabab':
-                        gabab_syn = h.gabab(self._nrn_sections[loc](0.5))
-                        gabab_syn.e = -80
-                        gabab_syn.tau1 = 45
-                        gabab_syn.tau2 = 200
-                        self.syn.append(gabab_syn)
-                    elif add_syn == 'gabaa_som+':
-                        gabaa_syn = h.Exp2Syn(self._nrn_sections[loc](0.5))
-                        gabaa_syn.e = -80
-                        gabaa_syn.tau1 = 1.5
-                        gabaa_syn.tau2 = 20
-                        self.syn.append(gabaa_syn)
-                    
-        elif type(add_syn) is list:
-            print('Adding multiple synapses to cell.')
-            self.syn = list()
-            for syn_name in add_syn:
-                if type(syn_loc) is None:
-                    raise ValueError('syn_loc must be specified if add_syn is a list.')
-                elif type(syn_loc) is str:
-                    if syn_name == 'Exp2Syn':
-                        exp2syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
-
-                        exp2syn.tau1 = 0.5
-                        exp2syn.tau2 = 5.0
-                        exp2syn.e = 0.0
-
-                        self.syn.append(exp2syn)
-
-                    elif syn_name == 'NMDA_gao':
-                        self.syn.append(h.NMDA_gao(self._nrn_sections[syn_loc](0.5)))
-                    elif syn_name == 'gabab':
-                        gabab_syn = h.gabab(self._nrn_sections[syn_loc](0.5))
-                        gabab_syn.e = -80
-                        gabab_syn.tau1 = 45
-                        gabab_syn.tau2 = 200
-                        self.syn.append(gabab_syn)
-                    elif syn_name == 'gabaa_som+':
-                        gabaa_syn = h.Exp2Syn(self._nrn_sections[syn_loc](0.5))
-                        gabaa_syn.e = -80
-                        gabaa_syn.tau1 = 1.5
-                        gabaa_syn.tau2 = 20
-                        self.syn.append(gabaa_syn)
-                elif type(syn_loc) is list:
-                    print('Adding multiple synapses to cell. syn_loc should be a string.')
-                    for loc in syn_loc:
-                        if syn_name == 'Exp2Syn':
-                            exp2syn = h.Exp2Syn(self._nrn_sections[loc](0.5))
-
-                            exp2syn.tau1 = 0.5
-                            exp2syn.tau2 = 5.0
-                            exp2syn.e = 0.0
-
-                            self.syn.append(exp2syn)
-
-                        elif syn_name == 'NMDA_gao':
-                            self.syn.append(h.NMDA_gao(self._nrn_sections[loc](0.5)))
-                        elif syn_name == 'gabab':
-                            gabab_syn = h.gabab(self._nrn_sections[loc](0.5))
-                            gabab_syn.e = -80
-                            gabab_syn.tau1 = 45
-                            gabab_syn.tau2 = 200
-                            self.syn.append(gabab_syn)
-                        elif syn_name == 'gabaa_som+':
-                            gabaa_syn = h.Exp2Syn(self._nrn_sections[loc](0.5))
-                            gabaa_syn.e = -80
-                            gabaa_syn.tau1 = 1.5
-                            gabaa_syn.tau2 = 20
-                            self.syn.append(gabaa_syn)
-
-        #self.syn.tau = 2
+        `add_syn` / `syn_loc` may each be a str or a list. `self.syn` is a single
+        synapse when both are strings, otherwise a list (types x locations, in
+        that order).
+        """
+        if add_syn is None:
+            return
+        if syn_loc is None:
+            raise ValueError('syn_loc must be specified if add_syn is given.')
+        names = [add_syn] if isinstance(add_syn, str) else list(add_syn)
+        locs = [syn_loc] if isinstance(syn_loc, str) else list(syn_loc)
+        print(f'Adding synapse(s) {names} at {locs}')
+        syns = [self._make_synapse(n, loc) for n in names for loc in locs]
+        single = isinstance(add_syn, str) and isinstance(syn_loc, str)
+        self.syn = syns[0] if single else syns
 
     def build(self, sec_name_apical=None, add_syn=None, syn_loc=None):
 
@@ -465,8 +401,8 @@ class Cell:
         self.dipole = h.Vector().record(self.dpl_ref)
 
 
-
-def l5_params(model='hay'):
+# L5ET cell
+def l5_params():
 
     section_params = {
         # Soma
@@ -503,10 +439,6 @@ def l5_params(model='hay'):
         'L5Pyr_basal3_L': 255.,
         'L5Pyr_basal3_diam': 8.5,
     }
-    if model == 'rich':
-        section_params['L5Pyr_soma_Ra'] = 495.73
-        section_params['L5Pyr_dend_Ra'] = 495.73
-        section_params['L5Pyr_dend_cm'] = 1.6
 
     end_pts = {
             'soma': [[0, 0, 0], [0, 0, 39]],
@@ -540,7 +472,8 @@ def l5_params(model='hay'):
 
     return section_params, end_pts, cell_tree
 
-def l5IT_params(model='hay'):
+# IT cell not included in manuscript or final model.
+def l5IT_params():
 
     section_params = {
         # Soma
@@ -577,10 +510,6 @@ def l5IT_params(model='hay'):
         'L5Pyr_basal3_L': 255.,
         'L5Pyr_basal3_diam': 8.5,
     }
-    if model == 'rich':
-        section_params['L5Pyr_soma_Ra'] = 495.73
-        section_params['L5Pyr_dend_Ra'] = 495.73
-        section_params['L5Pyr_dend_cm'] = 1.6
 
     end_pts = {
             'soma': [[0, 0, 0], [0, 0, 23]],
@@ -614,6 +543,7 @@ def l5IT_params(model='hay'):
 
     return section_params, end_pts, cell_tree
 
+# L2/3 pyramidal cell
 def l2_params():
 
     section_params = {

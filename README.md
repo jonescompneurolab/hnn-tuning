@@ -34,7 +34,7 @@ they cannot coexist in one environment.
 | File | Purpose | Install into |
 |------|---------|--------------|
 | `requirements.txt` | Everything needed for the cell models, network simulations, and figures | Main environment (Python 3.12) |
-| `requirements-allen.txt` | Allen Cell Types Database analysis — only the notebooks in `allen_data/` | **Separate** environment (see file header) |
+| `requirements-allen.txt` | Allen Cell Types Database analysis — only extraction of electrophysiological features in `extract_ephys/allen_get_ephys_data.py` | See **Data**. |
 
 Core packages: **NEURON 8.2.7**, **hnn-core**, numpy, scipy, pandas,
 matplotlib, [cmcrameri](https://www.fabiocrameri.ch/colourmaps/) (colour maps),
@@ -43,19 +43,7 @@ JupyterLab.
 
 ### hnn-core version
 
-The results in this manuscript were produced with a **development fork** of
-hnn-core, not a released version:
-
-- Fork: `https://github.com/katduecker/hnn-core`
-- Branch: `pr-10`
-- Commit: `195d280d`
-- Reported version: `0.4.4.dev0`
-
-`requirements.txt` pins this commit directly. **Before submission**, replace it
-with the upstream commit or released version once the changes are merged, and
-link the relevant pull requests here:
-
-- TODO — hnn-core PRs described by this manuscript
+TO-DO
 
 ---
 
@@ -78,10 +66,11 @@ with approximate runtimes.
 
 ## Data
 
-TODO — what is included in the repository, what must be downloaded (Allen Cell
-Types Database, MEG/ERP recordings, NHP laminar LFP), licences, and DOIs for
-any separately deposited dataset.
-Also mention the spectralevents data copied into the data folder and where it comes from
+All data required to produce the figures in the manuscript are shared in `data/`.
+For the [Allen Cell Types data](https://celltypes.brain-map.org/), the extracted electrophysiological features
+for the different cells (interneuron, l5, l23) are shared in `data/allen-data`.
+These features were extracted using `extract_ephys/allen_get_ephys_data.py` which requires allensdk
+and have to be run in a *separate* environment (see `requirements_allen.txt`).
 
 ---
 

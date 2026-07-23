@@ -14,7 +14,7 @@ import numpy as np
 
 from functools import partial
 
-from .cell_builder_utils import l5_params, _get_dends, _get_pyr_soma, Cell
+from .cell_builder_utils import l5_params, Cell, _get_dends, _get_pyr_soma
 from .l5_mechs_utils import Mechs, Ih_condu_hay, linear_gbar
 
 from matplotlib import colormaps
