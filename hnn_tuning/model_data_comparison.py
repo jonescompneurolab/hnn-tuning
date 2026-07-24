@@ -31,7 +31,8 @@ def _parse_array(s):
 
 
 def load_ephys_csv(path):
-    """Load an experimental ephys feature table, restoring array-valued columns.
+    """Load an experimental table, restoring array-valued columns.
+    Can be used for Allen Ephys data and alpha-beta complex simulation.
 
     Parameters
     ----------
@@ -45,6 +46,10 @@ def load_ephys_csv(path):
         The table, with ``sag_stim_amp`` converted back to arrays if present.
     """
     df = pd.read_csv(path, index_col=0)
-    if 'sag_stim_amp' in df.columns:
-        df['sag_stim_amp'] = df['sag_stim_amp'].apply(_parse_array)
+    # array-valued columns: Allen ephys (sag_stim_amp) + alpha-beta complex sim outputs
+    array_cols = ('sag_stim_amp', 'alpha_beta_ratio', 'alpha_power',
+                  'beta_power', 'symmetry_index')
+    for col in array_cols:
+        if col in df.columns:
+            df[col] = df[col].apply(_parse_array)
     return df

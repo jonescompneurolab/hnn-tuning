@@ -285,10 +285,9 @@ def compute_symmetry_index_mean(dpl, lowcut=7, highcut=29, prominence=0.01):
 def run_main(n_trials, n_procs, run_idx):
     params = sim_analysis_params_default()
 
-    fb_delay = params['fb_delay']
-    filename = op.join(out_pth, f'alpha_beta_complex_simulation_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
-    netfilename = op.join(out_pth, f'net_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
-    dplfilename = op.join(out_pth, f'dpl_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
+    filename = op.join(out_pth, f'alpha_beta_complex_simulation_{run_idx}.csv')
+    netfilename = op.join(out_pth, f'net_delay_{run_idx}.pkl')
+    dplfilename = op.join(out_pth, f'dpl_delay_{run_idx}.pkl')
     params['n_procs'] = n_procs
     params['prox_seed'] = run_idx-1+544
     params['dist_seed'] = run_idx-1+476
@@ -312,7 +311,7 @@ def run_main(n_trials, n_procs, run_idx):
         'symmetry_index': [s_idx[i] for i in range(n_trials)]
     })
 
-    df.to_pickle(filename)
+    df.to_csv(filename)
 
     with open(netfilename, 'wb') as file:
         pickle.dump(net, file) #
