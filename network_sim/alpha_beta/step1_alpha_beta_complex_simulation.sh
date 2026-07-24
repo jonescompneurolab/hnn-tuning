@@ -22,7 +22,7 @@ source ~/oscar-install/activate-hnn-core-conda-custom-source-env.sh
 conda activate hnn-core-env
 conda env list             # just double checking if we're in the right place
 
-python alpha_beta_complex.py --n_trials 600 --n_procs 50 --run_idx ${SLURM_ARRAY_TASK_ID}
+python step1_alpha_beta_complex_simulation.py --n_trials 600 --n_procs 50 --run_idx ${SLURM_ARRAY_TASK_ID}
 
 # stats file
 scontrol show job $SLURM_JOB_ID >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats

@@ -1,25 +1,33 @@
-"""Alpha-beta complex simulations"""
+"""Alpha/beta complex simulations for the duecker_ET_model
+(reproduces the Jones et al., 2009 alpha/beta complex mechanism).
+
+Step 1 of the alpha/beta analysis: drive the network with a proximal feedforward
+and a distal feedback bursty drive (~10 Hz), simulate the dipole over many trials,
+and compute the spectral measures — PSD (Welch), Morlet TFR, alpha/beta power ratio,
+and waveform symmetry index — saving per-run pickles to sim_results/. Run on the
+cluster (submitted to Slurm via step1_alpha_beta_complex_simulation.sh, one array
+task per run_idx). Step 2 (step2_alpha_beta_complex_results.ipynb) loads the pickles
+and makes the figures.
+
+Author: Katharina Duecker <katharina.duecker@gmail.com>
+Part of the hnn-tuning research compendium.
+"""
 
 ## set up environment
 
 # HNN
 from hnn_core import JoblibBackend
 from hnn_core import duecker_ET_model, simulate_dipole
-from hnn_core.externals.mne import tfr_array_morlet
+from hnn_core.externals.mne import tfr_array_morlet  # used by compute_tfr_mne (kept for comparison)
 
 # other
 import os
 import os.path as op
 import numpy as np
-import matplotlib.pyplot as plt
 import argparse
 import pandas as pd
 import scipy.signal as signal
 from scipy.signal import find_peaks, butter, lfilter
-
-
-# custom scripts and paths
-import sys
 import pickle
 
 from hnn_tuning import NETWORK_SIM
@@ -160,8 +168,6 @@ def compute_tfr(scale_dpl):
     
     tfr = tfr.astype(np.float32)
 
-    tfr = tfr.astype(np.float32)
-
     return frequencies, tfr
 
 def compute_tfr_mne(scale_dpl):
@@ -280,16 +286,12 @@ def run_main(n_trials, n_procs, run_idx):
     params = sim_analysis_params_default()
 
     fb_delay = params['fb_delay']
-    # params['fb_delay'] = fb_delay
     filename = op.join(out_pth, f'alpha_beta_complex_simulation_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
     netfilename = op.join(out_pth, f'net_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
     dplfilename = op.join(out_pth, f'dpl_delay_{fb_delay}ms_fb_std_15_{run_idx}.pkl')
     params['n_procs'] = n_procs
     params['prox_seed'] = run_idx-1+544
     params['dist_seed'] = run_idx-1+476
-   
-    # set up dataframe
-    df_dict = dict()
 
     dpl, net = run_alpha_beta_complex_simulations(params, n_trials=n_trials)
 
@@ -325,13 +327,10 @@ if __name__ == '__main__':
     parser.add_argument('--n_trials', type=int, default=1,
                         help='Number of trials to simulate (default: 1)')
     parser.add_argument('--n_procs', type=int, default=1,
-                        help='Number of cores for MPI simulation (default: 1, run serially)')
+                        help='Number of parallel jobs for the Joblib backend (default: 1, run serially)')
     parser.add_argument('--run_idx', type=int, default=1,
-                        help='Number of cores for MPI simulation (default: 1, run serially)')
-    
+                        help='Run index (Slurm array task id); sets the RNG seeds and output filenames (default: 1)')
+
     args = parser.parse_args()
     run_main(args.n_trials, args.n_procs, args.run_idx)
-
-    
-
 
