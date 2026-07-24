@@ -45,6 +45,15 @@ JupyterLab.
 
 TO-DO
 
+**Dipole baseline correction (`bsl_cor="duecker"`).** The `duecker_ET_model` pyramidal cells have an h-current gradient that causes an increasing gradient in resting membrane potential along the apical dendrites. 
+This produces a slow drift in the dipole (which is also corrected for in the original `neymotin_2020_model`). 
+`simulate_dipole(..., bsl_cor="duecker")` removes it by subtracting a per-layer
+(L2/L5) exponential-decay fit stored in the fork at
+`hnn_core/param/bsl_dipole_dueckerET.json`. 
+
+The baseline correction method is devloped in `network_sim/dipole_baseline_correction/fit_baseline_correction.ipynb`.
+Re-run if ion channel conductances are changed (**not recommended!**).
+
 ---
 
 ## Repository layout
