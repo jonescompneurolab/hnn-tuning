@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -J opt_cma
-#SBATCH -t 16:00:00
+#SBATCH -t 30:00
 #SBATCH --mem=200G
-#SBATCH --ntasks=100
+#SBATCH --ntasks=10
 #SBATCH --account carney-srj3-condo2
 #SBATCH --exclude=node2430,node2414,node2428,node2418,node2416,node1940
 
@@ -23,7 +23,7 @@ conda env list             # just double checking if we're in the right place
 
 # Step 2 of the ERP pipeline: CMA-ES optimisation of the evoked-drive parameters.
 # 150 generations, population 100, spread over 100 MPI ranks.
-python step2_optimize_ERP_cma.py --max_iter 150 --popsize 100 --n_procs 100 --scale_factor 1000 --smooth_window_len 5 --sigma0 0.25
+python step2_optimize_ERP_cma.py --max_iter 2 --popsize 10 --n_procs 10 --scale_factor 1000 --smooth_window_len 5 --sigma0 0.25
 # stats file
 scontrol show job $SLURM_JOB_ID >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats
 sacct -j $SLURM_JOB_ID --format=JobID,JobName,MaxRSS,Elapsed >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats
