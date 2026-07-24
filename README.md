@@ -79,7 +79,7 @@ All data required to produce the figures in the manuscript are shared in `data/`
 For the [Allen Cell Types data](https://celltypes.brain-map.org/), the extracted electrophysiological features
 for the different cells (interneuron, l5, l23) are shared in `data/allen-data`.
 These features were extracted using `extract_ephys/allen_get_ephys_data.py` which requires allensdk
-and have to be run in a *separate* environment (see `requirements_allen.txt`).
+and has to be run in a *separate* environment (see `requirements_allen.txt`).
 
 ---
 
