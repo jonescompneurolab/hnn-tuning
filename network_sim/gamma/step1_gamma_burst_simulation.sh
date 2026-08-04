@@ -4,7 +4,6 @@
 #SBATCH --mem=80G
 #SBATCH --ntasks=50
 #SBATCH --account carney-srj3-condo2
-#SBATCH --exclude=node2430,node2414,node2428,node2418
 
 # Specify an output file
 #SBATCH -o gamma_bursty-%j.out

@@ -34,7 +34,7 @@ pathgen = str(DATA / 'hnn-data') + '/'
 
 # path to back up cma runs
 pth_backup=str(NETWORK_SIM / 'ERP' / 'backup_cma')
-
+os.makedirs(pth_backup, exist_ok=True)
 
 def set_params_opt_drives(net, param_values):
     """Write a flat CMA-ES parameter dict onto the network's evoked drives.
@@ -76,17 +76,18 @@ def get_constraints_init_params(continue_checkpoint=False):
     are instead read from the best solution in a previous run's checkpoint
     (`backup_cma/cma_checkpoint.pkl`).
     """
-
+    
     # log10 of the hand-tuned weights in step1_handtune.ipynb (0.0 -> -15, i.e. off)
-    initial_params = dict({'prox1_L2_inhibitory_ampa': -3.,     # 0.001
-                    'prox1_L2_pyramidal_ampa': -1.52,           # 0.03
-                    'prox1_L5_inhibitory_ampa': -15,            # 0.0
-                    'prox1_L5_pyramidal_ampa': -2.,             # 0.01
 
-                    'prox1_L2_inhibitory_nmda': -3.,            # 0.001
+    initial_params = dict({'prox1_L2_inhibitory_ampa': -2.4,    # 0.004 
+                    'prox1_L2_pyramidal_ampa': -1.52,           # 0.03
+                    'prox1_L5_inhibitory_ampa': -15,           # 0.0
+                    'prox1_L5_pyramidal_ampa': -6.2,            # 6e-7
+
+                    'prox1_L2_inhibitory_nmda': -2.,            # 0.01
                     'prox1_L2_pyramidal_nmda': -1.3,            # 0.05
-                    'prox1_L5_inhibitory_nmda': -15,            # 0.0
-                    'prox1_L5_pyramidal_nmda': -2.3,            # 0.005
+                    'prox1_L5_inhibitory_nmda': -2,            # 0.01
+                    'prox1_L5_pyramidal_nmda': -15,            # 0.0
 
                     'dist1_L2_inhibitory_ampa': -2.3,           # 0.005
                     'dist1_L2_pyramidal_ampa': -2.,             # 0.01
@@ -96,67 +97,62 @@ def get_constraints_init_params(continue_checkpoint=False):
                     'dist1_L2_pyramidal_nmda': -2.,             # 0.01
                     'dist1_L5_pyramidal_nmda': 0.,              # 1.0
 
-                    'prox2_L2_inhibitory_ampa': -2.,            # 0.01
+                    'prox2_L2_inhibitory_ampa': -15,            # 0
                     'prox2_L2_pyramidal_ampa': -0.52,           # 0.3
-                    'prox2_L5_inhibitory_ampa': -3.,            # 0.001
-                    'prox2_L5_pyramidal_ampa': -0.82,           # 0.15
+                    'prox2_L5_inhibitory_ampa': -1.35,            # 0.044
+                    'prox2_L5_pyramidal_ampa': -1.3,           # 0.051
 
-                    'prox2_L2_inhibitory_nmda': -2.,            # 0.01
-                    'prox2_L2_pyramidal_nmda': -0.7,            # 0.2
-                    'prox2_L5_inhibitory_nmda': -3.,            # 0.001
-                    'prox2_L5_pyramidal_nmda': -0.7,            # 0.2
+                    'prox2_L2_inhibitory_nmda': -.066,            # 0.86
+                    'prox2_L2_pyramidal_nmda': -4,            # 0.0001
+                    'prox2_L5_inhibitory_nmda': -6.3,            # 5e-7
+                    'prox2_L5_pyramidal_nmda': -0.42,            # 0.38
 
                     'prox1_mu': 15,
-                    'prox1_sigma': 4,
+                    'prox1_sigma': 3.5,
                     'prox1_numspikes': 1.,
-                    'dist1_mu': 60,
+                    'dist1_mu': 56,
                     'dist1_sigma': 4.5,
                     'dist1_numspikes': 2,
-                    'prox2_mu': 100,
-                    'prox2_sigma': 15,
+                    'prox2_mu': 99,
+                    'prox2_sigma': 12,
                     'prox2_numspikes': 1})
 
+    constraints = dict({'prox1_L2_inhibitory_ampa': (-4, -1.8),
+                        'prox1_L2_pyramidal_ampa': (-1.75, 0),
+                        'prox1_L5_inhibitory_ampa': (-15, -6),
+                        'prox1_L5_pyramidal_ampa': (-12, -1),
 
-    # prox1 (first drive): keep L2_pyramidal weights strictly ABOVE L5_pyramidal so
-    # L2 pyramidal fires before L5 pyramidal. Enforced with non-overlapping box
-    # bounds -- L2_pyramidal floor (-1.7 -> 0.020) sits above the L5_pyramidal ceiling
-    # (-1.9 -> 0.0126), so CMA-ES can never make L5 >= L2 for this drive.
-    constraints = dict({'prox1_L2_inhibitory_ampa': (-15, -1.8),
-                        'prox1_L2_pyramidal_ampa': (-1.7, 0),
-                        'prox1_L5_inhibitory_ampa': (-15, -1.75),
-                        'prox1_L5_pyramidal_ampa': (-15, -1.9),
+                        'prox1_L2_inhibitory_nmda': (-4, -2),
+                        'prox1_L2_pyramidal_nmda': (-1.6, 0),
+                        'prox1_L5_inhibitory_nmda': (-4, -2),
+                        'prox1_L5_pyramidal_nmda': (-15, -1),
 
-                        'prox1_L2_inhibitory_nmda': (-15, -2.),
-                        'prox1_L2_pyramidal_nmda': (-1.7, 0),
-                        'prox1_L5_inhibitory_nmda': (-15, -1.75),
-                        'prox1_L5_pyramidal_nmda': (-15, -1.9),
+                        'dist1_L2_inhibitory_ampa': (-4.6, 0),
+                        'dist1_L2_pyramidal_ampa': (-4, 0),
+                        'dist1_L5_pyramidal_ampa': (-4, 0),
 
-                        'dist1_L2_inhibitory_ampa': (-15, 0),
-                        'dist1_L2_pyramidal_ampa': (-6, 0),
-                        'dist1_L5_pyramidal_ampa': (-6, 0),
-
-                        'dist1_L2_inhibitory_nmda': (-15, 0),
+                        'dist1_L2_inhibitory_nmda': (-15, -10),
                         'dist1_L2_pyramidal_nmda': (-6, 0),
                         'dist1_L5_pyramidal_nmda': (-6, 0),
 
-                        'prox2_L2_inhibitory_ampa': (-15, 0),
-                        'prox2_L2_pyramidal_ampa': (-15, -.5),
-                        'prox2_L5_inhibitory_ampa': (-15, 0),
-                        'prox2_L5_pyramidal_ampa': (-15, -0.5),
+                        'prox2_L2_inhibitory_ampa': (-15, -10),
+                        'prox2_L2_pyramidal_ampa': (-1.5, 0),
+                        'prox2_L5_inhibitory_ampa': (-3, 0),
+                        'prox2_L5_pyramidal_ampa': (-3, 0),
 
-                        'prox2_L2_inhibitory_nmda': (-15, 0),
-                        'prox2_L2_pyramidal_nmda': (-15, -.5),
-                        'prox2_L5_inhibitory_nmda': (-15, 0),
-                        'prox2_L5_pyramidal_nmda': (-15, -0.5),
+                        'prox2_L2_inhibitory_nmda': (-1.2, 0),
+                        'prox2_L2_pyramidal_nmda': (-6, -2),
+                        'prox2_L5_inhibitory_nmda': (-12, -4),
+                        'prox2_L5_pyramidal_nmda': (-2, 0),
                         
                         'prox1_mu': (10, 25),
-                        'prox1_sigma': (1, 6),
+                        'prox1_sigma': (2, 8),
                         'prox1_numspikes': (0, 3),
-                        'dist1_mu': (50, 100),
-                        'dist1_sigma': (1, 6),
+                        'dist1_mu': (30, 70),
+                        'dist1_sigma': (2, 8),
                         'dist1_numspikes': (0,3),
-                        'prox2_mu': (80, 150),
-                        'prox2_sigma': (1, 20),
+                        'prox2_mu': (80, 120),
+                        'prox2_sigma': (6, 16),
                         'prox2_numspikes': (0, 3)})
 
     # if optimization crashed and we want to continue from checkpoint
