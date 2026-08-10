@@ -66,6 +66,18 @@ def _get_pyr_soma(p_all, cell_type, end_pt, v_init = -65, cai=5e-5):
         end_pts = end_pt
     )
 
+# get inhibitory neuron soma
+def _get_inh_soma(end_pts=None):
+    if end_pts is None:
+        end_pts = [[0, 0, 0], [0, 0, 20]]
+
+    # measures from Cumberland et al., 2023
+    return Section(
+        L=20.,
+        diam=20.,
+        cm=1.,
+        Ra=200.,
+        end_pts=end_pts)
 
 # angle of dendrite relative to apical for dipole calculation
 def _get_cos_theta(sections, sec_name_apical):
