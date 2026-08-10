@@ -19,9 +19,11 @@ import hnn_core
 from hnn_core.params import _short_name
 
 from hnn_core import duecker_ET_model, simulate_dipole, read_dipole, MPIBackend, average_dipoles
+from hnn_core.batch_simulate import BatchSimulate
+from hnn_core.dipole import _rmse_corr
 from hnn_core.optimization import Optimizer
+from hnn_core.optimization.objective_functions import _preprocess_dipole
 from hnn_core.network import pick_connection
-
 import numpy as np
 
 import pickle
@@ -120,12 +122,12 @@ def get_constraints_init_params(continue_checkpoint=False):
     constraints = dict({'prox1_L2_inhibitory_ampa': (-4, -1.8),
                         'prox1_L2_pyramidal_ampa': (-1.825, 0),
                         'prox1_L5_inhibitory_ampa': (-15, -6),
-                        'prox1_L5_pyramidal_ampa': (-2, -1.8),          # very constrained here to only allow a little bit of L5 spiking (less than L2/3)
+                        'prox1_L5_pyramidal_ampa': (-2, 0),          
 
                         'prox1_L2_inhibitory_nmda': (-4, -2),
                         'prox1_L2_pyramidal_nmda': (-1.6, 0),
                         'prox1_L5_inhibitory_nmda': (-4, -2),
-                        'prox1_L5_pyramidal_nmda': (-15, -1),
+                        'prox1_L5_pyramidal_nmda': (-15, 0),
 
                         'dist1_L2_inhibitory_ampa': (-4.6, 0),
                         'dist1_L2_pyramidal_ampa': (-4, 0),
@@ -211,6 +213,146 @@ def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
                              weights_nmda=dist_weights,
                              synaptic_delays=dist_delays)
 
+def compare_spikes_times(net, cells_oi=["L2_pyramidal", "L5_pyramidal"], toi=50):
+
+    """Compare spike times between two cells of interest before a time of interest (toi).
+    cells_oi contains the two cell types to be compared, with the first entry being the one that should
+    have more spikes within the timeframe. Both cell types should have spikes"""
+
+    penalty = 0
+    compare_fr = np.zeros((len(cells_oi), len(net.cell_response.spike_times_by_type[cells_oi[0]])))
+    for c, coi in enumerate(cells_oi):
+        for si, spike_trl in enumerate(net.cell_response.spike_times_by_type[coi]):
+             # count spikes of this type before time of interest
+             compare_fr[c,si] = np.sum(np.array([strl < toi for strl in spike_trl]))
+
+
+    print(f'compare fr {compare_fr}')
+    #import pdb; pdb.set_trace()
+    #1st penalty: no spiking in one of the cells of interest. First cell type (l2) more severaly penalized than second
+    penalty += np.sum((compare_fr==0)*np.array([3, 2]).reshape(-1,1))
+
+    # 2nd penalty: more spiking in L5pyr than L2/3 pyr (diff values positive means second row has higher values than first)
+    penalty += np.sum(np.diff(compare_fr,axis=0) > 0)*2
+
+    return penalty
+
+def rmse_corr_spike_times(
+    initial_net,
+    initial_params,
+    set_params,
+    predicted_params,
+    update_params,
+    tstop,
+    obj_values,
+    obj_fun_kwargs,
+    best=None,
+):
+    """ Optimization function that combines dipole RMSE_corr and spike comparisons between L2/3 and L5 pyr.
+    Only batch simulate case implemented because I am using this with CMA.
+
+    Parameters
+    ----------
+    initial_net : instance of Network
+        The network object.
+    initial_params : dict
+        Keys are parameter names, values are initial parameters.
+    set_params : func
+        User-defined function that sets network drives and parameters.
+    predicted_params : list
+        Parameters selected by the optimizer.
+    update_params : func
+        Function to update params.
+    obj_values : list
+        List to store objective function values.
+    tstop : float
+        The simulated dipole's duration.
+    obj_fun_kwargs : dict
+        A kwargs-style dictionary that contains additional arguments for this particular
+        objective function and/or a particular solver. See `Optimizer.fit` for more
+        details. The key-value pairs specific to this objective function are:
+
+        target : instance of Dipole
+            Required. A dipole object with experimental data.
+        n_trials : int, default=1
+            Number of trials to simulate and average.
+        bsl_cor : {"jones", "duecker"}, default="jones"
+            Baseline correction method. For neymotin_2020_model and law_2021_model, use
+            method 'jones' (manual correction). For duecker_ET_model, use method 'duecker'.
+
+    best : dict, optional
+        Dictionary with keys "obj" and "params" to store the best objective value and
+        corresponding parameters. Note that `best` will be updated as a "side-effect"
+        (similar to "pass-by-reference"), and is not returned by the function; this is
+        necessary because the optimization routines in `scipy.optimize` require the
+        objective functions to return a single scalar value. Only used if the solver is
+        set to "cobyla" or "cma".
+
+    Returns
+    -------
+    obj : float
+        RMSE weighed by correlation, penalized by spiking.
+    """
+
+    predicted_params = np.array(predicted_params).reshape(-1, len(initial_params))
+    params_batch = {
+        name: predicted_params[:, idx]
+        for idx, name in enumerate(initial_params.keys())
+    }
+
+    # simulate dpl with predicted params
+    new_net = initial_net.copy()
+
+    batch_simulation = BatchSimulate(
+        net=new_net,
+        set_params=set_params,
+        save_outputs=False,
+        save_dpl=True,
+        dt=obj_fun_kwargs.get("dt", 0.025),
+        n_trials=obj_fun_kwargs.get("n_trials", 1),
+        tstop=tstop,
+        overwrite=False,
+        clear_cache=False,
+        bsl_cor=obj_fun_kwargs.get("bsl_cor", None),
+    )
+
+    res = batch_simulation.run(
+        params_batch,
+        n_jobs=obj_fun_kwargs.get("n_jobs", 1),
+        combinations=False,
+        backend="loky",
+        verbose=obj_fun_kwargs.get("verbose", True),
+    )
+    
+    
+
+    dpls, spike_penalty = list(), list()
+    for batch_res in res["simulated_data"]:
+        for data in batch_res:
+            # smooth & scale all dipoles
+            _preprocess_dipole(data["dpl"], obj_fun_kwargs)
+            # average dipoles per population
+            dpls.append(average_dipoles(data["dpl"]))
+            # compare spike times and calculate penalty
+            cur_pen = compare_spikes_times(data["net"])
+            print(f'current penalty {cur_pen}')
+            spike_penalty.append(cur_pen)
+
+
+    obj = [_rmse_corr(dpl, obj_fun_kwargs["target"], tstop=tstop) for dpl in dpls]
+
+    #import pdb; pdb.set_trace()
+    for io, o in enumerate(obj):
+         obj[io] = o*spike_penalty[io]
+
+    obj_values.append(obj)
+
+    
+
+    return obj
+
+   
+
 def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, continue_checkpoint, init_random):
     """Run the CMA-ES optimisation and pickle the fitted `Optimizer`.
 
@@ -244,7 +386,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     
 
     optim = Optimizer(net_base, tstop=tstop, constraints=constraints, solver='cma', 
-        set_params=set_params_opt_drives, initial_params=initial_params, max_iter=max_iter, obj_fun="dipole_rmse_corr")
+        set_params=set_params_opt_drives, initial_params=initial_params, max_iter=max_iter, obj_fun=rmse_corr_spike_times)
 
     optim.fit(target=exp_dpl, n_trials=3, scale_factor=scaling_factor, sigma0=sigma0,
             smooth_window_len=smooth_win, dt=dt, popsize=popsize, pth_backup=pth_backup,
@@ -254,10 +396,10 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     optim._set_params = None
 
     if init_random:
-        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_random_l5prox1.pkl', 'wb') as file:
+        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_random_constrain_spiking.pkl', 'wb') as file:
                     pickle.dump(optim, file)
     else:
-        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_l5prox1.pkl', 'wb') as file:
+        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_constrain_spiking.pkl', 'wb') as file:
             pickle.dump(optim, file)
 
 if __name__ == '__main__':
