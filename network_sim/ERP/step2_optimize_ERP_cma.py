@@ -80,9 +80,9 @@ def get_constraints_init_params(continue_checkpoint=False):
     # log10 of the hand-tuned weights in step1_handtune.ipynb (0.0 -> -15, i.e. off)
 
     initial_params = dict({'prox1_L2_inhibitory_ampa': -2.4,    # 0.004 
-                    'prox1_L2_pyramidal_ampa': -1.52,           # 0.03
+                    'prox1_L2_pyramidal_ampa': -1.824,           # 0.015
                     'prox1_L5_inhibitory_ampa': -15,           # 0.0
-                    'prox1_L5_pyramidal_ampa': -6.2,            # 6e-7
+                    'prox1_L5_pyramidal_ampa': -2,            # 0.01
 
                     'prox1_L2_inhibitory_nmda': -2.,            # 0.01
                     'prox1_L2_pyramidal_nmda': -1.3,            # 0.05
@@ -118,9 +118,9 @@ def get_constraints_init_params(continue_checkpoint=False):
                     'prox2_numspikes': 1})
 
     constraints = dict({'prox1_L2_inhibitory_ampa': (-4, -1.8),
-                        'prox1_L2_pyramidal_ampa': (-1.75, 0),
+                        'prox1_L2_pyramidal_ampa': (-1.825, 0),
                         'prox1_L5_inhibitory_ampa': (-15, -6),
-                        'prox1_L5_pyramidal_ampa': (-12, -1),
+                        'prox1_L5_pyramidal_ampa': (-2, -1.8),          # very constrained here to only allow a little bit of L5 spiking (less than L2/3)
 
                         'prox1_L2_inhibitory_nmda': (-4, -2),
                         'prox1_L2_pyramidal_nmda': (-1.6, 0),
@@ -254,10 +254,10 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     optim._set_params = None
 
     if init_random:
-        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_random.pkl', 'wb') as file:
+        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_random_l5prox1.pkl', 'wb') as file:
                     pickle.dump(optim, file)
     else:
-        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}.pkl', 'wb') as file:
+        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_l5prox1.pkl', 'wb') as file:
             pickle.dump(optim, file)
 
 if __name__ == '__main__':
