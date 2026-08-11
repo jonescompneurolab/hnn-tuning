@@ -216,8 +216,13 @@ def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
 def compare_spikes_times(net, cells_oi=["L2_pyramidal", "L5_pyramidal"], toi=50):
 
     """Compare spike times between two cells of interest before a time of interest (toi).
+    toi is set to 50 (ms) as this mainly concerns the first proximal drive.
     cells_oi contains the two cell types to be compared, with the first entry being the one that should
-    have more spikes within the timeframe. Both cell types should have spikes"""
+    have more spikes within the timeframe. 
+    
+    Peanlty 1: Penalize if cell type does not spike. Penalize more for first cell_oi than second.
+    
+    Penalty 2: Penalize if cell type 2 spikes more than cell type 1."""
 
     penalty = 0
     compare_fr = np.zeros((len(cells_oi), len(net.cell_response.spike_times_by_type[cells_oi[0]])))
@@ -226,8 +231,6 @@ def compare_spikes_times(net, cells_oi=["L2_pyramidal", "L5_pyramidal"], toi=50)
              # count spikes of this type before time of interest
              compare_fr[c,si] = np.sum(np.array([strl < toi for strl in spike_trl]))
 
-
-    print(f'compare fr {compare_fr}')
     #import pdb; pdb.set_trace()
     #1st penalty: no spiking in one of the cells of interest. First cell type (l2) more severaly penalized than second
     penalty += np.sum((compare_fr==0)*np.array([3, 2]).reshape(-1,1))
@@ -249,7 +252,7 @@ def rmse_corr_spike_times(
     best=None,
 ):
     """ Optimization function that combines dipole RMSE_corr and spike comparisons between L2/3 and L5 pyr.
-    Only batch simulate case implemented because I am using this with CMA.
+    Only batch simulate case implemented because it's here used with CMA.
 
     Parameters
     ----------
@@ -324,8 +327,6 @@ def rmse_corr_spike_times(
         verbose=obj_fun_kwargs.get("verbose", True),
     )
     
-    
-
     dpls, spike_penalty = list(), list()
     for batch_res in res["simulated_data"]:
         for data in batch_res:
@@ -335,23 +336,19 @@ def rmse_corr_spike_times(
             dpls.append(average_dipoles(data["dpl"]))
             # compare spike times and calculate penalty
             cur_pen = compare_spikes_times(data["net"])
-            print(f'current penalty {cur_pen}')
             spike_penalty.append(cur_pen)
 
 
     obj = [_rmse_corr(dpl, obj_fun_kwargs["target"], tstop=tstop) for dpl in dpls]
 
     #import pdb; pdb.set_trace()
+    # penalize based on spike patterns
     for io, o in enumerate(obj):
-         obj[io] = o*spike_penalty[io]
+         obj[io] = o*(1+spike_penalty[io])
 
     obj_values.append(obj)
 
-    
-
     return obj
-
-   
 
 def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, continue_checkpoint, init_random):
     """Run the CMA-ES optimisation and pickle the fitted `Optimizer`.
