@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -J opt_cma
-#SBATCH -t 20:00:00
+#SBATCH -t 10:00:00
 #SBATCH --mem=200G
-#SBATCH --ntasks=100
+#SBATCH --ntasks=50
 #SBATCH --account carney-srj3-condo2
 
 # Specify an output file
@@ -20,9 +20,9 @@ source ~/oscar-install/activate-hnn-core-conda-custom-source-env.sh
 conda activate hnn-core-env
 conda env list             # just double checking if we're in the right place
 
-# Step 2 of the ERP pipeline: CMA-ES optimisation of the evoked-drive parameters.
+# Step 2 of the ERP pipeline: CMA-ES optimization of the evoked-drive parameters.
 # 150 generations, population 100, distributedn over 100 jobs
-python step2_optimize_ERP_cma.py --max_iter 150 --popsize 100 --n_procs 100 --scale_factor 1000 --smooth_window_len 5 --sigma0 0.1
+python step2_optimize_ERP_cma.py --max_iter 50 --popsize 50 --n_procs 50 --scale_factor 1000 --smooth_window_len 5 --sigma0 0.05
 # stats file
 scontrol show job $SLURM_JOB_ID >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats
 sacct -j $SLURM_JOB_ID --format=JobID,JobName,MaxRSS,Elapsed >> ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.stats

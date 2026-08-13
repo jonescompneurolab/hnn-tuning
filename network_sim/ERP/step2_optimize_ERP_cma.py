@@ -25,7 +25,7 @@ from hnn_core.optimization import Optimizer
 from hnn_core.optimization.objective_functions import _preprocess_dipole
 from hnn_core.network import pick_connection
 import numpy as np
-
+from functools import partial
 import pickle
 hnn_core_root = op.join(op.dirname(hnn_core.__file__))
 from scipy.stats import pearsonr
@@ -38,7 +38,7 @@ pathgen = str(DATA / 'hnn-data') + '/'
 pth_backup=str(NETWORK_SIM / 'ERP' / 'backup_cma')
 os.makedirs(pth_backup, exist_ok=True)
 
-def set_params_opt_drives(net, param_values):
+def set_params_opt_drives(net, param_values_norm, constraints):
     """Write a flat CMA-ES parameter dict onto the network's evoked drives.
 
     This is the `set_params` callback handed to hnn-core's `Optimizer`: on every
@@ -46,6 +46,10 @@ def set_params_opt_drives(net, param_values):
     Weights are optimised in log10 space, so the stored value is
     `10 ** param_values[...]`
     """
+
+    # first, unscale parameters
+    param_values = unscale_vals(param_values_norm, constraints)
+
     drive_names = list(net.external_drives.keys())
     for name in drive_names:
         target_cell_types = net.external_drives[name]['target_types']
@@ -53,7 +57,6 @@ def set_params_opt_drives(net, param_values):
         net.external_drives[name]['dynamics']['mu'] = param_values[f'{name}_mu']
         net.external_drives[name]['dynamics']['sigma'] = param_values[f'{name}_sigma']
         #import pdb; pdb.set_trace()
-        net.external_drives[name]['dynamics']['numspikes'] = max(1, int(np.round(param_values[f'{name}_numspikes'])))
 
         # reinstate external drives to be able to fill in below
         for receptor in ['ampa', 'nmda']:
@@ -69,6 +72,19 @@ def set_params_opt_drives(net, param_values):
                 net.connectivity[conn_idx[0]]['nc_dict']['A_weight'] = 10 ** param_values[f'{name}_{cell_type}_{receptor}']
                 net.external_drives[name][f'weights_{receptor}'][cell_type] = 10 ** param_values[f'{name}_{cell_type}_{receptor}']
 
+# scaling of parameters
+def scale_vals(x, constraints):
+
+    # return: (x-constraints_lower)/(constraints_upper-constraints_lower)
+    return {k: (v-constraints[k][0])/(constraints[k][1]-constraints[k][0]) for k, v in x.items()}
+
+# unscaling of parameters
+def unscale_vals(x_norm, constraints):
+
+    # return: constraint_lower + value * (contraint_upper - constraint_lower)
+    return {k: constraints[k][0] + v * (constraints[k][1] - constraints[k][0])
+            for k, v in x_norm.items()}
+
 def get_constraints_init_params(continue_checkpoint=False):
     """Return the CMA-ES search bounds and the starting parameter values.
 
@@ -81,81 +97,112 @@ def get_constraints_init_params(continue_checkpoint=False):
     
     # log10 of the hand-tuned weights in step1_handtune.ipynb (0.0 -> -15, i.e. off)
 
-    initial_params = dict({'prox1_L2_inhibitory_ampa': -2.4,    # 0.004 
-                    'prox1_L2_pyramidal_ampa': -1.824,           # 0.015
-                    'prox1_L5_inhibitory_ampa': -15,           # 0.0
-                    'prox1_L5_pyramidal_ampa': -2,            # 0.01
+    initial_params = dict({'prox1_L2_inhibitory_ampa': np.log10(0.015),
+                    'prox1_L2_pyramidal_ampa': np.log10(0.035),
+                    'prox1_L5_inhibitory_ampa': np.log10(1e-15),
+                    'prox1_L5_pyramidal_ampa': np.log10(0.015),
 
-                    'prox1_L2_inhibitory_nmda': -2.,            # 0.01
-                    'prox1_L2_pyramidal_nmda': -1.3,            # 0.05
-                    'prox1_L5_inhibitory_nmda': -2,            # 0.01
-                    'prox1_L5_pyramidal_nmda': -15,            # 0.0
+                    'prox1_L2_inhibitory_nmda': np.log10(0.01),
+                    'prox1_L2_pyramidal_nmda': np.log10(0.025),
+                    'prox1_L5_inhibitory_nmda': np.log10(1e-15),
+                    'prox1_L5_pyramidal_nmda': np.log10(0.01),
 
-                    'dist1_L2_inhibitory_ampa': -2.3,           # 0.005
-                    'dist1_L2_pyramidal_ampa': -2.,             # 0.01
-                    'dist1_L5_pyramidal_ampa': 0.,              # 1.0
+                    'dist1_L2_inhibitory_ampa': np.log10(3e-6),
+                    'dist1_L2_pyramidal_ampa': np.log10(0.0001),
+                    'dist1_L5_pyramidal_ampa': np.log10(2.5),
 
-                    'dist1_L2_inhibitory_nmda': -15,            # 0.0
-                    'dist1_L2_pyramidal_nmda': -2.,             # 0.01
-                    'dist1_L5_pyramidal_nmda': 0.,              # 1.0
+                    'dist1_L2_inhibitory_nmda': np.log10(8e-12),
+                    'dist1_L2_pyramidal_nmda': np.log10(0.0001),
+                    'dist1_L5_pyramidal_nmda': np.log10(0.04),
 
-                    'prox2_L2_inhibitory_ampa': -15,            # 0
-                    'prox2_L2_pyramidal_ampa': -0.52,           # 0.3
-                    'prox2_L5_inhibitory_ampa': -1.35,            # 0.044
-                    'prox2_L5_pyramidal_ampa': -1.3,           # 0.051
+                    'prox2_L2_inhibitory_ampa': np.log10(1e-15),
+                    'prox2_L2_pyramidal_ampa': np.log10(0.014),
+                    'prox2_L5_inhibitory_ampa': np.log10(2e-7),
+                    'prox2_L5_pyramidal_ampa': np.log10(0.34),
 
-                    'prox2_L2_inhibitory_nmda': -.066,            # 0.86
-                    'prox2_L2_pyramidal_nmda': -4,            # 0.0001
-                    'prox2_L5_inhibitory_nmda': -6.3,            # 5e-7
-                    'prox2_L5_pyramidal_nmda': -0.42,            # 0.38
+                    'prox2_L2_inhibitory_nmda': np.log10(1e-15),
+                    'prox2_L2_pyramidal_nmda': np.log10(2e-5),
+                    'prox2_L5_inhibitory_nmda': np.log10(5.7e-8),
+                    'prox2_L5_pyramidal_nmda': np.log10(0.0027),
 
-                    'prox1_mu': 15,
-                    'prox1_sigma': 3.5,
-                    'prox1_numspikes': 1.,
-                    'dist1_mu': 56,
-                    'dist1_sigma': 4.5,
-                    'dist1_numspikes': 2,
-                    'prox2_mu': 99,
-                    'prox2_sigma': 12,
-                    'prox2_numspikes': 1})
+                    'prox1_mu': 15.13,
+                    'prox1_sigma': 3.1,
+                    'dist1_mu': 60,
+                    'dist1_sigma': 3.7,
+                    'prox2_mu': 122,
+                    'prox2_sigma': 13.4})
 
-    constraints = dict({'prox1_L2_inhibitory_ampa': (-4, -1.8),
-                        'prox1_L2_pyramidal_ampa': (-1.825, 0),
-                        'prox1_L5_inhibitory_ampa': (-15, -6),
-                        'prox1_L5_pyramidal_ampa': (-2, 0),          
 
-                        'prox1_L2_inhibitory_nmda': (-4, -2),
-                        'prox1_L2_pyramidal_nmda': (-1.6, 0),
-                        'prox1_L5_inhibitory_nmda': (-4, -2),
-                        'prox1_L5_pyramidal_nmda': (-15, 0),
+    constraints = dict({'prox1_L2_inhibitory_ampa': (-2.12, -1.52),   # init -1.82
+                    'prox1_L2_pyramidal_ampa':  (-1.76, -1.16),   # init -1.46
+                    'prox1_L5_inhibitory_ampa': (-15, -12),       # off
+                    'prox1_L5_pyramidal_ampa':  (-2.12, -1.52),   # init -1.82
 
-                        'dist1_L2_inhibitory_ampa': (-4.6, 0),
-                        'dist1_L2_pyramidal_ampa': (-4, 0),
-                        'dist1_L5_pyramidal_ampa': (-4, 0),
+                    'prox1_L2_inhibitory_nmda': (-2.30, -1.70),   # init -2.00
+                    'prox1_L2_pyramidal_nmda':  (-1.90, -1.30),   # init -1.60
+                    'prox1_L5_inhibitory_nmda': (-15, -12),       # off
+                    'prox1_L5_pyramidal_nmda':  (-2.30, -1.70),   # init -2.00
 
-                        'dist1_L2_inhibitory_nmda': (-15, -10),
-                        'dist1_L2_pyramidal_nmda': (-6, 0),
-                        'dist1_L5_pyramidal_nmda': (-6, 0),
+                    'dist1_L2_inhibitory_ampa': (-6.02, -5.02),   # init -5.52
+                    'dist1_L2_pyramidal_ampa':  (-4.50, -3.50),   # init -4.00
+                    'dist1_L5_pyramidal_ampa':  (-0.10,  0.90),   # init  0.40
 
-                        'prox2_L2_inhibitory_ampa': (-15, -10),
-                        'prox2_L2_pyramidal_ampa': (-1.5, 0),
-                        'prox2_L5_inhibitory_ampa': (-3, 0),
-                        'prox2_L5_pyramidal_ampa': (-3, 0),
+                    'dist1_L2_inhibitory_nmda': (-15, -10),       # off (init -11.10)
+                    'dist1_L2_pyramidal_nmda':  (-4.50, -3.50),   # init -4.00
+                    'dist1_L5_pyramidal_nmda':  (-1.90, -0.90),   # init -1.40
 
-                        'prox2_L2_inhibitory_nmda': (-1.2, 0),
-                        'prox2_L2_pyramidal_nmda': (-6, -2),
-                        'prox2_L5_inhibitory_nmda': (-12, -4),
-                        'prox2_L5_pyramidal_nmda': (-2, 0),
-                        
-                        'prox1_mu': (10, 25),
-                        'prox1_sigma': (2, 8),
-                        'prox1_numspikes': (0, 3),
-                        'dist1_mu': (30, 70),
-                        'dist1_sigma': (2, 8),
-                        'dist1_numspikes': (0,3),
-                        'prox2_mu': (80, 120),
-                        'prox2_sigma': (6, 16),
-                        'prox2_numspikes': (0, 3)})
+                    'prox2_L2_inhibitory_ampa': (-15, -12),       # off
+                    'prox2_L2_pyramidal_ampa':  (-2.35, -1.35),   # init -1.85
+                    'prox2_L5_inhibitory_ampa': (-7.20, -6.20),   # init -6.70
+                    'prox2_L5_pyramidal_ampa':  (-0.97,  0.03),   # init -0.47
+
+                    'prox2_L2_inhibitory_nmda': (-15, -12),       # off
+                    'prox2_L2_pyramidal_nmda':  (-5.20, -4.20),   # init -4.70
+                    'prox2_L5_inhibitory_nmda': (-7.74, -6.74),   # init -7.24
+                    'prox2_L5_pyramidal_nmda':  (-3.07, -2.07),   # init -2.57
+
+                    'prox1_mu':    (13.5, 17.0),   # init 15.13
+                    'prox1_sigma': (2.3, 4.0),     # init 3.1, conservative to keep 2 peaks
+                    'dist1_mu':    (54, 66),       # init 60
+                    'dist1_sigma': (2.5, 5.5),     # init 3.7
+                    'prox2_mu':    (114, 130),     # init 122
+                    'prox2_sigma': (10.5, 16.5)})  # init 13.4
+
+    # # wide space
+    # constraints = dict({'prox1_L2_inhibitory_ampa': (-15, 0),
+    #                 'prox1_L2_pyramidal_ampa':  (-15, 0),
+    #                 'prox1_L5_inhibitory_ampa': (-15, 0),
+    #                 'prox1_L5_pyramidal_ampa':  (-15, 0),
+
+    #                 'prox1_L2_inhibitory_nmda': (-15, 0),
+    #                 'prox1_L2_pyramidal_nmda':  (-15, 0),
+    #                 'prox1_L5_inhibitory_nmda': (-15, 0),
+    #                 'prox1_L5_pyramidal_nmda':  (-15, 0),
+
+    #                 'dist1_L2_inhibitory_ampa': (-15, 0),
+    #                 'dist1_L2_pyramidal_ampa':  (-15, 0),
+    #                 'dist1_L5_pyramidal_ampa':  (-15, 1),
+
+    #                 'dist1_L2_inhibitory_nmda': (-15, 0),
+    #                 'dist1_L2_pyramidal_nmda':  (-15, 0),
+    #                 'dist1_L5_pyramidal_nmda':  (-15, 0),
+
+    #                 'prox2_L2_inhibitory_ampa': (-15, 0),
+    #                 'prox2_L2_pyramidal_ampa':  (-15, 0),
+    #                 'prox2_L5_inhibitory_ampa': (-15, 0),
+    #                 'prox2_L5_pyramidal_ampa':  (-15, 1),
+
+    #                 'prox2_L2_inhibitory_nmda': (-15, 0),
+    #                 'prox2_L2_pyramidal_nmda':  (-15, 0),
+    #                 'prox2_L5_inhibitory_nmda': (-15, 0),
+    #                 'prox2_L5_pyramidal_nmda':  (-15, 0),
+
+    #                 'prox1_mu':    (5, 40),
+    #                 'prox1_sigma': (1, 15),
+    #                 'dist1_mu':    (30, 90),
+    #                 'dist1_sigma': (1, 15),
+    #                 'prox2_mu':    (90, 175),
+    #                 'prox2_sigma': (1, 25)})
 
     # if optimization crashed and we want to continue from checkpoint
     if continue_checkpoint:
@@ -186,7 +233,7 @@ def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
 
     prox_delays = {"L2_inhibitory": 0.1, "L2_pyramidal": 0.1, "L5_inhibitory": 1.0, "L5_pyramidal": 1.0}
     dist_delays = {"L2_inhibitory": 0.1, "L2_pyramidal": 0.1, "L5_pyramidal": 0.1}
-
+    numspikes = {'prox1': 1, "dist1": 4, "prox2": 3}
     # Add proximal drives
     for idx in range(n_prox):
         name = f'prox{idx+1}'
@@ -194,7 +241,7 @@ def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
         net.add_evoked_drive(name,
                              mu=0.0,
                              sigma=1.0,
-                             numspikes=1,
+                             numspikes=numspikes[name],
                              location='proximal',
                              weights_ampa=prox_weights,
                              weights_nmda=prox_weights,
@@ -207,7 +254,7 @@ def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
         net.add_evoked_drive(name,
                              mu=0.0,
                              sigma=1.0,
-                             numspikes=1,
+                             numspikes=numspikes[name],
                              location='distal',
                              weights_ampa=dist_weights,
                              weights_nmda=dist_weights,
@@ -220,23 +267,25 @@ def compare_spikes_times(net, cells_oi=["L2_pyramidal", "L5_pyramidal"], toi=50)
     cells_oi contains the two cell types to be compared, with the first entry being the one that should
     have more spikes within the timeframe. 
     
-    Peanlty 1: Penalize if cell type does not spike. Penalize more for first cell_oi than second.
+    Peanlty 1: Penalize if cell types don't spike.
     
     Penalty 2: Penalize if cell type 2 spikes more than cell type 1."""
 
-    penalty = 0
     compare_fr = np.zeros((len(cells_oi), len(net.cell_response.spike_times_by_type[cells_oi[0]])))
     for c, coi in enumerate(cells_oi):
-        for si, spike_trl in enumerate(net.cell_response.spike_times_by_type[coi]):
-             # count spikes of this type before time of interest
-             compare_fr[c,si] = np.sum(np.array([strl < toi for strl in spike_trl]))
+        n_trials = len(net.cell_response.spike_times_by_type['L2_inhibitory'])
+        trials = net.cell_response.spike_times_by_type.get(coi, [[]] * n_trials)   # missing -> silent
+        for si, spike_trl in enumerate(trials):
+                # count spikes of this type before time of interest
+                compare_fr[c,si] = np.sum(np.array([strl < toi for strl in spike_trl]))
 
-    #import pdb; pdb.set_trace()
-    #1st penalty: no spiking in one of the cells of interest. First cell type (l2) more severaly penalized than second
-    penalty += np.sum((compare_fr==0)*np.array([3, 2]).reshape(-1,1))
+    # 1st penalty: no spiking in cell types of interest (relative to how often it occurred)
+    penalty1 = np.sum(compare_fr == 0)/compare_fr.size
 
-    # 2nd penalty: more spiking in L5pyr than L2/3 pyr (diff values positive means second row has higher values than first)
-    penalty += np.sum(np.diff(compare_fr,axis=0) > 0)*2
+    # 2nd penalty: more spiking in L5pyr than L2/3 pyr (if both spike)
+    both_spike = np.all(compare_fr > 0, axis=0)
+    penalty2 = np.sum((np.diff(compare_fr, axis=0)[0] > 0) & both_spike) / compare_fr.shape[1]
+    penalty = 0.6*penalty1 + 0.4*penalty2
 
     return penalty
 
@@ -342,15 +391,16 @@ def rmse_corr_spike_times(
     obj = [_rmse_corr(dpl, obj_fun_kwargs["target"], tstop=tstop) for dpl in dpls]
 
     #import pdb; pdb.set_trace()
+    pen_scale = 10              # scale of penalty (assuming losses ranging up to ~30)
     # penalize based on spike patterns
     for io, o in enumerate(obj):
-         obj[io] = o*(1+spike_penalty[io])
+         obj[io] = o+pen_scale*spike_penalty[io] 
 
     obj_values.append(obj)
 
     return obj
 
-def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, continue_checkpoint, init_random):
+def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, continue_checkpoint):
     """Run the CMA-ES optimisation and pickle the fitted `Optimizer`.
 
     Loads the target ERP, builds `duecker_ET_model` with empty drives, sets up the
@@ -375,15 +425,26 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     dt = 0.025
 
     constraints, initial_params = get_constraints_init_params(continue_checkpoint)
-    
-    # Run optimization
-    if init_random:
-        initial_params = None
-        print('random initialization!!!')
-    
+    # normalize initial parameters
+    initial_norm = scale_vals(initial_params, constraints)
+    # normalize constraints
+    norm_constraints = {k: (0, 1) for k in list(constraints.keys())}
 
-    optim = Optimizer(net_base, tstop=tstop, constraints=constraints, solver='cma', 
-        set_params=set_params_opt_drives, initial_params=initial_params, max_iter=max_iter, obj_fun=rmse_corr_spike_times)
+    # evaluate the objective at hand-tuned starting point
+    net = duecker_ET_model(); set_up_drives_empty(net)
+    set_params_opt_drives(net, initial_norm, constraints)     # writes warm-start onto drives
+    dpl = simulate_dipole(net, tstop=tstop, n_trials=3, verbose=False) 
+    dpl = [d.scale(scaling_factor).smooth(smooth_win) for d in dpl]
+    avg_dpl = average_dipoles(dpl)
+    o = _rmse_corr(avg_dpl, exp_dpl, tstop=tstop)
+    pen = compare_spikes_times(net)
+    baseline = o + pen_scale * pen
+    print("warm-start loss:", baseline, "| rmse:", o, "| penalty:", pen)
+    
+    
+    set_params_cb = partial(set_params_opt_drives, constraints=constraints)
+    optim = Optimizer(net_base, tstop=tstop, constraints=norm_constraints, solver='cma', 
+        set_params=set_params_cb, initial_params=initial_norm, max_iter=max_iter, obj_fun=rmse_corr_spike_times)
 
     optim.fit(target=exp_dpl, n_trials=3, scale_factor=scaling_factor, sigma0=sigma0,
             smooth_window_len=smooth_win, dt=dt, popsize=popsize, pth_backup=pth_backup,
@@ -392,21 +453,17 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     # Drop the set_params callback before pickling to avoid set_params_opt_drives being a dependency. 
     optim._set_params = None
 
-    if init_random:
-        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_random_constrain_spiking.pkl', 'wb') as file:
-                    pickle.dump(optim, file)
-    else:
-        with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_constrain_spiking.pkl', 'wb') as file:
-            pickle.dump(optim, file)
+    with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_best_warmstart.pkl', 'wb') as file:
+        pickle.dump(optim, file)
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Run the optimization pipeline.')
     parser.add_argument('--max_iter', type=int, default=1,
                         help='Maximum iterations')
-    parser.add_argument('--popsize', type=int, default=1,
+    parser.add_argument('--popsize', type=int, default=3,
                         help='Population size')
-    parser.add_argument('--n_procs', type=int, default=20,
+    parser.add_argument('--n_procs', type=int, default=1,
                         help='Number of processors to use with Joblib (number of trials running in parallel).')
     parser.add_argument('--scale_factor', type=int, default=1000,
                         help='scale factor for dipole')
@@ -416,8 +473,7 @@ if __name__ == '__main__':
                         help='CMA-ES initial step size (sigma0); baked into the output filename')
     parser.add_argument('--continue_checkpoint', action='store_true', default=False,
                         help='continue from checkpoint?')
-    parser.add_argument('--init_random', action='store_true', default=False,
-                        help='Initiliaze random values?')
+
     args = parser.parse_args()
 
     opt_cma(max_iter=args.max_iter,
@@ -426,5 +482,4 @@ if __name__ == '__main__':
             scaling_factor=args.scale_factor,
             smooth_win=args.smooth_window_len,
             sigma0=args.sigma0,
-            continue_checkpoint=args.continue_checkpoint,
-            init_random=args.init_random)
+            continue_checkpoint=args.continue_checkpoint)
