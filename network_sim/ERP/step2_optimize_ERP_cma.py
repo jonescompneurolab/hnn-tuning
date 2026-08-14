@@ -133,76 +133,76 @@ def get_constraints_init_params(continue_checkpoint=False):
                     'prox2_sigma': 13.4})
 
 
-    constraints = dict({'prox1_L2_inhibitory_ampa': (-2.12, -1.52),   # init -1.82
-                    'prox1_L2_pyramidal_ampa':  (-1.76, -1.16),   # init -1.46
-                    'prox1_L5_inhibitory_ampa': (-15, -12),       # off
-                    'prox1_L5_pyramidal_ampa':  (-2.12, -1.52),   # init -1.82
+    # constraints = dict({'prox1_L2_inhibitory_ampa': (-2.12, -1.52),   # init -1.82
+    #                 'prox1_L2_pyramidal_ampa':  (-1.76, -1.16),   # init -1.46
+    #                 'prox1_L5_inhibitory_ampa': (-15, -12),       # off
+    #                 'prox1_L5_pyramidal_ampa':  (-2.12, -1.52),   # init -1.82
 
-                    'prox1_L2_inhibitory_nmda': (-2.30, -1.70),   # init -2.00
-                    'prox1_L2_pyramidal_nmda':  (-1.90, -1.30),   # init -1.60
-                    'prox1_L5_inhibitory_nmda': (-15, -12),       # off
-                    'prox1_L5_pyramidal_nmda':  (-2.30, -1.70),   # init -2.00
+    #                 'prox1_L2_inhibitory_nmda': (-2.30, -1.70),   # init -2.00
+    #                 'prox1_L2_pyramidal_nmda':  (-1.90, -1.30),   # init -1.60
+    #                 'prox1_L5_inhibitory_nmda': (-15, -12),       # off
+    #                 'prox1_L5_pyramidal_nmda':  (-2.30, -1.70),   # init -2.00
 
-                    'dist1_L2_inhibitory_ampa': (-6.02, -5.02),   # init -5.52
-                    'dist1_L2_pyramidal_ampa':  (-4.50, -3.50),   # init -4.00
-                    'dist1_L5_pyramidal_ampa':  (-0.10,  0.90),   # init  0.40
+    #                 'dist1_L2_inhibitory_ampa': (-6.02, -5.02),   # init -5.52
+    #                 'dist1_L2_pyramidal_ampa':  (-4.50, -3.50),   # init -4.00
+    #                 'dist1_L5_pyramidal_ampa':  (-0.10,  0.90),   # init  0.40
 
-                    'dist1_L2_inhibitory_nmda': (-15, -10),       # off (init -11.10)
-                    'dist1_L2_pyramidal_nmda':  (-4.50, -3.50),   # init -4.00
-                    'dist1_L5_pyramidal_nmda':  (-1.90, -0.90),   # init -1.40
+    #                 'dist1_L2_inhibitory_nmda': (-15, -10),       # off (init -11.10)
+    #                 'dist1_L2_pyramidal_nmda':  (-4.50, -3.50),   # init -4.00
+    #                 'dist1_L5_pyramidal_nmda':  (-1.90, -0.90),   # init -1.40
 
-                    'prox2_L2_inhibitory_ampa': (-15, -12),       # off
-                    'prox2_L2_pyramidal_ampa':  (-2.35, -1.35),   # init -1.85
-                    'prox2_L5_inhibitory_ampa': (-7.20, -6.20),   # init -6.70
-                    'prox2_L5_pyramidal_ampa':  (-0.97,  0.03),   # init -0.47
+    #                 'prox2_L2_inhibitory_ampa': (-15, -12),       # off
+    #                 'prox2_L2_pyramidal_ampa':  (-2.35, -1.35),   # init -1.85
+    #                 'prox2_L5_inhibitory_ampa': (-7.20, -6.20),   # init -6.70
+    #                 'prox2_L5_pyramidal_ampa':  (-0.97,  0.03),   # init -0.47
 
-                    'prox2_L2_inhibitory_nmda': (-15, -12),       # off
-                    'prox2_L2_pyramidal_nmda':  (-5.20, -4.20),   # init -4.70
-                    'prox2_L5_inhibitory_nmda': (-7.74, -6.74),   # init -7.24
-                    'prox2_L5_pyramidal_nmda':  (-3.07, -2.07),   # init -2.57
+    #                 'prox2_L2_inhibitory_nmda': (-15, -12),       # off
+    #                 'prox2_L2_pyramidal_nmda':  (-5.20, -4.20),   # init -4.70
+    #                 'prox2_L5_inhibitory_nmda': (-7.74, -6.74),   # init -7.24
+    #                 'prox2_L5_pyramidal_nmda':  (-3.07, -2.07),   # init -2.57
 
-                    'prox1_mu':    (13.5, 17.0),   # init 15.13
-                    'prox1_sigma': (2.3, 4.0),     # init 3.1, conservative to keep 2 peaks
-                    'dist1_mu':    (54, 66),       # init 60
-                    'dist1_sigma': (2.5, 5.5),     # init 3.7
-                    'prox2_mu':    (114, 130),     # init 122
-                    'prox2_sigma': (10.5, 16.5)})  # init 13.4
+    #                 'prox1_mu':    (13.5, 17.0),   # init 15.13
+    #                 'prox1_sigma': (2.3, 4.0),     # init 3.1, conservative to keep 2 peaks
+    #                 'dist1_mu':    (54, 66),       # init 60
+    #                 'dist1_sigma': (2.5, 5.5),     # init 3.7
+    #                 'prox2_mu':    (114, 130),     # init 122
+    #                 'prox2_sigma': (10.5, 16.5)})  # init 13.4
 
-    # # wide space
-    # constraints = dict({'prox1_L2_inhibitory_ampa': (-15, 0),
-    #                 'prox1_L2_pyramidal_ampa':  (-15, 0),
-    #                 'prox1_L5_inhibitory_ampa': (-15, 0),
-    #                 'prox1_L5_pyramidal_ampa':  (-15, 0),
+    # wide space
+    constraints = dict({'prox1_L2_inhibitory_ampa': (-15, 0),
+                    'prox1_L2_pyramidal_ampa':  (-4, 0),
+                    'prox1_L5_inhibitory_ampa': (-15, 0),
+                    'prox1_L5_pyramidal_ampa':  (-4, 0),
 
-    #                 'prox1_L2_inhibitory_nmda': (-15, 0),
-    #                 'prox1_L2_pyramidal_nmda':  (-15, 0),
-    #                 'prox1_L5_inhibitory_nmda': (-15, 0),
-    #                 'prox1_L5_pyramidal_nmda':  (-15, 0),
+                    'prox1_L2_inhibitory_nmda': (-15, 0),
+                    'prox1_L2_pyramidal_nmda':  (-4, 0),
+                    'prox1_L5_inhibitory_nmda': (-15, 0),
+                    'prox1_L5_pyramidal_nmda':  (-4, 0),
 
-    #                 'dist1_L2_inhibitory_ampa': (-15, 0),
-    #                 'dist1_L2_pyramidal_ampa':  (-15, 0),
-    #                 'dist1_L5_pyramidal_ampa':  (-15, 1),
+                    'dist1_L2_inhibitory_ampa': (-15, 0),
+                    'dist1_L2_pyramidal_ampa':  (-15, 0),
+                    'dist1_L5_pyramidal_ampa':  (-2, 1),
 
-    #                 'dist1_L2_inhibitory_nmda': (-15, 0),
-    #                 'dist1_L2_pyramidal_nmda':  (-15, 0),
-    #                 'dist1_L5_pyramidal_nmda':  (-15, 0),
+                    'dist1_L2_inhibitory_nmda': (-15, 0),
+                    'dist1_L2_pyramidal_nmda':  (-15, 0),
+                    'dist1_L5_pyramidal_nmda':  (-2, 0),
 
-    #                 'prox2_L2_inhibitory_ampa': (-15, 0),
-    #                 'prox2_L2_pyramidal_ampa':  (-15, 0),
-    #                 'prox2_L5_inhibitory_ampa': (-15, 0),
-    #                 'prox2_L5_pyramidal_ampa':  (-15, 1),
+                    'prox2_L2_inhibitory_ampa': (-15, 0),
+                    'prox2_L2_pyramidal_ampa':  (-15, 0),
+                    'prox2_L5_inhibitory_ampa': (-15, 0),
+                    'prox2_L5_pyramidal_ampa':  (-15, 1),
 
-    #                 'prox2_L2_inhibitory_nmda': (-15, 0),
-    #                 'prox2_L2_pyramidal_nmda':  (-15, 0),
-    #                 'prox2_L5_inhibitory_nmda': (-15, 0),
-    #                 'prox2_L5_pyramidal_nmda':  (-15, 0),
+                    'prox2_L2_inhibitory_nmda': (-15, 0),
+                    'prox2_L2_pyramidal_nmda':  (-15, 0),
+                    'prox2_L5_inhibitory_nmda': (-15, 0),
+                    'prox2_L5_pyramidal_nmda':  (-15, 0),
 
-    #                 'prox1_mu':    (5, 40),
-    #                 'prox1_sigma': (1, 15),
-    #                 'dist1_mu':    (30, 90),
-    #                 'dist1_sigma': (1, 15),
-    #                 'prox2_mu':    (90, 175),
-    #                 'prox2_sigma': (1, 25)})
+                    'prox1_mu':    (5, 40),
+                    'prox1_sigma': (1, 15),
+                    'dist1_mu':    (30, 90),
+                    'dist1_sigma': (1, 15),
+                    'prox2_mu':    (90, 175),
+                    'prox2_sigma': (1, 25)})
 
     # if optimization crashed and we want to continue from checkpoint
     if continue_checkpoint:
@@ -234,6 +234,7 @@ def set_up_drives_empty(net, tstop=200, n_prox=2, n_dist=1):
     prox_delays = {"L2_inhibitory": 0.1, "L2_pyramidal": 0.1, "L5_inhibitory": 1.0, "L5_pyramidal": 1.0}
     dist_delays = {"L2_inhibitory": 0.1, "L2_pyramidal": 0.1, "L5_pyramidal": 0.1}
     numspikes = {'prox1': 1, "dist1": 4, "prox2": 3}
+
     # Add proximal drives
     for idx in range(n_prox):
         name = f'prox{idx+1}'
@@ -271,9 +272,9 @@ def compare_spikes_times(net, cells_oi=["L2_pyramidal", "L5_pyramidal"], toi=50)
     
     Penalty 2: Penalize if cell type 2 spikes more than cell type 1."""
 
-    compare_fr = np.zeros((len(cells_oi), len(net.cell_response.spike_times_by_type[cells_oi[0]])))
+    n_trials = len(net.cell_response._spike_times)
+    compare_fr = np.zeros((len(cells_oi), n_trials))
     for c, coi in enumerate(cells_oi):
-        n_trials = len(net.cell_response.spike_times_by_type['L2_inhibitory'])
         trials = net.cell_response.spike_times_by_type.get(coi, [[]] * n_trials)   # missing -> silent
         for si, spike_trl in enumerate(trials):
                 # count spikes of this type before time of interest
@@ -433,11 +434,12 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     # evaluate the objective at hand-tuned starting point
     net = duecker_ET_model(); set_up_drives_empty(net)
     set_params_opt_drives(net, initial_norm, constraints)     # writes warm-start onto drives
-    dpl = simulate_dipole(net, tstop=tstop, n_trials=3, verbose=False) 
+    dpl = simulate_dipole(net, tstop=tstop, n_trials=3, verbose=False, bsl_cor="duecker") 
     dpl = [d.scale(scaling_factor).smooth(smooth_win) for d in dpl]
     avg_dpl = average_dipoles(dpl)
     o = _rmse_corr(avg_dpl, exp_dpl, tstop=tstop)
     pen = compare_spikes_times(net)
+    pen_scale=10
     baseline = o + pen_scale * pen
     print("warm-start loss:", baseline, "| rmse:", o, "| penalty:", pen)
     
@@ -453,7 +455,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     # Drop the set_params callback before pickling to avoid set_params_opt_drives being a dependency. 
     optim._set_params = None
 
-    with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_best_warmstart.pkl', 'wb') as file:
+    with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_best_warmstart_wide_space.pkl', 'wb') as file:
         pickle.dump(optim, file)
 
 if __name__ == '__main__':
