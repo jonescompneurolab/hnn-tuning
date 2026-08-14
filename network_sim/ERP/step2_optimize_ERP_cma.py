@@ -397,6 +397,7 @@ def rmse_corr_spike_times(
     for io, o in enumerate(obj):
          obj[io] = o+pen_scale*spike_penalty[io] 
 
+    import pdb; pdb.set_trace()
     obj_values.append(obj)
 
     return obj

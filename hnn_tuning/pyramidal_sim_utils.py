@@ -234,6 +234,7 @@ def plot_dpl(net, dpl, smooth_dpl, axs, gid, cell_type,
     axs[1].plot(timevec, smooth_dpl.data[cell_type[:2]] / len(net.gid_ranges[cell_type]) / surface_mm2, label='smoothed', color='k', linewidth=2)
     axs[1].legend(loc='lower right', fontsize=8)
     axs[1].set_title('')
+    
 
     # dipole y-range: fixed (-0.3, 0.3) suits L2/3; pass dpl_ylim=None to autoscale
     # to the data (needed for L5, whose dipole is much larger).
