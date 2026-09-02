@@ -30,9 +30,9 @@ import scipy.signal as signal
 from scipy.signal import find_peaks, butter, lfilter
 import pickle
 
-from hnn_tuning import NETWORK_SIM
+from hnn_tuning import NETWORK_SIM, RESULTS
 main_pth = str(NETWORK_SIM / 'alpha_beta')
-out_pth = op.join(main_pth, 'sim_results')
+out_pth = op.join(RESULTS, 'alpha_beta')
 os.makedirs(out_pth, exist_ok=True)
 
 ## Set up parameters for simulations

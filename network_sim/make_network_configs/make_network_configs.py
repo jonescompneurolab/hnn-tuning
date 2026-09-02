@@ -29,11 +29,12 @@ import os.path as op
 
 import hnn_core
 from hnn_core import duecker_ET_model, write_network_configuration
+from hnn_tuning import NETWORK_SIM
 
 HNN_CORE_ROOT = op.dirname(hnn_core.__file__)
-PARAM_ROOT = op.join(HNN_CORE_ROOT, 'param')
-CONFIG_ROOT = op.join(HNN_CORE_ROOT, 'network_configs')
-
+PARAM_ROOT = op.join(NETWORK_SIM, 'gamma')
+CONFIG_ROOT = op.join(NETWORK_SIM, 'network_configs')
+os.makedirs(CONFIG_ROOT, exist_ok=True)
 
 # --- drive builders -------------------------------------------------------
 # One function per model. Each takes a Network and attaches the drives that

@@ -13,6 +13,7 @@ SINGLE_CELL_SIM = REPO_ROOT / "single_cell_sim"
 NETWORK_SIM = REPO_ROOT / "network_sim"
 DATA = REPO_ROOT / "data"
 
+
 # Generated figures and other outputs, organised by stage and cell type,
 # e.g. RESULTS / "single_cell_sim" / "interneuron". Regenerable — not tracked.
 RESULTS = REPO_ROOT / "results"

@@ -133,76 +133,41 @@ def get_constraints_init_params(continue_checkpoint=False):
                     'prox2_sigma': 13.4})
 
 
-    # constraints = dict({'prox1_L2_inhibitory_ampa': (-2.12, -1.52),   # init -1.82
-    #                 'prox1_L2_pyramidal_ampa':  (-1.76, -1.16),   # init -1.46
-    #                 'prox1_L5_inhibitory_ampa': (-15, -12),       # off
-    #                 'prox1_L5_pyramidal_ampa':  (-2.12, -1.52),   # init -1.82
+    constraints = dict({'prox1_L2_inhibitory_ampa': (-2.12, -1.52),   # init -1.82
+                    'prox1_L2_pyramidal_ampa':  (-1.76, -1.16),   # init -1.46
+                    'prox1_L5_inhibitory_ampa': (-15, -12),       # off
+                    'prox1_L5_pyramidal_ampa':  (-2.12, -1.52),   # init -1.82
 
-    #                 'prox1_L2_inhibitory_nmda': (-2.30, -1.70),   # init -2.00
-    #                 'prox1_L2_pyramidal_nmda':  (-1.90, -1.30),   # init -1.60
-    #                 'prox1_L5_inhibitory_nmda': (-15, -12),       # off
-    #                 'prox1_L5_pyramidal_nmda':  (-2.30, -1.70),   # init -2.00
+                    'prox1_L2_inhibitory_nmda': (-2.30, -1.70),   # init -2.00
+                    'prox1_L2_pyramidal_nmda':  (-1.90, -1.30),   # init -1.60
+                    'prox1_L5_inhibitory_nmda': (-15, -12),       # off
+                    'prox1_L5_pyramidal_nmda':  (-2.30, -1.70),   # init -2.00
 
-    #                 'dist1_L2_inhibitory_ampa': (-6.02, -5.02),   # init -5.52
-    #                 'dist1_L2_pyramidal_ampa':  (-4.50, -3.50),   # init -4.00
-    #                 'dist1_L5_pyramidal_ampa':  (-0.10,  0.90),   # init  0.40
+                    'dist1_L2_inhibitory_ampa': (-6.02, -5.02),   # init -5.52
+                    'dist1_L2_pyramidal_ampa':  (-4.50, -3.50),   # init -4.00
+                    'dist1_L5_pyramidal_ampa':  (-0.10,  0.90),   # init  0.40
 
-    #                 'dist1_L2_inhibitory_nmda': (-15, -10),       # off (init -11.10)
-    #                 'dist1_L2_pyramidal_nmda':  (-4.50, -3.50),   # init -4.00
-    #                 'dist1_L5_pyramidal_nmda':  (-1.90, -0.90),   # init -1.40
+                    'dist1_L2_inhibitory_nmda': (-15, -10),       # off (init -11.10)
+                    'dist1_L2_pyramidal_nmda':  (-4.50, -3.50),   # init -4.00
+                    'dist1_L5_pyramidal_nmda':  (-1.90, -0.90),   # init -1.40
 
-    #                 'prox2_L2_inhibitory_ampa': (-15, -12),       # off
-    #                 'prox2_L2_pyramidal_ampa':  (-2.35, -1.35),   # init -1.85
-    #                 'prox2_L5_inhibitory_ampa': (-7.20, -6.20),   # init -6.70
-    #                 'prox2_L5_pyramidal_ampa':  (-0.97,  0.03),   # init -0.47
+                    'prox2_L2_inhibitory_ampa': (-15, -12),       # off
+                    'prox2_L2_pyramidal_ampa':  (-2.35, -1.35),   # init -1.85
+                    'prox2_L5_inhibitory_ampa': (-7.20, -6.20),   # init -6.70
+                    'prox2_L5_pyramidal_ampa':  (-0.97,  0.03),   # init -0.47
 
-    #                 'prox2_L2_inhibitory_nmda': (-15, -12),       # off
-    #                 'prox2_L2_pyramidal_nmda':  (-5.20, -4.20),   # init -4.70
-    #                 'prox2_L5_inhibitory_nmda': (-7.74, -6.74),   # init -7.24
-    #                 'prox2_L5_pyramidal_nmda':  (-3.07, -2.07),   # init -2.57
+                    'prox2_L2_inhibitory_nmda': (-15, -12),       # off
+                    'prox2_L2_pyramidal_nmda':  (-5.20, -4.20),   # init -4.70
+                    'prox2_L5_inhibitory_nmda': (-7.74, -6.74),   # init -7.24
+                    'prox2_L5_pyramidal_nmda':  (-3.07, -2.07),   # init -2.57
 
-    #                 'prox1_mu':    (13.5, 17.0),   # init 15.13
-    #                 'prox1_sigma': (2.3, 4.0),     # init 3.1, conservative to keep 2 peaks
-    #                 'dist1_mu':    (54, 66),       # init 60
-    #                 'dist1_sigma': (2.5, 5.5),     # init 3.7
-    #                 'prox2_mu':    (114, 130),     # init 122
-    #                 'prox2_sigma': (10.5, 16.5)})  # init 13.4
+                    'prox1_mu':    (13.5, 17.0),   # init 15.13
+                    'prox1_sigma': (2.3, 4.0),     # init 3.1, conservative to keep 2 peaks
+                    'dist1_mu':    (54, 66),       # init 60
+                    'dist1_sigma': (2.5, 5.5),     # init 3.7
+                    'prox2_mu':    (114, 130),     # init 122
+                    'prox2_sigma': (10.5, 16.5)})  # init 13.4
 
-    # wide space
-    constraints = dict({'prox1_L2_inhibitory_ampa': (-15, 0),
-                    'prox1_L2_pyramidal_ampa':  (-4, 0),
-                    'prox1_L5_inhibitory_ampa': (-15, 0),
-                    'prox1_L5_pyramidal_ampa':  (-4, 0),
-
-                    'prox1_L2_inhibitory_nmda': (-15, 0),
-                    'prox1_L2_pyramidal_nmda':  (-4, 0),
-                    'prox1_L5_inhibitory_nmda': (-15, 0),
-                    'prox1_L5_pyramidal_nmda':  (-4, 0),
-
-                    'dist1_L2_inhibitory_ampa': (-15, 0),
-                    'dist1_L2_pyramidal_ampa':  (-15, 0),
-                    'dist1_L5_pyramidal_ampa':  (-2, 1),
-
-                    'dist1_L2_inhibitory_nmda': (-15, 0),
-                    'dist1_L2_pyramidal_nmda':  (-15, 0),
-                    'dist1_L5_pyramidal_nmda':  (-2, 0),
-
-                    'prox2_L2_inhibitory_ampa': (-15, 0),
-                    'prox2_L2_pyramidal_ampa':  (-15, 0),
-                    'prox2_L5_inhibitory_ampa': (-15, 0),
-                    'prox2_L5_pyramidal_ampa':  (-15, 1),
-
-                    'prox2_L2_inhibitory_nmda': (-15, 0),
-                    'prox2_L2_pyramidal_nmda':  (-15, 0),
-                    'prox2_L5_inhibitory_nmda': (-15, 0),
-                    'prox2_L5_pyramidal_nmda':  (-15, 0),
-
-                    'prox1_mu':    (5, 40),
-                    'prox1_sigma': (1, 15),
-                    'dist1_mu':    (30, 90),
-                    'dist1_sigma': (1, 15),
-                    'prox2_mu':    (90, 175),
-                    'prox2_sigma': (1, 25)})
 
     # if optimization crashed and we want to continue from checkpoint
     if continue_checkpoint:
