@@ -56,7 +56,7 @@ if __name__ == '__main__':
         description='Bursty gamma simulation for the duecker_ET_model (Fig. 11h-k).')
     parser.add_argument('--n_trials', type=int, default=1,
                         help='Number of trials to simulate (default: 100)')
-    parser.add_argument('--n_procs', type=int, default=50,
+    parser.add_argument('--n_procs', type=int, default=1,
                         help='Number of parallel jobs for the Joblib backend (default: 50)')
     parser.add_argument('--tstop', type=float, default=1000.,
                         help='Simulation duration in ms (default: 1000)')
