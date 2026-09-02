@@ -34,7 +34,7 @@ os.makedirs(out_pth, exist_ok=True)
 def run_main(n_trials, n_procs, tstop=1000.):
     """Simulate the bursty-gamma network and pickle the network + dipoles."""
 
-    CONFIG_ROOT = op.join(NETWORK_SIM, 'network_configs')
+    CONFIG_ROOT = op.join(NETWORK_SIM, 'gamma')
     net = read_network_configuration(op.join(CONFIG_ROOT, NETWORK_CONFIG))
 
     with JoblibBackend(n_jobs=n_procs):
@@ -54,7 +54,7 @@ def run_main(n_trials, n_procs, tstop=1000.):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Bursty gamma simulation for the duecker_ET_model (Fig. 11h-k).')
-    parser.add_argument('--n_trials', type=int, default=100,
+    parser.add_argument('--n_trials', type=int, default=1,
                         help='Number of trials to simulate (default: 100)')
     parser.add_argument('--n_procs', type=int, default=50,
                         help='Number of parallel jobs for the Joblib backend (default: 50)')
