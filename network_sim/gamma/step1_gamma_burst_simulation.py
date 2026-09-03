@@ -25,7 +25,7 @@ from hnn_core import JoblibBackend, read_network_configuration, simulate_dipole
 
 from hnn_tuning import NETWORK_SIM, RESULTS
 
-NETWORK_CONFIG = 'duecker_ET_gamma_50Hz_bursty.json'
+NETWORK_CONFIG = 'duecker_ET_gamma_50Hz_bursty'
 
 out_pth = op.join(RESULTS, "gamma_sim")
 os.makedirs(out_pth, exist_ok=True)
