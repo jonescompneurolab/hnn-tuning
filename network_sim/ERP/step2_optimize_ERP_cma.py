@@ -362,7 +362,6 @@ def rmse_corr_spike_times(
     for io, o in enumerate(obj):
          obj[io] = o+pen_scale*spike_penalty[io] 
 
-    import pdb; pdb.set_trace()
     obj_values.append(obj)
 
     return obj
@@ -377,9 +376,9 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     """
 
     if continue_checkpoint:
-        print('Continuing optimization from checkpoint ...', flush=True)
+        print('Continuing CMA-ES optimization from checkpoint ...', flush=True)
     else:
-        print('Starting new optimization using CMA')
+        print('Starting new optimization using CMA-ES')
 
     data_url = f'{pathgen}MEG_detection_data/S1_SupraT.txt'
     exp_dpl = read_dipole(data_url)
@@ -407,7 +406,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     pen = compare_spikes_times(net)
     pen_scale=10
     baseline = o + pen_scale * pen
-    print("warm-start loss:", baseline, "| rmse:", o, "| penalty:", pen)
+    print("warm-start loss:", baseline, "| rmse_corr:", o, "| penalty:", pen)
     
     
     set_params_cb = partial(set_params_opt_drives, constraints=constraints)
@@ -421,7 +420,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     # Drop the set_params callback before pickling to avoid set_params_opt_drives being a dependency. 
     optim._set_params = None
 
-    with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}_best_warmstart_wide_space.pkl', 'wb') as file:
+    with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}.pkl', 'wb') as file:
         pickle.dump(optim, file)
 
 if __name__ == '__main__':
