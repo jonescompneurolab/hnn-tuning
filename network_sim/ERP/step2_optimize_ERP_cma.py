@@ -58,19 +58,19 @@ def set_params_opt_drives(net, param_values_norm, constraints):
         net.external_drives[name]['dynamics']['sigma'] = param_values[f'{name}_sigma']
         #import pdb; pdb.set_trace()
 
-        # reinstate external drives to be able to fill in below
+        # reinstate external drives and fill in
         for receptor in ['ampa', 'nmda']:
-                        net.external_drives[name][f'weights_{receptor}'] = {
-                        ct: 0.0 for ct in target_cell_types
-                    }
+            net.external_drives[name][f'weights_{receptor}'] = {
+            ct: 10**param_values[f'{name}_{ct}_{receptor}'] for ct in target_cell_types
+        }
 
+        # nothing actually happens unless connectivity is changed
         for cell_type in target_cell_types:
             for receptor in ['ampa', 'nmda']:
                 
                 conn_idx = pick_connection(net, src_gids=name, target_gids=cell_type, receptor=receptor)
                 assert len(conn_idx) == 1
                 net.connectivity[conn_idx[0]]['nc_dict']['A_weight'] = 10 ** param_values[f'{name}_{cell_type}_{receptor}']
-                net.external_drives[name][f'weights_{receptor}'][cell_type] = 10 ** param_values[f'{name}_{cell_type}_{receptor}']
 
 # scaling of parameters
 def scale_vals(x, constraints):
@@ -245,7 +245,7 @@ def compare_spikes_times(net, cells_oi=["L2_pyramidal", "L5_pyramidal"], toi=50)
                 # count spikes of this type before time of interest
                 compare_fr[c,si] = np.sum(np.array([strl < toi for strl in spike_trl]))
 
-    # 1st penalty: no spiking in cell types of interest (relative to how often it occurred)
+    # 1st penalty: no spiking in cell types of interest (relative to total number of spikes)
     penalty1 = np.sum(compare_fr == 0)/compare_fr.size
 
     # 2nd penalty: more spiking in L5pyr than L2/3 pyr (if both spike)

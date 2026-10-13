@@ -5,7 +5,7 @@ checkout without hardcoded, machine-specific paths.
 """
 
 from pathlib import Path
-
+import hnn_core
 # hnn_tuning/_paths.py  ->  hnn_tuning/  ->  repository root
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,8 +29,10 @@ def results_dir(*parts):
     d.mkdir(parents=True, exist_ok=True)
     return d
 
-# Compiled NEURON mechanisms shipped with the bundled hnn-core working copy.
-HNN_CORE_MOD = REPO_ROOT / "hnn-core" / "hnn_core" / "mod"
+# HNN CORE ROOT
+
+hnn_core_root = Path(hnn_core.__file__).parent
+HNN_CORE_MOD = hnn_core_root / "mod"
 
 # Directory holding the custom epsp.mod point process (used by attenuation
 # experiments in single_cell_sim).

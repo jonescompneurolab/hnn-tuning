@@ -489,23 +489,20 @@ def l5IT_params():
 
     section_params = {
         # Soma
-        'L5Pyr_soma_L': 39.,
-        'L5Pyr_soma_diam': 28.9,
+        'L5Pyr_soma_L': 39.*0.75,
+        'L5Pyr_soma_diam': 28.9*0.75,
         'L5Pyr_soma_cm': 1,
-        'L5Pyr_soma_Ra': 100, #Rich 495.73, Hay: 100
+        'L5Pyr_soma_Ra': 200, 
 
         # Dendrite
         'L5Pyr_dend_cm': 1,
-        'L5Pyr_dend_Ra': 100, #Rich 495.73, Hay: 100
+        'L5Pyr_dend_Ra': 200, 
 
         'L5Pyr_apicaltrunk_L': 102.,
         'L5Pyr_apicaltrunk_diam': 10.2,
 
         'L5Pyr_apical1_L': 680.,
         'L5Pyr_apical1_diam': 7.48,
-
-        'L5Pyr_apical2_L': 680.,
-        'L5Pyr_apical2_diam': 4.93,
 
         'L5Pyr_apicaltuft_L': 425.,
         'L5Pyr_apicaltuft_diam': 3.4*0.5,
@@ -528,7 +525,6 @@ def l5IT_params():
             'apical_trunk': [[0, 0, 23], [0, 0, 83]],
             'apical_oblique': [[0, 0, 83], [-150, 0, 83]],
             'apical_1': [[0, 0, 83], [0, 0, 483]],
-            'apical_2': [[0, 0, 483], [0, 0, 883]],
             'apical_tuft': [[0, 0, 883], [0, 0, 1133]],
             'basal_1': [[0, 0, 0], [0, 0, -50]],
             'basal_2': [[0, 0, -50], [-106, 0, -156]],
@@ -538,7 +534,6 @@ def l5IT_params():
     cell_tree = {
             ('apical_trunk', 0): [('apical_trunk', 1)],
             ('apical_1', 0): [('apical_1', 1)],
-            ('apical_2', 0): [('apical_2', 1)],
             ('apical_tuft', 0): [('apical_tuft', 1)],
             ('apical_oblique', 0): [('apical_oblique', 1)],
             ('basal_1', 0): [('basal_1', 1)],
@@ -548,8 +543,7 @@ def l5IT_params():
             ('soma', 0): [('soma', 1), ('basal_1', 0)],
             ('soma', 1): [('apical_trunk', 0)],
             ('apical_trunk', 1): [('apical_1', 0), ('apical_oblique', 0)],
-            ('apical_1', 1): [('apical_2', 0)],
-            ('apical_2', 1): [('apical_tuft', 0)],
+            ('apical_1', 1): [('apical_tuft', 0)],
             ('basal_1', 1): [('basal_2', 0), ('basal_3', 0)]
         }
 

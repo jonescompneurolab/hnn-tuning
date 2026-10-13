@@ -27,7 +27,7 @@ from hnn_tuning import NETWORK_SIM, RESULTS
 
 NETWORK_CONFIG = 'duecker_ET_gamma_50Hz_bursty'
 
-out_pth = op.join(RESULTS, "gamma_sim")
+out_pth = op.join(RESULTS, "network_sim", "gamma")
 os.makedirs(out_pth, exist_ok=True)
 
 
