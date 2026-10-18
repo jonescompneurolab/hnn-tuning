@@ -20,6 +20,7 @@ For each cell type, a .csv and a .pkl saved to data/allen-data/:
     l23/ephys_l3_new.csv            vs.  l23/ephys_l3.csv
 
 Author: Katharina Duecker <katharina.duecker@gmail.com>
+Last checked: 18-Oct-2026
 """
 
 import argparse
@@ -69,9 +70,7 @@ CELL_TYPES = {
 }
 
 
-# --------------------------------------------------------------------------
-# helpers -- local to this script, since nothing else uses them
-# --------------------------------------------------------------------------
+# helpers 
 def _exp_func_mem_time(t, tau, A, C):
     """Exponential used to fit the membrane time constant."""
     return A * (1 - np.exp(-t / tau)) + C
@@ -246,9 +245,7 @@ def extract_ephys(ctc, specimen_ids):
     return ephys_features
 
 
-# --------------------------------------------------------------------------
 # extract ephys features for each cell type
-# --------------------------------------------------------------------------
 def extract_for_cell_type(ctc, df, cell_type):
     """Select the specimens for `cell_type` and extract their features."""
     specimen_ids = _select_specimen_ids(df, cell_type)
@@ -259,9 +256,7 @@ def extract_for_cell_type(ctc, df, cell_type):
 
 
 
-# --------------------------------------------------------------------------
 # main function (call from command line)
-# --------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,

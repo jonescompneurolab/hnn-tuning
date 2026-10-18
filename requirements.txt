@@ -1,20 +1,24 @@
-# Core requirements for the HNN tuning paper
+# Requirements for reproducing the manuscript figures
+# (developed with Python 3.12.9, macOS/arm64).
 #
-# Everything needed to run the cell-development and network-model code.
-# Versions are those used to produce the results in the manuscript
-# (Python 3.12.9, macOS/arm64).
+# IMPORTANT: the network simulations run with hnn-core's MPIBackend, which
+# needs OpenMPI + mpi4py. These cannot be installed reliably with pip.
+# Install them with conda BEFORE this file (see "Installation" in README.md):
+#     conda install -y "openmpi>5" mpi4py -c conda-forge
 #
-# Install with:
+# Then, from the repository root:
 #     pip install -r requirements.txt
-#
-# NEURON and hnn-core are the two dependencies that affect simulation output;
-# the rest are pinned to guard against API drift, and slightly older or newer
-# versions will very likely work.
+#     pip install -e .          # installs the `hnn_tuning` helper package
 
 # --- simulation ---------------------------------------------------------
 NEURON==8.2.7
 
-# hnn-core version XXX
+# TEMPORARY (until the next hnn-core release): `duecker_ET_model` is on
+# hnn-core master but not in the latest release (v0.6.1), so we pin the
+# master commit the manuscript was produced with.
+hnn_core[parallel] @ git+https://github.com/jonescompneurolab/hnn-core.git@66cde6aebe64050787200c410d8278f49f69b54d
+# Once released, replace the line above with:
+# hnn_core[parallel]==X.Y.Z
 
 # --- numerics and data --------------------------------------------------
 numpy==2.3.5
@@ -23,7 +27,6 @@ pandas==2.3.3
 
 # --- plotting -----------------------------------------------------------
 matplotlib==3.10.6
-cmcrameri==1.9          # perceptually uniform (Crameri) colour maps
 
 # --- notebooks ----------------------------------------------------------
 jupyterlab
