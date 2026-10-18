@@ -1,8 +1,9 @@
-"""HNN utils to build the L5 cell
+"""Utils to build individual pyramidal cells. 
 
+Code taken and adapted from HNN-core.
 
-Most functions are taking directly from the hnn-core repo.
-_create_synapses is adjusted to explore the dynamics of synapses tuned for this project. """
+Author: Katharina Duecker katharina.duecker@gmail.com
+Last checked: 18-Oct-2026"""
 
 import neuron
 from neuron import h
@@ -413,6 +414,7 @@ class Cell:
         self.dipole = h.Vector().record(self.dpl_ref)
 
 
+##### Cell parameters (as used in HNN)
 # L5ET cell
 def l5_params():
 

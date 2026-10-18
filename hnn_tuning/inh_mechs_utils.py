@@ -1,3 +1,10 @@
+"""Utils to build individual inhibitory cell. 
+
+Code taken and adapted from HNN-core.
+
+Author: Katharina Duecker katharina.duecker@gmail.com
+Last checked: 18-Oct-2026"""
+
 import neuron
 from neuron import h
 from functools import partial

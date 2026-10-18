@@ -1,4 +1,7 @@
-"""" Plotting functions for exploring Hay model and HNN """
+"""" Helper functions to simulate and plot L5pyr model.
+
+Author: Katharina Duecker katharina.duecker@gmail.com
+Last checked: 18-Oct-2026 """
 from neuron import h
 from neuron.units import ms, mV
 from scipy.signal import find_peaks

@@ -1,21 +1,11 @@
-"""Single-cell pyramidal stimulation experiments and their plotting.
+"""Single-cell pyramidal stimulation experiments and plotting.
 
-Shared by the L2/3 and L5-ET single-cell notebooks. Two experiment styles live
-here:
-
-* **Direct-NEURON** experiments driven through ``neuron.h`` on an hnn-core
-  ``Cell`` (e.g. from ``get_l2pyr`` / ``get_l5pyr``): signal attenuation along
-  the apical dendrite (``attenuation_from_section``) and its exponential-decay
-  fit helper (``exp_decay``).
-* **hnn-core dipole pipeline**: an *isolated* pyramidal cell -- a ``Network``
-  built with ``mesh_shape=(1, 1)`` and its connectivity cleared -- driven with a
-  tonic bias, with the dipole moment computed via ``simulate_dipole`` +
-  ``Dipole.smooth`` (``stim_dpl``) and plotted alongside membrane potential
-  (``plot_dpl``). Using the network pipeline on a single cell keeps the
-  single-cell dipole directly comparable to the network model.
-
-Importing this module loads the custom ``epsp.mod`` point process (needed by the
+Shared by the L2/3 and L5-ET single-cell notebooks.
+Importing this module loads the custom ``epsp.mod`` point process (needed for the
 attenuation experiment).
+
+Author: Katharina Duecker katharina.duecker@gmail.com
+Last checked: 18-Oct-2026
 """
 import neuron
 from neuron import h
@@ -32,9 +22,7 @@ from .plot_utils import add_scalebar
 neuron.load_mechanisms(str(EPSP_MOD))
 
 
-# ---------------------------------------------------------------------------
 # Direct-NEURON single-cell experiments (attenuation along the apical dendrite)
-# ---------------------------------------------------------------------------
 def exp_decay(x, lambda_val, A):
     return A * np.exp(-x / lambda_val)
 
@@ -135,9 +123,7 @@ def attenuation_from_section(model, ref_sect, section_names, amp, stim_dur, ax, 
     return atten, distance, upstroke, ax
 
 
-# ---------------------------------------------------------------------------
-# hnn-core dipole pipeline (isolated single cell)
-# ---------------------------------------------------------------------------
+# Single cell dipole (hnn-core)
 def stim_dpl(net, stim_cell='L5_pyramidal', stim_section='soma', stim_length=20, ampl=2.5):
     """Drive one isolated cell with a tonic bias and return its dipole.
 
@@ -177,7 +163,7 @@ def stim_dpl(net, stim_cell='L5_pyramidal', stim_section='soma', stim_length=20,
                        amplitude=ampl, t0=t0, tstop=t0 + stim_length)
 
     dpl = simulate_dipole(net, tstop=80, n_trials=1, record_vsec='all',
-                          record_isec='all', record_ca='all', bsl_cor="none")
+                          record_isec='all', record_ca='all')
     smooth_dpl = dpl[0].copy()
     smooth_dpl.smooth(window_len).scale(scaling_factor)
 

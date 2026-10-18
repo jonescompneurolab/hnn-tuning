@@ -7,6 +7,9 @@ CMA-ES solver in hnn-core's `Optimizer`.
 
 Meant to run on the cluster via `step2_optimize_ERP_cma.sh` (JOBLIB backend). The fitted
 `Optimizer` is pickled to `opt_ERP_cma_<popsize>_sigma0_<sigma0>.pkl`.
+
+Author: Katharina Duecker katharina.duecker@gmail.com
+Last checked: 18-Oct-2026
 """
 
 import os
@@ -294,9 +297,6 @@ def rmse_corr_spike_times(
             Required. A dipole object with experimental data.
         n_trials : int, default=1
             Number of trials to simulate and average.
-        bsl_cor : {"jones", "duecker"}, default="jones"
-            Baseline correction method. For neymotin_2020_model and law_2021_model, use
-            method 'jones' (manual correction). For duecker_ET_model, use method 'duecker'.
 
     best : dict, optional
         Dictionary with keys "obj" and "params" to store the best objective value and
@@ -330,8 +330,7 @@ def rmse_corr_spike_times(
         n_trials=obj_fun_kwargs.get("n_trials", 1),
         tstop=tstop,
         overwrite=False,
-        clear_cache=False,
-        bsl_cor=obj_fun_kwargs.get("bsl_cor", None),
+        clear_cache=False
     )
 
     res = batch_simulation.run(
@@ -368,11 +367,6 @@ def rmse_corr_spike_times(
 
 def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, continue_checkpoint):
     """Run the CMA-ES optimisation and pickle the fitted `Optimizer`.
-
-    Loads the target ERP, builds `duecker_ET_model` with empty drives, sets up the
-    constraints/initial values, fits with CMA-ES (objective: dipole RMSE +
-    anti-correlation, initial step size `sigma0`), and pickles the result to
-    `opt_ERP_cma_<popsize>_sigma0_<sigma0>_dt0025.pkl` (or `..._random.pkl`).
     """
 
     if continue_checkpoint:
@@ -399,7 +393,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     # evaluate the objective at hand-tuned starting point
     net = duecker_ET_model(); set_up_drives_empty(net)
     set_params_opt_drives(net, initial_norm, constraints)     # writes warm-start onto drives
-    dpl = simulate_dipole(net, tstop=tstop, n_trials=3, verbose=False, bsl_cor="duecker") 
+    dpl = simulate_dipole(net, tstop=tstop, n_trials=3, verbose=False) 
     dpl = [d.scale(scaling_factor).smooth(smooth_win) for d in dpl]
     avg_dpl = average_dipoles(dpl)
     o = _rmse_corr(avg_dpl, exp_dpl, tstop=tstop)
@@ -414,8 +408,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
         set_params=set_params_cb, initial_params=initial_norm, max_iter=max_iter, obj_fun=rmse_corr_spike_times)
 
     optim.fit(target=exp_dpl, n_trials=3, scale_factor=scaling_factor, sigma0=sigma0,
-            smooth_window_len=smooth_win, dt=dt, popsize=popsize, pth_backup=pth_backup,
-            bsl_cor="duecker", n_jobs=n_procs, verbose=False)
+            smooth_window_len=smooth_win, dt=dt, popsize=popsize, pth_backup=pth_backup, n_jobs=n_procs, verbose=False)
 
     # Drop the set_params callback before pickling to avoid set_params_opt_drives being a dependency. 
     optim._set_params = None

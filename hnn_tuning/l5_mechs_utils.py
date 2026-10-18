@@ -1,4 +1,7 @@
-"""mechs integrator utils"""
+"""Utils to build L5pyr model.
+
+Author: Katharina Duecker katharina.duecker@gmail.com
+Last checked: 18-Oct-2026"""
 import neuron
 from neuron import h
 from functools import partial

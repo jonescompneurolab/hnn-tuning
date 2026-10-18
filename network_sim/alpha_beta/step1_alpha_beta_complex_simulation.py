@@ -3,14 +3,10 @@
 
 Step 1 of the alpha/beta analysis: drive the network with a proximal feedforward
 and a distal feedback bursty drive (~10 Hz), simulate the dipole over many trials,
-and compute the spectral measures — PSD (Welch), Morlet TFR, alpha/beta power ratio,
-and waveform symmetry index — saving per-run pickles to sim_results/. Run on the
-cluster (submitted to Slurm via step1_alpha_beta_complex_simulation.sh, one array
-task per run_idx). Step 2 (step2_alpha_beta_complex_results.ipynb) loads the pickles
-and makes the figures.
+and compute the spectral measures. Results are loaded and plotted in step2 notebook.
 
 Author: Katharina Duecker <katharina.duecker@gmail.com>
-Part of the hnn-tuning research compendium.
+Last checked: 18-Oct-2026
 """
 
 ## set up environment
@@ -106,7 +102,7 @@ def run_alpha_beta_complex_simulations(params, n_trials=1):
                         weights_ampa=params['weights_ampa_d'], synaptic_delays=params['syn_delays_d'], event_seed=params['dist_seed'])
     
     with JoblibBackend(n_jobs=params['n_procs']):
-        dpl = simulate_dipole(net, tstop=params['tstop'], bsl_cor='duecker', n_trials=n_trials, dt=params['dt'])
+        dpl = simulate_dipole(net, tstop=params['tstop'], n_trials=n_trials, dt=params['dt'])
     
     dpl = [d.scale(params['scale_factor']) for d in dpl]
 

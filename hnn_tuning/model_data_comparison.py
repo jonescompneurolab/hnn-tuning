@@ -1,8 +1,5 @@
-"""Helpers for comparing model cells against experimental electrophysiology.
+"""Helpers for comparing model cells (L2, L5, int) against experimental electrophysiology.
 
-Shared by the single-cell comparison scripts (``*_vsAllen``,
-``l5_ETvsKalmbach2021``). Pure numpy/pandas — no NEURON import — so it loads
-quickly and can be imported from any environment.
 """
 
 import numpy as np

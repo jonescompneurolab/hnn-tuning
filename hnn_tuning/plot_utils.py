@@ -1,40 +1,35 @@
-"""Shared, cell-type-agnostic plotting helpers.
-
-Used across the single-cell notebooks (and, for now, some network_sim figures).
-Holds the scale-bar helper and the per-cell-type line-plot colour palette.
+"""Shared plotting helper functions.
+Author: Katharina Duecker katharina.duecker@gmail.com
+Last checked: 18-Oct-2026
 """
 import numpy as np
 
 
 def get_cmap_neurons():
-    """Line-plot colours for the four cell types, in the order
-    ``[L2_inhibitory, L2_pyramidal, L5_inhibitory, L5_pyramidal]``.
-
-    This is the single source of truth for the neuron palette (it is the same
-    array returned as the third element of ``l23_plot_utils.get_colormap``).
+    """Line colors for the 4 different neuron types (L2 Int, L2 Pyr, L5 Int, L5 Pyr)
     """
     return np.array([[218, 166, 156], [164, 30, 79], [119, 161, 187], [92, 114, 183]]) / 255
 
 
-def assign_color(net, gid):
-    """Return the cell-type colour for a given gid in a network.
+# def assign_color(net, gid):
+#     """Return the cell-type colour for a given gid in a network.
 
-    DEPRECATED: hnn-core now assigns per-cell-type colours when plotting spiking
-    data. Kept only until the remaining network_sim callers migrate; do not use
-    in new code.
-    """
-    import matplotlib
+#     DEPRECATED: hnn-core now assigns per-cell-type colours when plotting spiking
+#     data. Kept only until the remaining network_sim callers migrate; do not use
+#     in new code.
+#     """
+#     import matplotlib
 
-    cm_neurons = get_cmap_neurons()
-    cmap = matplotlib.colors.ListedColormap(cm_neurons)
+#     cm_neurons = get_cmap_neurons()
+#     cmap = matplotlib.colors.ListedColormap(cm_neurons)
 
-    cell_type_colors = {'L2_inhibitory': cmap.colors[0], 'L2_pyramidal': cmap.colors[1],
-                        'L5_inhibitory': cmap.colors[2], 'L5_pyramidal': cmap.colors[3]}
+#     cell_type_colors = {'L2_inhibitory': cmap.colors[0], 'L2_pyramidal': cmap.colors[1],
+#                         'L5_inhibitory': cmap.colors[2], 'L5_pyramidal': cmap.colors[3]}
 
-    for cell_type, gid_range in net.gid_ranges.items():
-        if cell_type in list(cell_type_colors.keys()):
-            if gid in gid_range:
-                return cell_type_colors[cell_type]
+#     for cell_type, gid_range in net.gid_ranges.items():
+#         if cell_type in list(cell_type_colors.keys()):
+#             if gid in gid_range:
+#                 return cell_type_colors[cell_type]
 
 
 def add_scalebar(ax, x_len, y_len, x_label=None, y_label=None,
@@ -42,32 +37,21 @@ def add_scalebar(ax, x_len, y_len, x_label=None, y_label=None,
                  label_pad=0.03, flip_x=False):
     """Draw an L-shaped scale bar and strip the axes frame.
 
-    Replaces the ``spine.set_bounds`` + ``set_xticks([])``/``set_yticks([])``
-    idiom. The bar's corner is anchored in *axes fraction* (not data
-    coordinates), so passing the same ``anchor`` to several panels makes their
-    scale bars line up automatically -- no manual alignment needed -- even when
-    the panels have different data ranges.
 
     Parameters
     ----------
     ax : matplotlib.axes.Axes
-        Axes to annotate. Its current x/y limits are read to size the bar, so
-        call this AFTER plotting and setting the limits.
+        Axes to annotate. 
     x_len, y_len : float
         Scale-bar lengths in DATA units (e.g. ``x_len=200`` for 200 ms,
-        ``y_len=50`` for 50 mV). These differ per panel / simulation / cell type,
-        so they are required.
+        ``y_len=50`` for 50 mV). These differ per panel / simulation / cell type.
     x_label, y_label : str, optional
         Text labels for the horizontal and vertical bars (e.g. ``'200 ms'``,
         ``'50 mV'``). ``None`` (default) draws the bar without a label.
     anchor : (float, float)
-        Corner of the L in axes fraction, ``(0, 0)`` = lower-left. Use the same
-        value across panels to align them.
+        Corner of the L in axes fraction, ``(0, 0)`` = lower-left. 
     flip_x : bool
-        Mirror the L horizontally: the horizontal (x) bar extends LEFT instead of
-        right and the y-label sits on the RIGHT of the vertical bar. Use this for
-        the twin axis of a ``twinx`` panel so its scale bar mirrors the main
-        axis's -- anchor both at the same ``anchor`` to get a symmetric pair.
+        Mirror the L horizontally.
     color, lw, fontsize, label_pad : styling.
 
     Returns

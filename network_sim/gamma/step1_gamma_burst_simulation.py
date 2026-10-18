@@ -13,6 +13,7 @@ Usage
     python step1_gamma_burst_simulation.py --n_trials 100 --n_procs 50
 
 Author: Katharina Duecker <katharina.duecker@gmail.com>
+Last-checked: 18-Oct-2026
 """
 
 import argparse
@@ -38,7 +39,7 @@ def run_main(n_trials, n_procs, tstop=1000.):
     net = read_network_configuration(op.join(CONFIG_ROOT, NETWORK_CONFIG))
 
     with JoblibBackend(n_jobs=n_procs):
-        dpl = simulate_dipole(net, tstop=tstop, bsl_cor='duecker', n_trials=n_trials)
+        dpl = simulate_dipole(net, tstop=tstop,  n_trials=n_trials)
 
     netfilename = op.join(out_pth, 'net_gamma_bursty.pkl')
     dplfilename = op.join(out_pth, 'dpl_gamma_bursty.pkl')
