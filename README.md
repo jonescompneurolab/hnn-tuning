@@ -127,7 +127,7 @@ JupyterLab.
 | Gamma | Fig. 11 | network_sim/gamma/step2_inspect_gamma_multiscale.ipynb | Plots single trial continuous gamma, and bursty gamma |
 | comparison neymotin_2020_model | Supp. Fig. 3 | network_sim/comparison_neymotin2020/suppfig3.ipynb | Plots weights, space constants, and single cell dipoles for neymotin_2020_model, identifies rheobase for neymotin_2020_model and duecker_ET_model | 
 | Supporting information/development | - | network_sim/dipole_baseline_correction/fit_baseline_correction.ipynb | Shows development & result of baseline correction. Included for documentation. | 
-| Supporting information/development | - | network_sim/make_network_configs/make_network_configs.py | Generates network configurations from legacy "flat" json files and stores them in network_sim/network_configs. Included for documentation (not usable without flat json files). | 
+| Supporting information/development | - | network_sim/make_network_configs/make_network_configs.py | Generates network configurations from legacy "flat" json files and stores them in network_sim/network_configs. Included for documentation only (not usable without flat json files). | 
 ---
 
 ## Data
