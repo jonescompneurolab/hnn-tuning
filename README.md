@@ -122,11 +122,10 @@ JupyterLab.
 | ERP | - | network_sim/ERP/step2_optimize_ERP_cma.py | Optimization script to fit ERP drives (requires HPC, results shared in results/network_sim/ERP) |
 | ERP | Fig. 9 | network_sim/ERP/step3_inspect_ERP_multiscale.ipynb | Multiscale interpretation of ERP simulation in terms of spiking, firing rates, membrane voltage, Ca2+, synaptic currents |
 | Alpha-Beta | - | network_sim/alpha-beta/step1_alpha_beta_complex_simulation.py | Simulates and analyses alpha-beta complex dipoles (HPC recommended, results shared in results/network_sim/alpha_beta) | 
-| Alpha-Beta | Fig. 10 | network_sim/alpha-beta/step2_alpha_beta_complex_results.ipynb | Plots results of alpha-beta simulation, analyses SI MEG dipole as in Jones et al., 2019 |
+| Alpha-Beta | Fig. 10 | network_sim/alpha-beta/step2_alpha_beta_complex_results.ipynb | Plots results of alpha-beta simulation, analyses SI MEG dipole as in Jones et al., 2009 |
 | Gamma | - | network_sim/gamma/step1_gamma_burst_simulation.py | Simulates 100 trials of 1s each with bursty gamma configuration, results saved in results/network_sim/gamma (HPC recommended, not shared because too large) |
 | Gamma | Fig. 11 | network_sim/gamma/step2_inspect_gamma_multiscale.ipynb | Plots single trial continuous gamma, and bursty gamma |
-| Neymotin 2020 model | Supp. Fig. 3 | network_sim/comparison_neymotin2020/suppfig3.ipynb | Plots weights, space constants, and single cell dipoles for neymotin_2020_model, identifies rheobase for neymotin_2020_model and duecker_ET_model | 
-
+| comparison neymotin_2020_model | Supp. Fig. 3 | network_sim/comparison_neymotin2020/suppfig3.ipynb | Plots weights, space constants, and single cell dipoles for neymotin_2020_model, identifies rheobase for neymotin_2020_model and duecker_ET_model | 
 | Supporting information/development | - | network_sim/dipole_baseline_correction/fit_baseline_correction.ipynb | Shows development & result of baseline correction. Included for documentation. | 
 | Supporting information/development | - | network_sim/make_network_configs/make_network_configs.py | Generates network configurations from legacy "flat" json files and stores them in network_sim/network_configs. Included for documentation (not usable without flat json files). | 
 ---
