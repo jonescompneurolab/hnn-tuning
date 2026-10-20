@@ -34,11 +34,12 @@ hnn_core_root = op.join(op.dirname(hnn_core.__file__))
 from scipy.stats import pearsonr
 
 pathfig = os.path.join(os.getcwd(), 'figures')
-from hnn_tuning import DATA, NETWORK_SIM
+from hnn_tuning import DATA, NETWORK_SIM, results_dir
 pathgen = str(DATA / 'hnn-data') + '/'
 
 # path to back up cma runs
 pth_backup=str(NETWORK_SIM / 'ERP' / 'backup_cma')
+out_pth = results_dir('network_sim', 'ERP')
 os.makedirs(pth_backup, exist_ok=True)
 
 def set_params_opt_drives(net, param_values_norm, constraints):
@@ -413,7 +414,7 @@ def opt_cma(max_iter, popsize, n_procs, scaling_factor, smooth_win, sigma0, cont
     # Drop the set_params callback before pickling to avoid set_params_opt_drives being a dependency. 
     optim._set_params = None
 
-    with open(f'opt_ERP_cma_{popsize}_sigma0_{sigma0}.pkl', 'wb') as file:
+    with open(op.koin(out_pth, f'opt_ERP_cma_{popsize}_sigma0_{sigma0}.pkl'), 'wb') as file:
         pickle.dump(optim, file)
 
 if __name__ == '__main__':
