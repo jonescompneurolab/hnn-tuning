@@ -45,9 +45,24 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    For other operating systems see the
    [hnn-core installation guide](https://jonescompneurolab.github.io/hnn-core/stable/install.html).
 5. Clone this repository and install the requirements plus the `hnn_tuning`
-   helper package:
+   helper package. The repository is currently **private**, so you need to be
+   a collaborator and authenticate with GitHub. Use one of:
+
+   - **SSH** (recommended if you have an
+     [SSH key added to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)):
+     ```bash
+     git clone git@github.com:jonescompneurolab/hnn-tuning.git
+     ```
+   - **HTTPS**: GitHub no longer accepts your account password here.
+     Authenticate first with `gh auth login` (GitHub CLI), or enter a
+     [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+     when git asks for a password:
+     ```bash
+     git clone https://github.com/jonescompneurolab/hnn-tuning.git
+     ```
+
+   Then:
    ```bash
-   git clone <repository-url>
    cd hnn-tuning
    pip install -r requirements.txt
    pip install -e .          # makes `import hnn_tuning` work
@@ -83,15 +98,40 @@ JupyterLab.
 
 ## Repository layout
 
-| Folder | Description | 
-|------|---------|
+| Folder | Description |
+|--------|-------------|
+| `hnn_tuning/` | Helper functions for simulations and plotting |
+| `data/` | Pre-processed single-cell data (can be replicated using `extract_ephys/allen_get_ephys_data.py`, see **Data**) |
+| `single_cell_sim/` | Simulations of single-cell dynamics and comparison to data from the Allen Cell Types Database |
+| `network_sim/` | Simulations using the tuned network |
+| `results/` | Saved simulation outputs used by the figure notebooks |
 
-hnn_tuning/ | Helper functions for simulations and plotting |
-data/ | Pre-processed single cell data (can be replicated using extract_ephys/allen_get_ephys_data.py, see requirements-allen.txt | 
-single_cell_sim | Simulations of single cell dynamics and comparison to data from Allen Cell Types database. |
-network_sim | Simulations using the tuned network.|
+---
 
+## Reproducing manuscript figures
 
+Start with `single_cell_sim/` (cell tuning), then `network_sim/`. The figure
+notebooks read pre-computed results from `results/`. To regenerate those,
+first run the simulation script listed under "Generates".
+
+| Simulation | Figure | Notebook / script to plot | Generates | 
+|--------|--------|---------------------------|----------------------------|
+| L5 ET pyramidal|| Fig. 2 & 3; Supp. Fig. 1, Supp. Fig. 2 | single_cell_sim/cells/l5_pyramidal.ipynb | L5 ET pyramidal comparison to Allen data & calcium spikes, ion channel conductances, somato-dendritic attenuation, single neuron dipoles | 
+| L2/3 Pyramidal | Fig. 4 & 5; Supp. Fig. 1, Supp. Fig. 2 | single_cell_sim/cells/l23_pyramidal.ipynb | L2/3 pyramidal comparison to Allen data & calcium spikes, ion channel conductances,  somato-dendritic attenuation, single neuron dipoles | 
+|Interneuron | Fig. 6 | single_cell_sim/cells/interneuron.ipynb | Interneuron comparison to Allen data | 
+| Synapses | Fig. 7 | network_sim/inspect_synapses/synapses.ipynb | NMDA synapse, slow GABAA, GABAB |
+| Connectivity | Fig. 8 | network_sim/connectivity/connectivity.ipynb | Space constant, maximum weights, connectivity heat maps, PSPs |
+| ERP | - | network_sim/ERP/step1_handtune.ipynb | Hand-tuned starting values not shown in manuscript |
+| ERP | - | network_sim/ERP/step2_optimize_ERP_cma.py | Optimization script to fit ERP drives (requires HPC) |
+| ERP | Fig. 9 | network_sim/ERP/step2_inspect_ERP_multiscale.ipynb | Multiscale interpretation of ERP simulation in terms of spiking, firing rates, membrane voltage, Ca2+, synaptic currents |
+| Alpha-Beta | - | network_sim/alpha-beta/step1_alpha_beta_complex_simulation.py | Simulates and analyses alpha-beta complex dipoles (HPC recommended), results shared in results/network_sim/alpha_beta | 
+| Alpha-Beta | Fig. 10 | network_sim/alpha-beta/step2_alpha_beta_complex_results.ipynb | Plots results of alpha-beta simulation, analyses SI MEG dipole as in Jones et al., 2019 |
+| Gamma | - | network_sim/gamma/step1_gamma_burst_simulation.py | Simulates 100 trials of 1s each with bursty gamma configuration, results saved in results/network_sim/gamma (HPC recommended, not shared because too large) |
+| Gamma | Fig. 11 | network_sim/gamma/step2_inspect_gamma_multiscale.ipynb | Plots single trial continuous gamma, and bursty gamma |
+| Neymotin 2020 model | Supp. Fig. 3 | network_sim/comparison_neymotin2020/suppfig3.ipynb | Plots weights, space constants, and single cell dipoles for neymotin_2020_model, identifies rheobase for neymotin_2020_model and duecker_ET_model | 
+
+| Supporting information/development | - | network_sim/dipole_baseline_correction/fit_baseline_correction.ipynb | Shows development & result of baseline correction. Included for documentation. | 
+| Supporting information/development | - | network_sim/make_network_configs/make_network_configs.py | Generates network configurations from legacy "flat" json files and stores them in network_sim/network_configs. Included for documentation (not usable without flat json files). | 
 ---
 
 ## Data

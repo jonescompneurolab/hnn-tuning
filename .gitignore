@@ -21,3 +21,5 @@ __pycache__/
 # Keep the small computed feature tables (ephys_*.csv / .pkl) tracked.
 data/allen-data/**/cell_types/
 *.nwb
+results/network_sim/gamma/net_gamma_bursty.pkl
+results/network_sim/gamma/dpl_gamma_bursty.pkl
