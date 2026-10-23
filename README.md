@@ -29,6 +29,7 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    ```bash
    xcode-select --install
    ```
+
 4. Create and activate the environment, and install MPI (needed for
    `MPIBackend`, used by the network simulations):
    ```bash
@@ -36,6 +37,7 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    conda activate hnn-tuning
    conda install -y "openmpi>5" mpi4py -c conda-forge
    ```
+
 5. macOS only: let NEURON find the conda MPI libraries whenever the
    environment is activated:
    ```bash
@@ -48,6 +50,7 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    ```
    For other operating systems see the
    [hnn-core installation guide](https://jonescompneurolab.github.io/hnn-core/stable/install.html).
+
 6. Clone this repository and install the requirements plus the `hnn_tuning`
    helper package. The repository is currently **private**, so you need to be
    a collaborator and authenticate with GitHub. Use one of:
@@ -71,7 +74,16 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    pip install -r requirements.txt
    pip install -e .          # makes `import hnn_tuning` work
    ```
-7. Check the install:
+
+7. Compile the `single_cell_sim/epsp.mod` mechanism for your platform by running:
+
+   ```bash
+   cd single_cell_sim
+   nrnivmodl
+   cd ../
+   ```
+
+8. Check the install:
    ```bash
    python -c "import hnn_core, hnn_tuning; from hnn_core import MPIBackend; print(hnn_core.__version__)"
    ```
