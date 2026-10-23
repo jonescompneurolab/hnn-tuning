@@ -85,7 +85,14 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
 
 8. Check the install:
    ```bash
-   python -c "import hnn_core, hnn_tuning; from hnn_core import MPIBackend; print(hnn_core.__version__)"
+   python -c "
+   import hnn_core, hnn_tuning
+   from hnn_core import neymotin_2020_model, MPIBackend, simulate_dipole
+   with MPIBackend():
+      simulate_dipole(neymotin_2020_model(), tstop=20)
+   print('--> SUCCESS: The test worked')
+   print(f'--> HNN-Core version is: {hnn_core.__version__}')
+   "
    ```
 
 To work on hnn-core itself, clone it and run `pip install -e ".[dev]"`
