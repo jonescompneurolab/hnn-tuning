@@ -21,18 +21,24 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
 
 1. If you installed NEURON with the standalone installer package, uninstall it
    first so it does not shadow the pip-installed version.
-2. macOS only: install the Xcode Command-Line Tools (restart afterwards):
+
+2. Install Anaconda or Miniconda from
+   [https://www.anaconda.com/download/success](https://www.anaconda.com/download/success).
+
+3. macOS only: install the Xcode Command-Line Tools (restart afterwards):
    ```bash
    xcode-select --install
    ```
-3. Create and activate the environment, and install MPI (needed for
+
+4. Create and activate the environment, and install MPI (needed for
    `MPIBackend`, used by the network simulations):
    ```bash
    conda create -y -n hnn-tuning python=3.12
    conda activate hnn-tuning
    conda install -y "openmpi>5" mpi4py -c conda-forge
    ```
-4. macOS only: let NEURON find the conda MPI libraries whenever the
+
+5. macOS only: let NEURON find the conda MPI libraries whenever the
    environment is activated:
    ```bash
    mkdir -p $CONDA_PREFIX/etc/conda/activate.d $CONDA_PREFIX/etc/conda/deactivate.d
@@ -44,7 +50,8 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    ```
    For other operating systems see the
    [hnn-core installation guide](https://jonescompneurolab.github.io/hnn-core/stable/install.html).
-5. Clone this repository and install the requirements plus the `hnn_tuning`
+
+6. Clone this repository and install the requirements plus the `hnn_tuning`
    helper package. The repository is currently **private**, so you need to be
    a collaborator and authenticate with GitHub. Use one of:
 
@@ -67,9 +74,25 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    pip install -r requirements.txt
    pip install -e .          # makes `import hnn_tuning` work
    ```
-6. Check the install:
+
+7. Compile the `single_cell_sim/epsp.mod` mechanism for your platform by running:
+
    ```bash
-   python -c "import hnn_core, hnn_tuning; from hnn_core import MPIBackend; print(hnn_core.__version__)"
+   cd single_cell_sim
+   nrnivmodl
+   cd ../
+   ```
+
+8. Check the install:
+   ```bash
+   python -c "
+   import hnn_core, hnn_tuning
+   from hnn_core import neymotin_2020_model, MPIBackend, simulate_dipole
+   with MPIBackend():
+      simulate_dipole(neymotin_2020_model(), tstop=20)
+   print('--> SUCCESS: The test worked')
+   print(f'--> HNN-Core version is: {hnn_core.__version__}')
+   "
    ```
 
 To work on hnn-core itself, clone it and run `pip install -e ".[dev]"`

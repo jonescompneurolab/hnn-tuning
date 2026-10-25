@@ -23,3 +23,7 @@ data/allen-data/**/cell_types/
 *.nwb
 results/network_sim/gamma/net_gamma_bursty.pkl
 results/network_sim/gamma/dpl_gamma_bursty.pkl
+
+# Mechanism build files
+single_cell_sim/arm64
+single_cell_sim/x86_64
