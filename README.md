@@ -55,7 +55,7 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    helper package.
 
    ```bash
-     git clone [git@github.com:jonescompneurolab/hnn-tuning.git](https://github.com/jonescompneurolab/hnn-tuning)
+     git clone https://github.com/jonescompneurolab/hnn-tuning
    ```
    
    Then:
