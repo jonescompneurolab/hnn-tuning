@@ -52,22 +52,12 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    [hnn-core installation guide](https://jonescompneurolab.github.io/hnn-core/stable/install.html).
 
 6. Clone this repository and install the requirements plus the `hnn_tuning`
-   helper package. The repository is currently **private**, so you need to be
-   a collaborator and authenticate with GitHub. Use one of:
+   helper package.
 
-   - **SSH** (recommended if you have an
-     [SSH key added to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)):
-     ```bash
-     git clone git@github.com:jonescompneurolab/hnn-tuning.git
-     ```
-   - **HTTPS**: GitHub no longer accepts your account password here.
-     Authenticate first with `gh auth login` (GitHub CLI), or enter a
-     [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
-     when git asks for a password:
-     ```bash
-     git clone https://github.com/jonescompneurolab/hnn-tuning.git
-     ```
-
+   ```bash
+     git clone [git@github.com:jonescompneurolab/hnn-tuning.git](https://github.com/jonescompneurolab/hnn-tuning)
+   ```
+   
    Then:
    ```bash
    cd hnn-tuning
@@ -75,7 +65,7 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    pip install -e .          # makes `import hnn_tuning` work
    ```
 
-7. Compile the `single_cell_sim/epsp.mod` mechanism for your platform by running:
+8. Compile the `single_cell_sim/epsp.mod` mechanism for your platform by running:
 
    ```bash
    cd single_cell_sim
@@ -83,7 +73,7 @@ Tested on macOS/arm64 with Python 3.12 and conda (Anaconda or Miniconda).
    cd ../
    ```
 
-8. Check the install:
+9. Check the install:
    ```bash
    python -c "
    import hnn_core, hnn_tuning
